@@ -1,4 +1,5 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "typescript.autoClosingTags": false
+    "typescript.autoClosingTags": false,
+    "java.debug.settings.onBuildFailureProceed": true
 }

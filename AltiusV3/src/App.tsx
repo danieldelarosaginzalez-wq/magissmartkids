@@ -28,6 +28,11 @@ import MateriasPage from './pages/MateriasPage';
 import NotasPage from './pages/NotasPage';
 import PerfilPage from './pages/PerfilPage';
 
+// Teacher Pages
+import TeacherSubjectsPage from './pages/teacher/TeacherSubjectsPage';
+import TeacherTasksPage from './pages/teacher/TeacherTasksPage';
+import TeacherGradesPage from './pages/teacher/TeacherGradesPage';
+
 function App() {
   const { isAuthenticated } = useAuthStore();
 
@@ -248,6 +253,51 @@ function App() {
             <ProtectedRoute allowedRoles={['student']}>
               <Layout>
                 <StudentTaskView />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Teacher Routes */}
+        <Route 
+          path="/profesor" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/profesor/materias" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <TeacherSubjectsPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/profesor/tareas" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <TeacherTasksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/profesor/calificaciones" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <TeacherGradesPage />
               </Layout>
             </ProtectedRoute>
           } 

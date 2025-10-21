@@ -2,7 +2,7 @@ package com.altiusacademy.controller;
 
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.enums.UserRole;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 import com.altiusacademy.dto.RegisterRequest;
 import com.altiusacademy.service.AuthService;
 import com.altiusacademy.service.StudentService;

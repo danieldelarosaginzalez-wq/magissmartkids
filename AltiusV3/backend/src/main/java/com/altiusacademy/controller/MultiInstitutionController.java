@@ -3,7 +3,7 @@ package com.altiusacademy.controller;
 import com.altiusacademy.model.entity.Institution;
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.entity.UserInstitutionRole;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 import com.altiusacademy.service.InstitutionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.altiusacademy.repository;
+package com.altiusacademy.repository.mysql;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.altiusacademy.model.ParentChildRelation;
+import com.altiusacademy.model.entity.ParentChildRelation;
 
 @Repository
 public interface ParentChildRelationRepository extends JpaRepository<ParentChildRelation, Long> {

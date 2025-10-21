@@ -1,4 +1,4 @@
-package com.altiusacademy.repository;
+package com.altiusacademy.repository.mysql;
 
 import com.altiusacademy.model.entity.UserInstitutionRole;
 import com.altiusacademy.model.entity.User;

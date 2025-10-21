@@ -55,51 +55,96 @@ const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const navigationItems: NavigationItem[] = [
-    {
-      label: 'Inicio',
-      href: '/dashboard',
-      icon: Home,
-    },
+  const getNavigationItems = (): NavigationItem[] => {
+    if (!user) return [];
+
+    const baseItems: NavigationItem[] = [
+      {
+        label: 'Inicio',
+        href: '/dashboard',
+        icon: Home,
+      }
+    ];
+
     // Student Navigation
-    {
-      label: 'Tareas',
-      href: '/tareas',
-      icon: CheckSquare,
-      roles: ['student'],
-    },
-    {
-      label: 'Materias',
-      href: '/materias',
-      icon: BookOpen,
-      roles: ['student'],
-    },
-    {
-      label: 'Notas',
-      href: '/notas',
-      icon: BarChart3,
-      roles: ['student'],
-    },
-    {
-      label: 'Actividades',
-      href: '/actividades-interactivas',
-      icon: Play,
-      roles: ['student', 'teacher'],
-    },
-    // Admin/Teacher Navigation
-    {
-      label: 'Usuarios',
-      href: '/users',
-      icon: Users,
-      roles: ['admin', 'coordinator'],
-    },
-    {
-      label: 'Reportes',
-      href: '/reports',
-      icon: BarChart3,
-      roles: ['teacher', 'coordinator', 'admin'],
-    },
-  ];
+    if (user.role === 'student') {
+      return [
+        ...baseItems,
+        {
+          label: 'Tareas',
+          href: '/tareas',
+          icon: CheckSquare,
+        },
+        {
+          label: 'Materias',
+          href: '/materias',
+          icon: BookOpen,
+        },
+        {
+          label: 'Notas',
+          href: '/notas',
+          icon: BarChart3,
+        },
+        {
+          label: 'Actividades',
+          href: '/actividades-interactivas',
+          icon: Play,
+        },
+      ];
+    }
+
+    // Teacher Navigation
+    if (user.role === 'teacher') {
+      return [
+        {
+          label: 'Inicio',
+          href: '/profesor',
+          icon: Home,
+        },
+        {
+          label: 'Mis Materias',
+          href: '/profesor/materias',
+          icon: BookOpen,
+        },
+        {
+          label: 'Tareas',
+          href: '/profesor/tareas',
+          icon: CheckSquare,
+        },
+        {
+          label: 'Calificaciones',
+          href: '/profesor/calificaciones',
+          icon: BarChart3,
+        },
+      ];
+    }
+
+    // Admin/Coordinator Navigation
+    if (user.role === 'admin' || user.role === 'coordinator') {
+      return [
+        ...baseItems,
+        {
+          label: 'Usuarios',
+          href: '/users',
+          icon: Users,
+        },
+        {
+          label: 'Reportes',
+          href: '/reports',
+          icon: BarChart3,
+        },
+        {
+          label: 'Actividades',
+          href: '/actividades-interactivas',
+          icon: Play,
+        },
+      ];
+    }
+
+    return baseItems;
+  };
+
+  const navigationItems = getNavigationItems();
 
   const handleLogout = () => {
     logout();
@@ -114,12 +159,7 @@ const Header: React.FC<HeaderProps> = ({
     return location.pathname.startsWith(href);
   };
 
-  const canAccessRoute = (item: NavigationItem) => {
-    if (!item.roles || !user) return true;
-    return item.roles.includes(user.role);
-  };
-
-  const filteredNavigationItems = navigationItems.filter(canAccessRoute);
+  const filteredNavigationItems = navigationItems;
 
   return (
     <header className={`bg-white shadow-magic border-b border-gray-200 sticky top-0 z-50 ${className}`}>

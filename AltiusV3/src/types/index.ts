@@ -1,134 +1,65 @@
+// Tipos para el frontend de MagicSmartKids
+
+export type UserRole = 'student' | 'teacher' | 'coordinator' | 'parent' | 'secretary' | 'admin';
+
+export interface Institution {
+  id: string;
+  name: string;
+  address?: string;
+  nit?: string;
+}
+
+export interface AcademicGrade {
+  id: string;
+  name: string;
+  level: number;
+}
+
 export interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   role: UserRole;
-  institutionId?: string | null;
-  institution?: Institution | null; // ✅ INSTITUCIÓN COMPLETA (puede ser null)
-  academicGrade?: AcademicGrade | null; // ✅ GRADO ACADÉMICO (puede ser null)
+  institution?: Institution | null;
+  academicGrade?: AcademicGrade | null;
   isActive: boolean;
   createdAt: string;
-  avatar?: string;
 }
 
-export interface AcademicGrade {
-  id: string;
-  name: string;
-  description: string;
-  level: number;
-}
-
-export type UserRole = 'admin' | 'secretary' | 'coordinator' | 'teacher' | 'student' | 'parent' | 'visitor';
-
-export interface Institution {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  director: string;
-  isActive: boolean;
-  studentsCount: number;
-  teachersCount: number;
+// Tipos para el dashboard del estudiante
+export interface StudentStats {
+  totalSubjects: number;
+  pendingTasks: number;
+  completedTasks: number;
   averageGrade: number;
+  studyHours: string;
+  completedActivities: number;
 }
 
-export interface Subject {
+export interface StudentTask {
+  id: string;
+  subject: string;
+  title: string;
+  description?: string;
+  dueDate: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  status: 'pending' | 'in_progress' | 'completed';
+}
+
+export interface StudentSubject {
   id: string;
   name: string;
-  description: string;
-  gradeLevel: string;
-  teacherId: string;
-  institutionId: string;
+  progress: number;
+  grade: number;
   color: string;
 }
 
-export interface Assignment {
+export interface StudentGrade {
   id: string;
-  title: string;
-  description: string;
-  subjectId: string;
-  teacherId: string;
-  type: 'quiz' | 'file_upload' | 'both';
-  dueDate: string;
-  totalPoints: number;
-  questions?: Question[];
-  isActive: boolean;
-  submissions: Submission[];
-}
-
-export interface Question {
-  id: string;
-  type: 'multiple_choice' | 'true_false' | 'fill_blank';
-  question: string;
-  options?: string[];
-  correctAnswer: string | number;
-  points: number;
-}
-
-export interface Submission {
-  id: string;
-  assignmentId: string;
-  studentId: string;
-  answers?: Answer[];
-  files?: File[];
-  submittedAt: string;
-  grade?: number;
-  feedback?: string;
-  status: 'pending' | 'graded' | 'late';
-}
-
-export interface Answer {
-  questionId: string;
-  answer: string | number;
-  isCorrect?: boolean;
-}
-
-export interface Grade {
-  id: string;
-  studentId: string;
-  subjectId: string;
-  assignmentId: string;
-  value: number;
-  maxValue: number;
-  period: string;
+  subject: string;
+  assignment: string;
+  grade: number;
+  maxGrade: number;
   date: string;
-  type: 'assignment' | 'exam' | 'participation';
-}
-
-export interface CalendarEvent {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  type: 'assignment' | 'exam' | 'meeting' | 'holiday';
-  subjectId?: string;
-  institutionId: string;
-}
-
-export interface DashboardStats {
-  totalStudents: number;
-  totalTeachers: number;
-  totalInstitutions: number;
-  averageImprovement: number;
-  pendingAssignments: number;
-  completedAssignments: number;
-  gradeDistribution: {
-    excellent: number;
-    good: number;
-    regular: number;
-    poor: number;
-  };
-}
-
-export interface StudentProgress {
-  studentId: string;
-  subjectId: string;
-  beforeGrade: number;
-  afterGrade: number;
-  improvement: number;
-  assignmentsCompleted: number;
-  totalAssignments: number;
-  lastActivity: string;
 }

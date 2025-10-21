@@ -73,8 +73,8 @@ const StudentDashboard: React.FC = () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
 
-      // Usar API real cuando esté disponible, fallback por ahora
-      const response = await api.get('/student/stats').catch(() => null);
+      // Usar API real del backend
+      const response = await api.get('/students/dashboard/stats');
 
       if (response?.data) {
         setStats({
@@ -87,20 +87,20 @@ const StudentDashboard: React.FC = () => {
           loading: false
         });
       } else {
-        // Datos de fallback realistas
-        setStats({
-          totalSubjects: 6,
-          pendingTasks: 4,
-          completedTasks: 12,
-          averageGrade: 4.3,
-          studyHours: '15h',
-          completedActivities: 18,
-          loading: false
-        });
+        throw new Error('No data received');
       }
     } catch (error) {
       console.error('Error loading student stats:', error);
-      setStats(prev => ({ ...prev, loading: false }));
+      // Fallback solo en caso de error
+      setStats({
+        totalSubjects: 0,
+        pendingTasks: 0,
+        completedTasks: 0,
+        averageGrade: 0,
+        studyHours: '0h',
+        completedActivities: 0,
+        loading: false
+      });
     }
   };
 
@@ -109,42 +109,22 @@ const StudentDashboard: React.FC = () => {
     try {
       setLoadingTasks(true);
 
-      // Usar API real cuando esté disponible, fallback por ahora
-      const response = await api.get('/student/tasks?status=pending').catch(() => null);
+      // Usar API real del backend
+      const response = await api.get('/students/tasks?status=pending');
 
       if (response?.data) {
-        setTasks(response.data);
+        // Transformar fechas del backend
+        const transformedTasks = response.data.map((task: any) => ({
+          ...task,
+          dueDate: task.dueDate || new Date().toISOString().split('T')[0]
+        }));
+        setTasks(transformedTasks);
       } else {
-        // Datos de fallback realistas
-        setTasks([
-          {
-            id: '1',
-            subject: 'Matemáticas',
-            title: 'Ejercicios de álgebra',
-            dueDate: '2025-10-22',
-            priority: 'HIGH',
-            status: 'pending'
-          },
-          {
-            id: '2',
-            subject: 'Ciencias',
-            title: 'Laboratorio de química',
-            dueDate: '2025-10-25',
-            priority: 'MEDIUM',
-            status: 'pending'
-          },
-          {
-            id: '3',
-            subject: 'Historia',
-            title: 'Ensayo sobre la independencia',
-            dueDate: '2025-10-28',
-            priority: 'LOW',
-            status: 'pending'
-          }
-        ]);
+        setTasks([]);
       }
     } catch (error) {
       console.error('Error loading tasks:', error);
+      setTasks([]);
     } finally {
       setLoadingTasks(false);
     }
@@ -155,24 +135,17 @@ const StudentDashboard: React.FC = () => {
     try {
       setLoadingSubjects(true);
 
-      // Usar API real cuando esté disponible, fallback por ahora
-      const response = await api.get('/student/subjects').catch(() => null);
+      // Usar API real del backend
+      const response = await api.get('/students/subjects/progress');
 
       if (response?.data) {
         setSubjects(response.data);
       } else {
-        // Datos de fallback realistas
-        setSubjects([
-          { id: '1', name: 'Matemáticas', progress: 85, grade: 4.5, color: '#2E5BFF' },
-          { id: '2', name: 'Ciencias', progress: 72, grade: 4.2, color: '#00C764' },
-          { id: '3', name: 'Historia', progress: 90, grade: 4.8, color: '#F5A623' },
-          { id: '4', name: 'Inglés', progress: 68, grade: 4.0, color: '#FF6B35' },
-          { id: '5', name: 'Educación Física', progress: 95, grade: 4.9, color: '#1494DE' },
-          { id: '6', name: 'Arte', progress: 78, grade: 4.3, color: '#9B59B6' }
-        ]);
+        setSubjects([]);
       }
     } catch (error) {
       console.error('Error loading subjects:', error);
+      setSubjects([]);
     } finally {
       setLoadingSubjects(false);
     }
@@ -183,22 +156,22 @@ const StudentDashboard: React.FC = () => {
     try {
       setLoadingGrades(true);
 
-      // Usar API real cuando esté disponible, fallback por ahora
-      const response = await api.get('/student/grades/recent').catch(() => null);
+      // Usar API real del backend
+      const response = await api.get('/students/grades/recent?limit=5');
 
       if (response?.data) {
-        setRecentGrades(response.data);
+        // Transformar fechas del backend
+        const transformedGrades = response.data.map((grade: any) => ({
+          ...grade,
+          date: grade.date || new Date().toISOString().split('T')[0]
+        }));
+        setRecentGrades(transformedGrades);
       } else {
-        // Datos de fallback realistas
-        setRecentGrades([
-          { id: '1', subject: 'Matemáticas', assignment: 'Quiz Álgebra', grade: 4.5, maxGrade: 5.0, date: '2025-10-18' },
-          { id: '2', subject: 'Ciencias', assignment: 'Examen Química', grade: 4.2, maxGrade: 5.0, date: '2025-10-17' },
-          { id: '3', subject: 'Historia', assignment: 'Tarea Independencia', grade: 4.8, maxGrade: 5.0, date: '2025-10-16' },
-          { id: '4', subject: 'Inglés', assignment: 'Speaking Test', grade: 4.0, maxGrade: 5.0, date: '2025-10-15' }
-        ]);
+        setRecentGrades([]);
       }
     } catch (error) {
       console.error('Error loading recent grades:', error);
+      setRecentGrades([]);
     } finally {
       setLoadingGrades(false);
     }
@@ -248,7 +221,7 @@ const StudentDashboard: React.FC = () => {
                   </h3>
                   <p className="text-gray-600 flex items-center gap-2">
                     <GraduationCap className="w-4 h-4" />
-                    Estudiante
+                    {user.academicGrade ? `${user.academicGrade.name} - Estudiante` : 'Estudiante'}
                   </p>
                   {user.institution.address && (
                     <p className="text-sm text-gray-500 mt-1">

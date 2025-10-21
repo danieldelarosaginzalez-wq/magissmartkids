@@ -4,46 +4,45 @@ import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Users, BookOpen, CheckCircle, AlertCircle, FileText, School, Target, TrendingUp, Clock, RefreshCw } from 'lucide-react';
+import { Users, BookOpen, AlertCircle, FileText, School, Target, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
 import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
+import api from '../../services/api';
 
-interface DashboardStats {
-  totalStudents: number;
-  totalSubjects: number;
-  totalTasks: number;
-  pendingGrades: number;
-  loading: boolean;
+interface TeacherDashboardStats {
+  totalMaterias: number;
+  totalEstudiantes: number;
+  tareasPendientesCorreccion: number;
+  promedioGeneral: number;
+  proximasEntregas: TeacherTask[];
+  actividadesRecientes: TeacherTask[];
 }
 
-interface Subject {
+interface TeacherSubject {
   id: string;
-  name: string;
-  studentsCount: number;
-  status: 'active' | 'inactive';
+  nombre: string;
+  grado: string;
+  estudiantes: number;
+  progresoPromedio: number;
+  color: string;
 }
 
-interface RecentTask {
-  id: string;
-  title: string;
-  subject: string;
-  submissions: number;
-  status: 'pending' | 'graded' | 'active';
-  dueDate?: string;
+interface TeacherTask {
+  id: number;
+  titulo: string;
+  descripcion?: string;
+  materiaId?: number;
+  grados?: string[];
+  fechaEntrega?: string;
+  tipo?: string;
+  fechaCreacion?: string;
 }
 
 const TeacherDashboard: React.FC = () => {
   const { user } = useAuthStore();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalStudents: 0,
-    totalSubjects: 0,
-    totalTasks: 0,
-    pendingGrades: 0,
-    loading: true
-  });
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [recentTasks, setRecentTasks] = useState<RecentTask[]>([]);
+  const [stats, setStats] = useState<TeacherDashboardStats | null>(null);
+  const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
-  const [loadingTasks, setLoadingTasks] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -52,115 +51,41 @@ const TeacherDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     await Promise.all([
       loadStats(),
-      loadSubjects(),
-      loadRecentTasks()
+      loadSubjects()
     ]);
   };
 
   const loadStats = async () => {
     try {
-      setStats(prev => ({ ...prev, loading: true }));
-      
-      // Simular carga de datos reales - aquí conectarías con tu API
-      const response = await fetch('/api/teacher/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          totalStudents: data.totalStudents || 0,
-          totalSubjects: data.totalSubjects || 0,
-          totalTasks: data.totalTasks || 0,
-          pendingGrades: data.pendingGrades || 0,
-          loading: false
-        });
-      } else {
-        // Datos de fallback si la API no está disponible
-        setStats({
-          totalStudents: 28,
-          totalSubjects: 3,
-          totalTasks: 15,
-          pendingGrades: 7,
-          loading: false
-        });
-      }
+      setLoading(true);
+      const response = await api.get('/teacher/dashboard/stats');
+      setStats(response.data);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      console.error('Error loading teacher dashboard stats:', error);
       // Datos de fallback
       setStats({
-        totalStudents: 28,
-        totalSubjects: 3,
-        totalTasks: 15,
-        pendingGrades: 7,
-        loading: false
+        totalMaterias: 0,
+        totalEstudiantes: 0,
+        tareasPendientesCorreccion: 0,
+        promedioGeneral: 0.0,
+        proximasEntregas: [],
+        actividadesRecientes: []
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadSubjects = async () => {
     try {
       setLoadingSubjects(true);
-      const response = await fetch('/api/subjects/teacher', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSubjects(data.subjects || []);
-      } else {
-        // Datos de fallback
-        setSubjects([
-          { id: '1', name: 'Matemáticas 5°A', studentsCount: 25, status: 'active' },
-          { id: '2', name: 'Matemáticas 5°B', studentsCount: 23, status: 'active' },
-          { id: '3', name: 'Álgebra 6°A', studentsCount: 20, status: 'active' }
-        ]);
-      }
+      const response = await api.get('/teacher/subjects');
+      setSubjects(response.data);
     } catch (error) {
-      console.error('Error loading subjects:', error);
-      setSubjects([
-        { id: '1', name: 'Matemáticas 5°A', studentsCount: 25, status: 'active' },
-        { id: '2', name: 'Matemáticas 5°B', studentsCount: 23, status: 'active' },
-        { id: '3', name: 'Álgebra 6°A', studentsCount: 20, status: 'active' }
-      ]);
+      console.error('Error loading teacher subjects:', error);
+      setSubjects([]);
     } finally {
       setLoadingSubjects(false);
-    }
-  };
-
-  const loadRecentTasks = async () => {
-    try {
-      setLoadingTasks(true);
-      const response = await fetch('/api/tasks/recent', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setRecentTasks(data.tasks || []);
-      } else {
-        // Datos de fallback
-        setRecentTasks([
-          { id: '1', title: 'Quiz de Fracciones', subject: 'Matemáticas 5°A', submissions: 15, status: 'pending' },
-          { id: '2', title: 'Ejercicios de Ecuaciones', subject: 'Álgebra 6°A', submissions: 18, status: 'graded' },
-          { id: '3', title: 'Problemas de Geometría', subject: 'Matemáticas 5°B', submissions: 12, status: 'active', dueDate: 'mañana' }
-        ]);
-      }
-    } catch (error) {
-      console.error('Error loading recent tasks:', error);
-      setRecentTasks([
-        { id: '1', title: 'Quiz de Fracciones', subject: 'Matemáticas 5°A', submissions: 15, status: 'pending' },
-        { id: '2', title: 'Ejercicios de Ecuaciones', subject: 'Álgebra 6°A', submissions: 18, status: 'graded' },
-        { id: '3', title: 'Problemas de Geometría', subject: 'Matemáticas 5°B', submissions: 12, status: 'active', dueDate: 'mañana' }
-      ]);
-    } finally {
-      setLoadingTasks(false);
     }
   };
 
@@ -235,10 +160,10 @@ const TeacherDashboard: React.FC = () => {
               <div>
                 <p className="text-xs sm:text-sm font-medium text-secondary">Estudiantes</p>
                 <p className="text-xl sm:text-2xl font-bold text-neutral-black">
-                  {stats.loading ? (
+                  {loading ? (
                     <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
                   ) : (
-                    stats.totalStudents
+                    stats?.totalEstudiantes || 0
                   )}
                 </p>
               </div>
@@ -255,10 +180,10 @@ const TeacherDashboard: React.FC = () => {
               <div>
                 <p className="text-xs sm:text-sm font-medium text-secondary">Materias</p>
                 <p className="text-xl sm:text-2xl font-bold text-neutral-black">
-                  {stats.loading ? (
+                  {loading ? (
                     <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
                   ) : (
-                    stats.totalSubjects
+                    stats?.totalMaterias || 0
                   )}
                 </p>
               </div>
@@ -270,15 +195,15 @@ const TeacherDashboard: React.FC = () => {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="p-2 sm:p-3 bg-accent-yellow/10 rounded-lg">
-                <Target className="h-6 w-6 sm:h-8 sm:w-8 text-accent-yellow" />
+                <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-accent-yellow" />
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-medium text-secondary">Tareas Creadas</p>
+                <p className="text-xs sm:text-sm font-medium text-secondary">Promedio General</p>
                 <p className="text-xl sm:text-2xl font-bold text-neutral-black">
-                  {stats.loading ? (
+                  {loading ? (
                     <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
                   ) : (
-                    stats.totalTasks
+                    `${(stats?.promedioGeneral || 0).toFixed(1)}`
                   )}
                 </p>
               </div>
@@ -295,10 +220,10 @@ const TeacherDashboard: React.FC = () => {
               <div>
                 <p className="text-xs sm:text-sm font-medium text-secondary">Por Calificar</p>
                 <p className="text-xl sm:text-2xl font-bold text-neutral-black">
-                  {stats.loading ? (
+                  {loading ? (
                     <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
                   ) : (
-                    stats.pendingGrades
+                    stats?.tareasPendientesCorreccion || 0
                   )}
                 </p>
               </div>
@@ -316,29 +241,38 @@ const TeacherDashboard: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <Link to="/actividades-interactivas" className="block">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Link to="/profesor/materias" className="block">
               <Button className="w-full bg-primary hover:bg-primary-600 text-neutral-white border-0 flex items-center gap-2 py-3 sm:py-4">
-                <Target className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Actividades Interactivas</span>
-              </Button>
-            </Link>
-            <Link to="/subjects" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
-              >
                 <BookOpen className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Gestionar Materias</span>
+                <span className="text-sm sm:text-base">Mis Materias</span>
               </Button>
             </Link>
-            <Link to="/grades" className="block">
+            <Link to="/profesor/tareas" className="block">
               <Button 
                 variant="outline" 
                 className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
               >
-                <CheckCircle className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Tareas</span>
+              </Button>
+            </Link>
+            <Link to="/profesor/calificaciones" className="block">
+              <Button 
+                variant="outline" 
+                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
+              >
+                <BarChart3 className="h-4 w-4" />
                 <span className="text-sm sm:text-base">Calificaciones</span>
+              </Button>
+            </Link>
+            <Link to="/actividades-interactivas" className="block">
+              <Button 
+                variant="outline" 
+                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
+              >
+                <Target className="h-4 w-4" />
+                <span className="text-sm sm:text-base">Actividades</span>
               </Button>
             </Link>
           </div>
@@ -378,17 +312,27 @@ const TeacherDashboard: React.FC = () => {
             ) : (
               <div className="space-y-3 sm:space-y-4">
                 {subjects.map((subject) => (
-                  <div key={subject.id} className="flex items-center justify-between p-3 sm:p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:border-primary-200 transition-all duration-200">
+                  <div 
+                    key={subject.id} 
+                    className="flex items-center justify-between p-3 sm:p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:border-primary-200 transition-all duration-200"
+                    style={{ borderLeftColor: subject.color, borderLeftWidth: '4px' }}
+                  >
                     <div>
-                      <p className="font-medium text-neutral-black text-sm sm:text-base">{subject.name}</p>
-                      <p className="text-xs sm:text-sm text-secondary">{subject.studentsCount} estudiantes</p>
+                      <p className="font-medium text-neutral-black text-sm sm:text-base">
+                        {subject.nombre} - {subject.grado}
+                      </p>
+                      <p className="text-xs sm:text-sm text-secondary">
+                        {subject.estudiantes} estudiantes • {subject.progresoPromedio.toFixed(1)}% progreso
+                      </p>
                     </div>
-                    <Badge 
-                      variant={subject.status === 'active' ? 'success' : 'secondary'}
-                      className="text-xs"
-                    >
-                      {subject.status === 'active' ? 'Activa' : 'Inactiva'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-2 bg-secondary-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-accent-green transition-all duration-300"
+                          style={{ width: `${subject.progresoPromedio}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -396,16 +340,16 @@ const TeacherDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Tareas Recientes */}
+        {/* Actividades Recientes */}
         <Card className="border-secondary-200">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <FileText className="h-5 w-5 text-primary" />
-              Tareas Recientes
+              Actividades Recientes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {loadingTasks ? (
+            {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="animate-pulse">
@@ -419,37 +363,28 @@ const TeacherDashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
-            ) : recentTasks.length === 0 ? (
+            ) : !stats?.actividadesRecientes || stats.actividadesRecientes.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-secondary mx-auto mb-4" />
-                <p className="text-secondary">No hay tareas recientes</p>
+                <p className="text-secondary">No hay actividades recientes</p>
               </div>
             ) : (
               <div className="space-y-3 sm:space-y-4">
-                {recentTasks.map((task) => (
-                  <div key={task.id} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border-l-4 bg-secondary-50 rounded-r-lg gap-2 sm:gap-0 ${
-                    task.status === 'pending' ? 'border-accent-yellow' :
-                    task.status === 'graded' ? 'border-accent-green' :
-                    'border-primary'
-                  }`}>
+                {stats.actividadesRecientes.map((task) => (
+                  <div key={task.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border-l-4 border-primary bg-secondary-50 rounded-r-lg gap-2 sm:gap-0">
                     <div className="flex-1">
-                      <p className="font-medium text-neutral-black text-sm sm:text-base">{task.title}</p>
+                      <p className="font-medium text-neutral-black text-sm sm:text-base">{task.titulo}</p>
                       <p className="text-xs sm:text-sm text-secondary">
-                        {task.subject} • {task.submissions} entregas
-                        {task.dueDate && ` • Vence ${task.dueDate}`}
+                        {task.grados?.join(', ')} • {task.tipo === 'traditional' ? 'Tarea tradicional' : 'Actividad interactiva'}
                       </p>
+                      {task.fechaCreacion && (
+                        <p className="text-xs text-secondary">
+                          Creada: {new Date(task.fechaCreacion).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
-                    <Badge 
-                      variant={
-                        task.status === 'pending' ? 'warning' :
-                        task.status === 'graded' ? 'success' :
-                        'default'
-                      }
-                      className="text-xs self-start sm:self-center"
-                    >
-                      {task.status === 'pending' ? 'Por calificar' :
-                       task.status === 'graded' ? 'Calificado' :
-                       'Activa'}
+                    <Badge variant="default" className="text-xs self-start sm:self-center">
+                      Reciente
                     </Badge>
                   </div>
                 ))}

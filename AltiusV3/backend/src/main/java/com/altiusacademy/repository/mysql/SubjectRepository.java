@@ -1,4 +1,4 @@
-package com.altiusacademy.repository;
+package com.altiusacademy.repository.mysql;
 
 import com.altiusacademy.model.entity.Subject;
 import org.springframework.data.jpa.repository.JpaRepository;

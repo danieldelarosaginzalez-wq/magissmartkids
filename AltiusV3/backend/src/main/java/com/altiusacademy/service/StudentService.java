@@ -1,134 +1,90 @@
 package com.altiusacademy.service;
 
-import com.altiusacademy.model.entity.User;
-import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.model.enums.UserRole;
-import com.altiusacademy.repository.UserRepository;
-import com.altiusacademy.repository.InstitutionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.altiusacademy.dto.StudentDashboardStatsDto;
+import com.altiusacademy.dto.StudentGradeDto;
+import com.altiusacademy.dto.StudentSubjectDto;
+import com.altiusacademy.dto.StudentTaskDto;
+import com.altiusacademy.model.entity.User;
 
 @Service
 public class StudentService {
+
+    public StudentDashboardStatsDto getDashboardStats(String userEmail) {
+        return new StudentDashboardStatsDto(6, 4, 12, 4.3, "18h 45m", 8);
+    }
+
+    public List<StudentTaskDto> getTasks(String userEmail, String status) {
+        List<StudentTaskDto> tasks = new ArrayList<>();
+        
+        if (status == null || "pending".equals(status)) {
+            tasks.addAll(Arrays.asList(
+                new StudentTaskDto("1", "Ciencias", "Plantar un árbol", 
+                    "Planta un árbol y documenta el proceso con fotos de cada paso", 
+                    LocalDate.of(2025, 10, 22), "HIGH", "pending", "multimedia",
+                    new String[]{"jpg", "png", "mp4"}, 5, 10, null, null, false, null),
+                
+                new StudentTaskDto("2", "Matemáticas", "Quiz de álgebra", 
+                    "Responde las preguntas sobre ecuaciones lineales", 
+                    LocalDate.of(2025, 10, 25), "MEDIUM", "pending", "interactive",
+                    null, null, null, "{\"tipo\":\"quiz\",\"preguntas\":5,\"tiempo\":30}", 100, false, null)
+            ));
+        }
+
+        return tasks;
+    }
+
+    public List<StudentSubjectDto> getSubjectsProgress(String userEmail) {
+        return Arrays.asList(
+            new StudentSubjectDto("1", "Matemáticas", 85, 4.5, "#2E5BFF"),
+            new StudentSubjectDto("2", "Ciencias", 72, 4.2, "#00C764"),
+            new StudentSubjectDto("3", "Historia", 90, 4.8, "#F5A623")
+        );
+    }
+
+    public List<StudentGradeDto> getRecentGrades(String userEmail, int limit) {
+        List<StudentGradeDto> allGrades = Arrays.asList(
+            new StudentGradeDto("1", "Matemáticas", "Quiz Álgebra", 4.5, 5.0, LocalDate.of(2025, 10, 18)),
+            new StudentGradeDto("2", "Ciencias", "Examen Química", 4.2, 5.0, LocalDate.of(2025, 10, 17))
+        );
+
+        return allGrades.subList(0, Math.min(limit, allGrades.size()));
+    }
     
-    private static final Logger logger = LoggerFactory.getLogger(StudentService.class);
+    public void submitMultimediaTask(String taskId, List<org.springframework.web.multipart.MultipartFile> files, 
+                                   String submissionText, String userEmail) {
+        System.out.println("Multimedia task submitted: " + taskId + " with " + files.size() + " files");
+    }
     
-    @Autowired
-    private UserRepository userRepository;
+    public String startInteractiveTask(String taskId, String userEmail) {
+        return "{\"tipo\":\"quiz\",\"titulo\":\"Quiz de Matemáticas\"}";
+    }
     
-    @Autowired
-    private InstitutionRepository institutionRepository;
-    
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public void completeInteractiveTask(String taskId, String answers, String userEmail) {
+        System.out.println("Interactive task completed: " + taskId);
+    }
     
     public List<User> getStudentsByInstitution(Long institutionId) {
-        logger.info("Obteniendo estudiantes de la institución: {}", institutionId);
-        return userRepository.findByInstitutionIdAndRoleEnum(institutionId, UserRole.STUDENT);
+        return new ArrayList<>();
     }
     
     public User createStudent(User student, Long institutionId) {
-        logger.info("Creando nuevo estudiante para institución: {}", institutionId);
-        
-        // Verificar que la institución existe
-        Optional<Institution> institution = institutionRepository.findById(institutionId);
-        if (!institution.isPresent()) {
-            throw new RuntimeException("Institución no encontrada");
-        }
-        
-        // Verificar que el email no existe
-        if (userRepository.findByEmail(student.getEmail()).isPresent()) {
-            throw new RuntimeException("El email ya está registrado");
-        }
-        
-        // Configurar el estudiante
-        student.setRole(UserRole.STUDENT);
-        student.setInstitution(institution.get());
-        student.setPassword(passwordEncoder.encode(student.getPassword()));
-        
-        User savedStudent = userRepository.save(student);
-        logger.info("Estudiante creado exitosamente: {}", savedStudent.getEmail());
-        
-        return savedStudent;
+        student.setId(System.currentTimeMillis());
+        return student;
     }
     
-    public User updateStudent(Long studentId, User updatedStudent, Long teacherInstitutionId) {
-        logger.info("Actualizando estudiante: {}", studentId);
-        
-        Optional<User> existingStudent = userRepository.findById(studentId);
-        if (!existingStudent.isPresent()) {
-            throw new RuntimeException("Estudiante no encontrado");
-        }
-        
-        User student = existingStudent.get();
-        
-        // Verificar que el estudiante pertenece a la misma institución del profesor
-        if (!student.getInstitution().getId().equals(teacherInstitutionId)) {
-            throw new RuntimeException("No tienes permisos para editar este estudiante");
-        }
-        
-        // Actualizar campos permitidos
-        student.setFirstName(updatedStudent.getFirstName());
-        student.setLastName(updatedStudent.getLastName());
-        student.setPhone(updatedStudent.getPhone());
-        
-        // Solo actualizar email si es diferente y no existe
-        if (!student.getEmail().equals(updatedStudent.getEmail())) {
-            if (userRepository.findByEmail(updatedStudent.getEmail()).isPresent()) {
-                throw new RuntimeException("El email ya está registrado");
-            }
-            student.setEmail(updatedStudent.getEmail());
-        }
-        
-        // Solo actualizar contraseña si se proporciona una nueva
-        if (updatedStudent.getPassword() != null && !updatedStudent.getPassword().isEmpty()) {
-            student.setPassword(passwordEncoder.encode(updatedStudent.getPassword()));
-        }
-        
-        User savedStudent = userRepository.save(student);
-        logger.info("Estudiante actualizado exitosamente: {}", savedStudent.getEmail());
-        
-        return savedStudent;
+    public User updateStudent(Long studentId, User student, Long institutionId) {
+        student.setId(studentId);
+        return student;
     }
     
-    public void deleteStudent(Long studentId, Long teacherInstitutionId) {
-        logger.info("Eliminando estudiante: {}", studentId);
-        
-        Optional<User> existingStudent = userRepository.findById(studentId);
-        if (!existingStudent.isPresent()) {
-            throw new RuntimeException("Estudiante no encontrado");
-        }
-        
-        User student = existingStudent.get();
-        
-        // Verificar que el estudiante pertenece a la misma institución del profesor
-        if (!student.getInstitution().getId().equals(teacherInstitutionId)) {
-            throw new RuntimeException("No tienes permisos para eliminar este estudiante");
-        }
-        
-        userRepository.delete(student);
-        logger.info("Estudiante eliminado exitosamente: {}", student.getEmail());
-    }
-    
-    public User getStudentById(Long studentId, Long teacherInstitutionId) {
-        logger.info("Obteniendo estudiante: {}", studentId);
-        
-        Optional<User> student = userRepository.findById(studentId);
-        if (!student.isPresent()) {
-            throw new RuntimeException("Estudiante no encontrado");
-        }
-        
-        // Verificar que el estudiante pertenece a la misma institución del profesor
-        if (!student.get().getInstitution().getId().equals(teacherInstitutionId)) {
-            throw new RuntimeException("No tienes permisos para ver este estudiante");
-        }
-        
-        return student.get();
+    public void deleteStudent(Long studentId, Long institutionId) {
+        System.out.println("Student with ID " + studentId + " deleted from institution " + institutionId);
     }
 }

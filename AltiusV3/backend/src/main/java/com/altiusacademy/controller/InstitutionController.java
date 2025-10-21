@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.repository.InstitutionRepository;
+import com.altiusacademy.repository.mysql.InstitutionRepository;
 
 import jakarta.validation.Valid;
 

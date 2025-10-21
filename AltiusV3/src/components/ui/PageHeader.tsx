@@ -7,9 +7,12 @@ import { cn } from '../../lib/utils';
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
   showBackButton?: boolean;
   backTo?: string;
   actions?: React.ReactNode;
+  action?: React.ReactNode;
   breadcrumbs?: Array<{
     label: string;
     href?: string;
@@ -20,9 +23,12 @@ interface PageHeaderProps {
 const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   subtitle,
+  description,
+  icon: Icon,
   showBackButton = false,
   backTo,
   actions,
+  action,
   breadcrumbs,
   className = ''
 }) => {
@@ -45,17 +51,17 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             {breadcrumbs.map((crumb, index) => (
               <li key={index} className="flex items-center">
                 {index > 0 && (
-                  <span className="mx-2 text-magic-gray-400">/</span>
+                  <span className="mx-2 text-gray-400">/</span>
                 )}
                 {crumb.href ? (
                   <button
                     onClick={() => navigate(crumb.href!)}
-                    className="text-magic-gray-600 hover:text-primary transition-colors"
+                    className="text-gray-600 hover:text-primary transition-colors"
                   >
                     {crumb.label}
                   </button>
                 ) : (
-                  <span className="text-magic-gray-900 font-medium">
+                  <span className="text-gray-900 font-medium">
                     {crumb.label}
                   </span>
                 )}
@@ -70,31 +76,39 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         <div className="flex items-center space-x-4">
           {showBackButton && (
             <Button
-              variant="ghost"
-              size="icon"
+              variant="outline"
+              size="sm"
               onClick={handleBack}
               className="flex-shrink-0"
               aria-label="Volver"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Volver
             </Button>
           )}
           
-          <div>
-            <h1 className="text-2xl md:text-3xl font-magic-display font-bold text-magic-gray-900">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="mt-1 text-magic-gray-600">
-                {subtitle}
-              </p>
+          <div className="flex items-center gap-3">
+            {Icon && (
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Icon className="w-6 h-6 text-primary" />
+              </div>
             )}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+                {title}
+              </h1>
+              {(subtitle || description) && (
+                <p className="mt-1 text-gray-600">
+                  {subtitle || description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
-        {actions && (
+        {(actions || action) && (
           <div className="flex items-center space-x-3 flex-shrink-0">
-            {actions}
+            {actions || action}
           </div>
         )}
       </div>

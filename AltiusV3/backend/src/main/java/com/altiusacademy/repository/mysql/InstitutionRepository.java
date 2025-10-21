@@ -1,4 +1,4 @@
-package com.altiusacademy.repository;
+package com.altiusacademy.repository.mysql;
 
 import java.util.List;
 import java.util.Optional;

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.altiusacademy.model.entity.Institution;
 import com.altiusacademy.model.entity.User;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 
 @RestController
 @RequestMapping("/api/student-validation")

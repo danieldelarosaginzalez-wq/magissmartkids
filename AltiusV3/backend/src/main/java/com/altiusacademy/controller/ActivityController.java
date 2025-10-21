@@ -1,16 +1,31 @@
 package com.altiusacademy.controller;
 
-import com.altiusacademy.model.entity.*;
-import com.altiusacademy.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.altiusacademy.model.entity.AcademicGrade;
+import com.altiusacademy.model.entity.Activity;
+import com.altiusacademy.model.entity.ActivityResult;
+import com.altiusacademy.model.entity.Institution;
+import com.altiusacademy.model.entity.User;
+import com.altiusacademy.repository.mysql.AcademicGradeRepository;
+import com.altiusacademy.repository.mysql.ActivityRepository;
+import com.altiusacademy.repository.mysql.ActivityResultRepository;
+import com.altiusacademy.repository.mysql.InstitutionRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 
 @RestController
 @RequestMapping("/api/activities")

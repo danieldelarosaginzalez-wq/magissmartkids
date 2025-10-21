@@ -1,78 +1,169 @@
 package com.altiusacademy.model.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.LocalDateTime;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
+/**
+ * Modelo MySQL para materias/asignaturas
+ */
 @Entity
 @Table(name = "subjects")
-@EntityListeners(AuditingEntityListener.class)
 public class Subject {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank
-    @Size(max = 100)
+    
+    @Column(nullable = false, length = 100)
     private String name;
-
-    @Size(max = 500)
+    
+    @Column(length = 500)
     private String description;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
-    private User teacher;
-
+    
+    @Column(length = 7) // Para colores hex #FFFFFF
+    private String color = "#2E5BFF";
+    
+    // Relaciones
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id")
     private Institution institution;
-
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_grade_id")
+    private SchoolGrade academicGrade;
+    
+    @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
+    private List<Task> tasks;
+    
+    // Profesor asignado
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private User teacher;
+    
+    // Estado activo
     @Column(name = "is_active")
     private Boolean isActive = true;
-
-    @CreatedDate
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @LastModifiedDate
+    
+    // Auditoría
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+    
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
+    
     // Constructors
     public Subject() {}
-
-    public Subject(String name) {
+    
+    public Subject(String name, String description, Institution institution) {
+        this.name = name;
+        this.description = description;
+        this.institution = institution;
+    }
+    
+    // Getters and Setters
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
         this.name = name;
     }
-
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public User getTeacher() { return teacher; }
-    public void setTeacher(User teacher) { this.teacher = teacher; }
-
-    public Institution getInstitution() { return institution; }
-    public void setInstitution(Institution institution) { this.institution = institution; }
-
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getColor() {
+        return color;
+    }
+    
+    public void setColor(String color) {
+        this.color = color;
+    }
+    
+    public Institution getInstitution() {
+        return institution;
+    }
+    
+    public void setInstitution(Institution institution) {
+        this.institution = institution;
+    }
+    
+    public SchoolGrade getAcademicGrade() {
+        return academicGrade;
+    }
+    
+    public void setAcademicGrade(SchoolGrade academicGrade) {
+        this.academicGrade = academicGrade;
+    }
+    
+    public List<Task> getTasks() {
+        return tasks;
+    }
+    
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
+    }
+    
+    public User getTeacher() {
+        return teacher;
+    }
+    
+    public void setTeacher(User teacher) {
+        this.teacher = teacher;
+    }
+    
+    public Boolean getIsActive() {
+        return isActive;
+    }
+    
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
+    }
+    
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+    
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+    
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+    
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+    
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

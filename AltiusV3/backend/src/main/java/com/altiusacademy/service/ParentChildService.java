@@ -8,11 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.altiusacademy.model.ParentChildRelation;
+import com.altiusacademy.model.entity.ParentChildRelation;
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.enums.UserRole;
-import com.altiusacademy.repository.ParentChildRelationRepository;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.ParentChildRelationRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 
 @Service
 @Transactional

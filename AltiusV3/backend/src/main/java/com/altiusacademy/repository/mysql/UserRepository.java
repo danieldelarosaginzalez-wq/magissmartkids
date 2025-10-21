@@ -1,10 +1,11 @@
-package com.altiusacademy.repository;
+package com.altiusacademy.repository.mysql;
 
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.altiusacademy.model.entity.User;
@@ -51,4 +52,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     
     @Query("SELECT COUNT(u) FROM User u WHERE u.institution.id = ?1 AND u.role = ?2 AND u.isActive = true")
     long countByInstitutionAndRole(Long institutionId, UserRole role);
+    
+    // Método para encontrar estudiantes por grado
+    @Query("SELECT u FROM User u JOIN u.schoolGrade sg WHERE sg.gradeName = :grade AND u.role = 'STUDENT' AND u.isActive = true")
+    List<User> findStudentsByGrade(@Param("grade") String grade);
 }

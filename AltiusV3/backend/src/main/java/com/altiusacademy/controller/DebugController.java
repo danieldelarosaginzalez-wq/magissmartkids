@@ -1,7 +1,7 @@
 package com.altiusacademy.controller;
 
 import com.altiusacademy.model.entity.User;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

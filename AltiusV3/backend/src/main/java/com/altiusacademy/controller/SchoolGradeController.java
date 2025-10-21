@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.altiusacademy.model.entity.SchoolGrade;
-import com.altiusacademy.repository.SchoolGradeRepository;
+import com.altiusacademy.repository.mysql.SchoolGradeRepository;
 
 @RestController
 @RequestMapping("/api/school-grades")

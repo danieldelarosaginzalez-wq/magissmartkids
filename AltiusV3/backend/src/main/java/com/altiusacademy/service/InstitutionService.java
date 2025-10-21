@@ -13,9 +13,9 @@ import com.altiusacademy.model.entity.Institution;
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.entity.UserInstitutionRole;
 import com.altiusacademy.model.enums.UserRole;
-import com.altiusacademy.repository.InstitutionRepository;
-import com.altiusacademy.repository.UserInstitutionRoleRepository;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.InstitutionRepository;
+import com.altiusacademy.repository.mysql.UserInstitutionRoleRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 
 @Service
 @Transactional
