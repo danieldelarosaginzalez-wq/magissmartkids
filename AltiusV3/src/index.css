@@ -1,3 +1,6 @@
+/* Import MagicSmartKids Color System */
+@import './styles/colors.css';
+
 /* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
@@ -13,9 +16,6 @@
   --verde: #00C764;
 }
 /* stylelint-enable at-rule-no-unknown */
-
-/* Import MagicSmartKids Color System */
-@import './styles/colors.css';
 
 /* MagicSmartKids Base Styles */
 @layer base {
@@ -308,6 +308,26 @@
     animation: magicWiggle 1s ease-in-out infinite;
   }
 
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.8s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.8s ease-out forwards;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
   /* Magic Accessibility Utilities */
   .sr-only-magic {
     position: absolute;
@@ -354,6 +374,57 @@
 
   75% {
     transform: rotate(3deg);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 54, 143, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 54, 143, 0.5);
   }
 }
 

@@ -6,7 +6,8 @@ public enum UserRole {
     COORDINATOR("coordinator"),
     TEACHER("teacher"),
     STUDENT("student"),
-    PARENT("parent");
+    PARENT("parent"),
+    SUPER_ADMIN("super_admin");
 
     private final String value;
 

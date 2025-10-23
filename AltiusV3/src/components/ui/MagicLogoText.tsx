@@ -42,8 +42,8 @@ const MagicLogoText: React.FC<MagicLogoTextProps> = ({
 
     if (variant === 'light') {
       const lightColorMap: { [key: string]: string } = {
-        '#1830CC': '#1830CC', '#f19122ff': '#F2D21F', '#2E5BFF': '#2E5BFF',
-        '#f19122ff': '#f19122ff', '#00C764': '#00C764', '#1494DE': '#2E5BFF',
+        '#1830CC': '#1830CC', '#F5A623': '#F2D21F', '#2E5BFF': '#2E5BFF',
+        '#00C764': '#00C764', '#1494DE': '#2E5BFF',
       };
       return { color: lightColorMap[color] || color };
     }

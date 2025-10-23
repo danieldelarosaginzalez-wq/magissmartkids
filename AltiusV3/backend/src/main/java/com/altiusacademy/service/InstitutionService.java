@@ -26,10 +26,61 @@ public class InstitutionService {
     @Autowired private UserInstitutionRoleRepository userInstitutionRoleRepository;
 
     /**
+     * Obtener todas las instituciones
+     */
+    public List<Institution> findAllInstitutions() {
+        return institutionRepository.findAll();
+    }
+
+    /**
+     * Guardar institución
+     */
+    public Institution saveInstitution(Institution institution) {
+        return institutionRepository.save(institution);
+    }
+
+    /**
+     * Buscar institución por ID
+     */
+    public Institution findInstitutionById(Long id) {
+        Optional<Institution> institution = institutionRepository.findById(id);
+        return institution.orElse(null);
+    }
+
+    /**
+     * Eliminar institución por ID
+     */
+    public void deleteInstitution(Long id) {
+        institutionRepository.deleteById(id);
+    }
+
+    /**
+     * Verificar si existe una institución con ese NIT
+     */
+    public boolean existsByNit(String nit) {
+        return institutionRepository.existsByNit(nit);
+    }
+
+    /**
+     * Verificar si existe una institución con ese nombre (case insensitive)
+     */
+    public boolean existsByNameIgnoreCase(String name) {
+        return institutionRepository.existsByNameIgnoreCase(name);
+    }
+
+    /**
+     * Buscar institución por NIT
+     */
+    public Institution findByNit(String nit) {
+        Optional<Institution> institution = institutionRepository.findByNit(nit);
+        return institution.orElse(null);
+    }
+
+    /**
      * Obtener estadísticas completas de una institución
      */
     public Map<String, Object> getInstitutionStats(Long institutionId) {
-        System.out.println("📊 Obteniendo estadísticas para institución: " + institutionId);
+        System.out.println(" Obteniendo estadísticas para institución: " + institutionId);
         
         Map<String, Object> stats = new HashMap<>();
         

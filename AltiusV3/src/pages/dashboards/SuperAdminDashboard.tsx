@@ -11,12 +11,12 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { Line, Pie } from 'react-chartjs-2';
-import { 
-  Users, 
-  School, 
-  BarChart3, 
-  Settings, 
+import { Line, Pie, Bar } from 'react-chartjs-2';
+import {
+  Users,
+  School,
+  BarChart3,
+  Settings,
   Plus,
   TrendingUp,
   AlertCircle,
@@ -62,6 +62,7 @@ import { Select } from '../../components/ui/Select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/Dialog';
 import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
 import { useAuthStore } from '../../stores/authStore';
+import SuperAdminInstitutionModal from '../../components/SuperAdminInstitutionModal';
 
 // Register Chart.js components
 ChartJS.register(
@@ -76,7 +77,7 @@ ChartJS.register(
   ArcElement,
 );
 
-interface AdminStats {
+interface SuperAdminStats {
   totalUsers: number;
   totalInstitutions: number;
   totalStudents: number;
@@ -127,27 +128,10 @@ interface SystemMetrics {
   responseTime: number;
 }
 
-interface RecentActivity {
-  id: string;
-  type: 'user_created' | 'institution_added' | 'system_update' | 'report_generated';
-  message: string;
-  time: string;
-  timestamp: Date;
-}
-
-interface InstitutionStat {
-  id: string;
-  name: string;
-  students: number;
-  teachers: number;
-  avgGrade: number;
-  status: 'active' | 'warning' | 'inactive';
-}
-
-const AdminDashboard: React.FC = () => {
+const SuperAdminDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
-  const [stats, setStats] = useState<AdminStats>({
+  const [stats, setStats] = useState<SuperAdminStats>({
     totalUsers: 0,
     totalInstitutions: 0,
     totalStudents: 0,
@@ -175,41 +159,36 @@ const AdminDashboard: React.FC = () => {
     responseTime: 0
   });
 
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [institutionStats, setInstitutionStats] = useState<InstitutionStat[]>([]);
-  const [loadingActivity, setLoadingActivity] = useState(true);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedInstitution, setSelectedInstitution] = useState('all');
+  const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false);
 
   useEffect(() => {
-    loadAdminData();
+    loadSuperAdminData();
     const interval = setInterval(loadSystemMetrics, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
-  const loadAdminData = async () => {
+  const loadSuperAdminData = async () => {
     await Promise.all([
       loadStats(),
       loadInstitutions(),
       loadUsers(),
-      loadSystemMetrics(),
-      loadRecentActivity(),
-      loadInstitutionStats()
+      loadSystemMetrics()
     ]);
   };
 
   const loadStats = async () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
-      
+
       const response = await fetch('/api/super-admin/stats', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setStats({
@@ -229,11 +208,11 @@ const AdminDashboard: React.FC = () => {
           loading: false
         });
       } else {
-        console.error('Failed to load admin stats');
+        console.error('Failed to load super admin stats');
         setStats(prev => ({ ...prev, loading: false }));
       }
     } catch (error) {
-      console.error('Error loading admin stats:', error);
+      console.error('Error loading super admin stats:', error);
       setStats(prev => ({ ...prev, loading: false }));
     }
   };
@@ -304,59 +283,6 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const loadRecentActivity = async () => {
-    try {
-      setLoadingActivity(true);
-      const response = await fetch('/api/super-admin/audit-logs?page=0&size=10', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Transform audit logs to RecentActivity format
-        const activities: RecentActivity[] = (data.auditLogs || []).map((log: any) => ({
-          id: log.id.toString(),
-          type: log.action.toLowerCase().replace('_', '_') as RecentActivity['type'],
-          message: log.details || `${log.action} on ${log.entityType}`,
-          time: 'Hace poco', // Could calculate from timestamp
-          timestamp: new Date(log.timestamp)
-        }));
-        setRecentActivity(activities);
-      } else {
-        console.error('Failed to load recent activity');
-        setRecentActivity([]);
-      }
-    } catch (error) {
-      console.error('Error loading recent activity:', error);
-      setRecentActivity([]);
-    } finally {
-      setLoadingActivity(false);
-    }
-  };
-
-  const loadInstitutionStats = async () => {
-    try {
-      const response = await fetch('/api/super-admin/institutions', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setInstitutionStats(data.institutions || []);
-      } else {
-        console.error('Failed to load institution stats');
-        setInstitutionStats([]);
-      }
-    } catch (error) {
-      console.error('Error loading institution stats:', error);
-      setInstitutionStats([]);
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -389,19 +315,16 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'user_created':
-        return <Users className="w-4 h-4 text-blue-600" />;
-      case 'institution_added':
-        return <School className="w-4 h-4 text-green-600" />;
-      case 'system_update':
-        return <Settings className="w-4 h-4 text-purple-600" />;
-      case 'report_generated':
-        return <BarChart3 className="w-4 h-4 text-orange-600" />;
-      default:
-        return <AlertCircle className="w-4 h-4 text-gray-600" />;
-    }
+  const handleCreateInstitution = () => {
+    setIsInstitutionModalOpen(true);
+  };
+
+  const handleInstitutionCreated = (newInstitution: any) => {
+    console.log('🏛️ Nueva institución creada:', newInstitution);
+    // Refresh the institutions list
+    loadInstitutions();
+    // Also refresh stats to get updated counts
+    loadStats();
   };
 
   const filteredUsers = users.filter(user => {
@@ -425,7 +348,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl">
                   <Crown className="w-8 h-8 text-white" />
                 </div>
-                Panel de Administración Completo
+                Panel de Super Administrador
               </h1>
               <p className="text-gray-600">
                 Control total del sistema Altius Academy - {stats.totalInstitutions} instituciones, {stats.totalUsers} usuarios
@@ -433,7 +356,7 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Button
-                onClick={loadAdminData}
+                onClick={loadSuperAdminData}
                 variant="outline"
                 className="border-gray-300 text-gray-700 hover:bg-gray-50"
               >
@@ -466,58 +389,10 @@ const AdminDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Institution Info */}
-      {user?.institution ? (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-2 sm:p-3 bg-primary/10 rounded-lg">
-                  <School className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg sm:text-xl font-bold text-neutral-black">
-                    {user.institution.name}
-                  </h3>
-                  <p className="text-sm sm:text-base text-secondary flex items-center gap-2">
-                    <span>{getRoleIcon(user.role)}</span>
-                    <span>{translateRole(user.role)}</span>
-                  </p>
-                  {user.institution.address && (
-                    <p className="text-xs sm:text-sm text-secondary mt-1">
-                      📍 {user.institution.address}
-                    </p>
-                  )}
-                </div>
-                {stats.pendingApprovals > 0 && (
-                  <Badge variant="warning" className="text-xs">
-                    {stats.pendingApprovals} pendientes
-                  </Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-          <Card className="border-accent-yellow/30 bg-accent-yellow/5">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-6 w-6 text-accent-yellow" />
-                <div>
-                  <p className="font-medium text-neutral-black">Sin institución asignada</p>
-                  <p className="text-sm text-secondary">Contacta al administrador del sistema</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Resumen
@@ -537,10 +412,6 @@ const AdminDashboard: React.FC = () => {
             <TabsTrigger value="system" className="flex items-center gap-2">
               <Server className="w-4 h-4" />
               Sistema
-            </TabsTrigger>
-            <TabsTrigger value="activity" className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Actividad
             </TabsTrigger>
           </TabsList>
 
@@ -702,7 +573,10 @@ const AdminDashboard: React.FC = () => {
                     <Building className="w-5 h-5" />
                     Gestión de Instituciones
                   </CardTitle>
-                  <Button className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white">
+                  <Button 
+                    onClick={handleCreateInstitution}
+                    className="bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Nueva Institución
                   </Button>
@@ -974,261 +848,197 @@ const AdminDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LineChart className="w-5 h-5" />
+                  Rendimiento Académico
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <Bar
+                    data={{
+                      labels: ['Matemáticas', 'Español', 'Ciencias', 'Historia', 'Inglés'],
+                      datasets: [{
+                        label: 'Promedio General',
+                        data: [4.2, 3.8, 4.0, 3.9, 4.1],
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 1
+                      }]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          display: false
+                        }
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          max: 5
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* System Tab */}
           <TabsContent value="system" className="space-y-6">
-            {/* System Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 rounded-lg">
-                      <Server className="w-6 h-6 text-blue-600" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="w-5 h-5" />
+                    CPU
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Uso</span>
+                      <span>{systemMetrics.cpuUsage}%</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">CPU</p>
-                      <p className="text-2xl font-bold text-blue-600">{systemMetrics.cpuUsage}%</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${systemMetrics.cpuUsage}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-green-100 rounded-lg">
-                      <HardDrive className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Memoria</p>
-                      <p className="text-2xl font-bold text-green-600">{systemMetrics.memoryUsage}%</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: `${systemMetrics.memoryUsage}%` }}></div>
-                      </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${systemMetrics.cpuUsage}%` }}
+                      ></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Database className="w-6 h-6 text-purple-600" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <HardDrive className="w-5 h-5" />
+                    Memoria
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Uso</span>
+                      <span>{systemMetrics.memoryUsage}%</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Disco</p>
-                      <p className="text-2xl font-bold text-purple-600">{systemMetrics.diskUsage}%</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${systemMetrics.diskUsage}%` }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-orange-100 rounded-lg">
-                      <Wifi className="w-6 h-6 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Red</p>
-                      <p className="text-2xl font-bold text-orange-600">{systemMetrics.networkTraffic} MB/s</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${systemMetrics.memoryUsage}%` }}
+                      ></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-red-100 rounded-lg">
-                      <Activity className="w-6 h-6 text-red-600" />
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="w-5 h-5" />
+                    Disco
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Uso</span>
+                      <span>{systemMetrics.diskUsage}%</span>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Conexiones</p>
-                      <p className="text-2xl font-bold text-red-600">{systemMetrics.activeConnections}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-yellow-100 rounded-lg">
-                      <Zap className="w-6 h-6 text-yellow-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-600">Respuesta</p>
-                      <p className="text-2xl font-bold text-yellow-600">{systemMetrics.responseTime}ms</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${systemMetrics.diskUsage}%` }}
+                      ></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
 
-          {/* Activity Tab */}
-          <TabsContent value="activity" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Activity */}
-              <Card className="border-secondary-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-neutral-black">
-                    <div className="p-1 bg-primary/10 rounded">
-                      <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    </div>
-                    <span>Actividad Reciente</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Wifi className="w-5 h-5" />
+                    Conexiones Activas
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {loadingActivity ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="animate-pulse flex items-start gap-3 p-3 bg-secondary-50 rounded-lg">
-                          <div className="w-8 h-8 bg-secondary-200 rounded"></div>
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-secondary-200 rounded w-3/4"></div>
-                            <div className="h-3 bg-secondary-200 rounded w-1/4"></div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-3 p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors">
-                        <div className="p-1 bg-neutral-white rounded">
-                          {getActivityIcon(activity.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-neutral-black">{activity.message}</p>
-                          <p className="text-xs text-secondary mt-1">Hace {activity.time}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <Button
-                    className="w-full border-secondary-300 text-secondary hover:bg-secondary-50"
-                    variant="outline"
-                  >
-                    Ver Actividad Completa
-                  </Button>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                    {systemMetrics.activeConnections}
+                  </div>
+                  <p className="text-sm text-gray-600">Usuarios conectados en tiempo real</p>
                 </CardContent>
               </Card>
 
-              {/* Quick Actions */}
-              <Card className="border-secondary-200">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-neutral-black">
-                    <div className="p-1 bg-primary/10 rounded">
-                      <Settings className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    </div>
-                    <span>Acciones Rápidas</span>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Tiempo de Respuesta
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 sm:space-y-3">
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <Users className="w-4 h-4 mr-2" />
-                    Gestionar Usuarios
-                  </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <School className="w-4 h-4 mr-2" />
-                    Administrar Instituciones
-                  </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Generar Reportes
-                  </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Monitoreo del Sistema
-                  </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <Database className="w-4 h-4 mr-2" />
-                    Backup y Restauración
-                  </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Exportar Datos
-                  </Button>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600 mb-2">
+                    {systemMetrics.responseTime}ms
+                  </div>
+                  <p className="text-sm text-gray-600">Tiempo promedio de respuesta</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Institution Overview */}
-            <Card className="border-secondary-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-neutral-black">
-                  <div className="p-1 bg-accent-green/10 rounded">
-                    <School className="w-4 h-4 sm:w-5 sm:h-5 text-accent-green" />
-                  </div>
-                  <span>Resumen de Instituciones</span>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Estado del Sistema
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-secondary-200">
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Institución</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Estudiantes</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Profesores</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Promedio</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Estado</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-medium text-secondary text-sm">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {institutionStats.map((institution) => (
-                        <tr key={institution.id} className="border-b border-secondary-100 hover:bg-secondary-50 transition-colors">
-                          <td className="py-3 px-2 sm:px-4">
-                            <div className="font-medium text-neutral-black text-sm">{institution.name}</div>
-                          </td>
-                          <td className="py-3 px-2 sm:px-4 text-secondary text-sm">{institution.students}</td>
-                          <td className="py-3 px-2 sm:px-4 text-secondary text-sm">{institution.teachers}</td>
-                          <td className="py-3 px-2 sm:px-4">
-                            <Badge
-                              variant={
-                                institution.avgGrade >= 4.0 ? 'success' :
-                                institution.avgGrade >= 3.0 ? 'warning' :
-                                'destructive'
-                              }
-                              className="text-xs"
-                            >
-                              {institution.avgGrade.toFixed(1)}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-2 sm:px-4">
-                            {getStatusBadge(institution.status)}
-                          </td>
-                          <td className="py-3 px-2 sm:px-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-secondary-300 text-secondary hover:bg-secondary-50 text-xs"
-                            >
-                              Ver Detalles
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <p className="font-medium text-green-900">Base de Datos</p>
+                    <p className="text-sm text-green-700">Operativa</p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <p className="font-medium text-green-900">API Services</p>
+                    <p className="text-sm text-green-700">En línea</p>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                    <Activity className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                    <p className="font-medium text-blue-900">Backup</p>
+                    <p className="text-sm text-blue-700">Completado</p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <p className="font-medium text-green-900">Seguridad</p>
+                    <p className="text-sm text-green-700">Activa</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Institution Creation Modal */}
+      <SuperAdminInstitutionModal
+        isOpen={isInstitutionModalOpen}
+        onClose={() => setIsInstitutionModalOpen(false)}
+        onInstitutionCreated={handleInstitutionCreated}
+      />
     </div>
   );
 };
 
-export default AdminDashboard;
+export default SuperAdminDashboard;

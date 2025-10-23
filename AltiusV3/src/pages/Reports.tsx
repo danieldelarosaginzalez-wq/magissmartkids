@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BarChart3, Download, Filter, TrendingUp, Users, BookOpen, Award, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { BarChart3, Download, Filter, TrendingUp, Users, BookOpen, Award, Calendar, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -11,158 +11,54 @@ const Reports: React.FC = () => {
   const { user } = useAuthStore();
   const [selectedPeriod, setSelectedPeriod] = useState('current');
   const [selectedGrade, setSelectedGrade] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [institutionStats, setInstitutionStats] = useState<any>({});
+  const [gradeStats, setGradeStats] = useState<any[]>([]);
+  const [subjectStats, setSubjectStats] = useState<any[]>([]);
+  const [teacherStats, setTeacherStats] = useState<any[]>([]);
+  const [monthlyProgress, setMonthlyProgress] = useState<any[]>([]);
 
-  const institutionStats = {
-    totalStudents: 485,
-    totalTeachers: 28,
-    averageGrade: 3.9,
-    improvement: '+0.4',
-    completionRate: 87,
-    activeAssignments: 15
+  useEffect(() => {
+    loadReports();
+  }, [selectedPeriod]);
+
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+      
+      // Load institution stats
+      const institutionResponse = await fetch(`/api/super-admin/institutions/stats?period=${selectedPeriod}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (institutionResponse.ok) {
+        const data = await institutionResponse.json();
+        setInstitutionStats(data.stats || {});
+        setGradeStats(data.gradeStats || []);
+        setSubjectStats(data.subjectStats || []);
+        setTeacherStats(data.teacherStats || []);
+        setMonthlyProgress(data.monthlyProgress || []);
+      } else {
+        console.error('Failed to load reports');
+        setInstitutionStats({});
+        setGradeStats([]);
+        setSubjectStats([]);
+        setTeacherStats([]);
+        setMonthlyProgress([]);
+      }
+    } catch (error) {
+      console.error('Error loading reports:', error);
+      setInstitutionStats({});
+      setGradeStats([]);
+      setSubjectStats([]);
+      setTeacherStats([]);
+      setMonthlyProgress([]);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const gradeStats = [
-    {
-      grade: '1°',
-      students: 85,
-      teachers: 6,
-      averageBefore: 2.9,
-      averageAfter: 3.6,
-      improvement: '+0.7',
-      completionRate: 92,
-      subjects: ['Matemáticas', 'Español', 'Ciencias', 'Sociales']
-    },
-    {
-      grade: '2°',
-      students: 92,
-      teachers: 6,
-      averageBefore: 3.1,
-      averageAfter: 3.8,
-      improvement: '+0.7',
-      completionRate: 89,
-      subjects: ['Matemáticas', 'Español', 'Ciencias', 'Sociales']
-    },
-    {
-      grade: '3°',
-      students: 88,
-      teachers: 5,
-      averageBefore: 3.0,
-      averageAfter: 3.9,
-      improvement: '+0.9',
-      completionRate: 85,
-      subjects: ['Matemáticas', 'Español', 'Ciencias', 'Sociales']
-    },
-    {
-      grade: '4°',
-      students: 94,
-      teachers: 6,
-      averageBefore: 2.8,
-      averageAfter: 4.0,
-      improvement: '+1.2',
-      completionRate: 88,
-      subjects: ['Matemáticas', 'Español', 'Ciencias', 'Sociales']
-    },
-    {
-      grade: '5°',
-      students: 86,
-      teachers: 5,
-      averageBefore: 3.2,
-      averageAfter: 4.1,
-      improvement: '+0.9',
-      completionRate: 90,
-      subjects: ['Matemáticas', 'Español', 'Ciencias', 'Sociales']
-    }
-  ];
-
-  const subjectStats = [
-    {
-      subject: 'Matemáticas',
-      students: 485,
-      teachers: 8,
-      averageBefore: 2.7,
-      averageAfter: 3.8,
-      improvement: '+1.1',
-      assignments: 45,
-      completionRate: 86
-    },
-    {
-      subject: 'Español',
-      students: 485,
-      teachers: 7,
-      averageBefore: 3.2,
-      averageAfter: 4.0,
-      improvement: '+0.8',
-      assignments: 38,
-      completionRate: 91
-    },
-    {
-      subject: 'Ciencias',
-      students: 485,
-      teachers: 6,
-      averageBefore: 3.0,
-      averageAfter: 3.9,
-      improvement: '+0.9',
-      assignments: 32,
-      completionRate: 88
-    },
-    {
-      subject: 'Sociales',
-      students: 485,
-      teachers: 7,
-      averageBefore: 3.1,
-      averageAfter: 3.8,
-      improvement: '+0.7',
-      assignments: 28,
-      completionRate: 84
-    }
-  ];
-
-  const teacherStats = [
-    {
-      name: 'Prof. Ana García',
-      subjects: ['Matemáticas 3°A', 'Matemáticas 3°B'],
-      students: 53,
-      assignments: 12,
-      averageGrade: 4.2,
-      completionRate: 94,
-      improvement: '+1.1'
-    },
-    {
-      name: 'Prof. Carlos Ruiz',
-      subjects: ['Español 3°A', 'Español 4°A'],
-      students: 48,
-      assignments: 10,
-      averageGrade: 4.0,
-      completionRate: 89,
-      improvement: '+0.8'
-    },
-    {
-      name: 'Prof. María López',
-      subjects: ['Ciencias 3°A', 'Ciencias 4°A'],
-      students: 51,
-      assignments: 8,
-      averageGrade: 3.9,
-      completionRate: 87,
-      improvement: '+0.9'
-    },
-    {
-      name: 'Prof. Pedro Martín',
-      subjects: ['Sociales 3°A', 'Sociales 4°A'],
-      students: 49,
-      assignments: 6,
-      averageGrade: 3.8,
-      completionRate: 82,
-      improvement: '+0.7'
-    }
-  ];
-
-  const monthlyProgress = [
-    { month: 'Septiembre', average: 2.8, assignments: 45, completion: 78 },
-    { month: 'Octubre', average: 3.2, assignments: 52, completion: 82 },
-    { month: 'Noviembre', average: 3.5, assignments: 48, completion: 85 },
-    { month: 'Diciembre', average: 3.7, assignments: 41, completion: 88 },
-    { month: 'Enero', average: 3.9, assignments: 38, completion: 87 }
-  ];
 
   const getImprovementColor = (improvement: string) => {
     const value = parseFloat(improvement.replace('+', ''));
@@ -187,6 +83,15 @@ const Reports: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <Button
+            onClick={loadReports}
+            disabled={loading}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Actualizar</span>
+          </Button>
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-40">
               <SelectValue />
@@ -214,7 +119,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Users className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{institutionStats.totalStudents}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : (institutionStats.totalStudents || 0)}
+              </p>
               <p className="text-sm text-gray-600">Estudiantes</p>
             </div>
           </CardContent>
@@ -223,7 +130,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Users className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{institutionStats.totalTeachers}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : (institutionStats.totalTeachers || 0)}
+              </p>
               <p className="text-sm text-gray-600">Profesores</p>
             </div>
           </CardContent>
@@ -232,7 +141,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <BarChart3 className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{institutionStats.averageGrade}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : (institutionStats.averageGrade || 0)}
+              </p>
               <p className="text-sm text-gray-600">Promedio</p>
             </div>
           </CardContent>
@@ -241,7 +152,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <TrendingUp className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">{institutionStats.improvement}</p>
+              <p className="text-2xl font-bold text-green-600">
+                {loading ? '...' : (institutionStats.improvement || '+0%')}
+              </p>
               <p className="text-sm text-gray-600">Mejora</p>
             </div>
           </CardContent>
@@ -250,7 +163,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <BookOpen className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{institutionStats.activeAssignments}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : (institutionStats.activeAssignments || 0)}
+              </p>
               <p className="text-sm text-gray-600">Tareas Activas</p>
             </div>
           </CardContent>
@@ -259,7 +174,9 @@ const Reports: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <Award className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{institutionStats.completionRate}%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {loading ? '...' : `${institutionStats.completionRate || 0}%`}
+              </p>
               <p className="text-sm text-gray-600">Completado</p>
             </div>
           </CardContent>

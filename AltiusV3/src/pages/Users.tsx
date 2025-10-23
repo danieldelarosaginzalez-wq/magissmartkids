@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Users as UsersIcon, Search, Filter, Edit, Trash2, UserCheck, UserX, Mail, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -14,91 +14,36 @@ const Users: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const users = [
-    {
-      id: 1,
-      firstName: 'Ana',
-      lastName: 'García',
-      email: 'ana.garcia@colegio.edu.co',
-      role: 'teacher',
-      phone: '300-123-4567',
-      institution: 'I.E. San José',
-      isActive: true,
-      createdAt: '2024-09-15',
-      lastLogin: '2025-01-10',
-      subjects: ['Matemáticas 3°A', 'Matemáticas 3°B'],
-      studentsCount: 53
-    },
-    {
-      id: 2,
-      firstName: 'Carlos',
-      lastName: 'Ruiz',
-      email: 'carlos.ruiz@colegio.edu.co',
-      role: 'teacher',
-      phone: '301-234-5678',
-      institution: 'I.E. San José',
-      isActive: true,
-      createdAt: '2024-09-20',
-      lastLogin: '2025-01-09',
-      subjects: ['Español 3°A', 'Español 4°A'],
-      studentsCount: 48
-    },
-    {
-      id: 3,
-      firstName: 'María',
-      lastName: 'López',
-      email: 'maria.lopez@colegio.edu.co',
-      role: 'coordinator',
-      phone: '302-345-6789',
-      institution: 'I.E. San José',
-      isActive: true,
-      createdAt: '2024-08-10',
-      lastLogin: '2025-01-10',
-      studentsCount: 485,
-      teachersCount: 28
-    },
-    {
-      id: 4,
-      firstName: 'Pedro',
-      lastName: 'Martín',
-      email: 'pedro.martin@gmail.com',
-      role: 'parent',
-      phone: '303-456-7890',
-      institution: 'I.E. San José',
-      isActive: true,
-      createdAt: '2024-10-05',
-      lastLogin: '2025-01-08',
-      children: ['Ana Martín (3°A)', 'Carlos Martín (1°B)']
-    },
-    {
-      id: 5,
-      firstName: 'Laura',
-      lastName: 'Rodríguez',
-      email: 'laura.rodriguez@estudiante.edu.co',
-      role: 'student',
-      phone: '304-567-8901',
-      institution: 'I.E. San José',
-      isActive: true,
-      createdAt: '2024-09-01',
-      lastLogin: '2025-01-10',
-      grade: '3°A',
-      currentAverage: 4.2,
-      parentEmail: 'padre.rodriguez@gmail.com'
-    },
-    {
-      id: 6,
-      firstName: 'Admin',
-      lastName: 'Sistema',
-      email: 'admin@altiusacademy.com',
-      role: 'admin',
-      phone: '305-678-9012',
-      institution: 'Sistema',
-      isActive: true,
-      createdAt: '2024-08-01',
-      lastLogin: '2025-01-10'
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/super-admin/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      } else {
+        console.error('Failed to load users');
+        setUsers([]);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -327,86 +272,85 @@ const Users: React.FC = () => {
           <CardTitle>Lista de Usuarios ({filteredUsers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Usuario</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Rol</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Contacto</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Estado</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Último Acceso</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map(user => (
-                  <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {user.firstName} {user.lastName}
-                        </div>
-                        <div className="text-sm text-gray-600">{user.email}</div>
-                        {user.role === 'student' && user.grade && (
-                          <div className="text-xs text-gray-500">Grado: {user.grade}</div>
-                        )}
-                        {user.role === 'teacher' && user.subjects && (
-                          <div className="text-xs text-gray-500">
-                            {user.subjects.length} materias
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant={getRoleColor(user.role)}>
-                        {getRoleLabel(user.role)}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-1 text-sm">
-                          <Mail className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-600">{user.email}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 text-sm">
-                          <Phone className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-600">{user.phone}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Badge variant={user.isActive ? 'success' : 'destructive'}>
-                        {user.isActive ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="text-sm text-gray-600">
-                        {formatDate(user.lastLogin)}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className={user.isActive ? 'text-red-600' : 'text-green-600'}
-                        >
-                          {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-red-600">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Cargando usuarios...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Usuario</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Rol</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Institución</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Estado</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Creado</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredUsers.map(user => (
+                    <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </div>
+                          <div className="text-sm text-gray-600">{user.email}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={getRoleColor(user.role)}>
+                          {getRoleLabel(user.role)}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="text-sm text-gray-600">
+                          {user.institutionName || 'Sin institución'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge variant={user.status === 'active' ? 'success' : 'destructive'}>
+                          {user.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm text-gray-600">
+                          {formatDate(user.createdAt)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex space-x-2">
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className={user.status === 'active' ? 'text-red-600' : 'text-green-600'}
+                          >
+                            {user.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                          </Button>
+                          <Button size="sm" variant="outline" className="text-red-600">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredUsers.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No se encontraron usuarios</p>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
