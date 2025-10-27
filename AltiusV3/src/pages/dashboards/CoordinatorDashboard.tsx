@@ -7,54 +7,132 @@ import { Button } from '../../components/ui/Button';
 import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
 import { useUserInfo } from '../../hooks/useUserInfo';
 
+interface Teacher {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  subjects: string[];
+  students: number;
+  status: string;
+}
+
+interface Student {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  grade: string;
+  average: number;
+  status: string;
+}
+
 const CoordinatorDashboard: React.FC = () => {
   const { user } = useAuthStore();
   const { userInfo, loading: userLoading, error: userError } = useUserInfo();
-  const [teachers, setTeachers] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUsersData();
   }, []);
 
+  // 🎭 DATOS FICTICIOS PARA LA PRESENTACIÓN
   const loadUsersData = async () => {
     try {
-      console.log('👥 Cargando datos de usuarios...');
-      
-      // Cargar profesores
-      const teachersResponse = await fetch('/api/users/teachers', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (teachersResponse.ok) {
-        const teachersData = await teachersResponse.json();
-        console.log('👩‍🏫 Profesores cargados:', teachersData);
-        setTeachers(teachersData.teachers || []);
-      } else {
-        console.error('❌ Error cargando profesores:', teachersResponse.status);
-      }
+      setLoading(true);
+      console.log('👥 Cargando datos ficticios para presentación...');
 
-      // Cargar estudiantes
-      const studentsResponse = await fetch('/api/users/students/all', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      // 🎭 SIMULACIÓN DE LOADING
+      await new Promise(resolve => setTimeout(resolve, 900));
+
+      // ✅ PROFESORES FICTICIOS REALISTAS
+      const mockTeachers = [
+        {
+          id: 1,
+          firstName: 'María',
+          lastName: 'González',
+          email: 'maria.gonzalez@colegio.edu.co',
+          subjects: ['Matemáticas', 'Geometría'],
+          students: 45,
+          status: 'active'
+        },
+        {
+          id: 2,
+          firstName: 'Carlos',
+          lastName: 'Rodríguez',
+          email: 'carlos.rodriguez@colegio.edu.co',
+          subjects: ['Español', 'Literatura'],
+          students: 38,
+          status: 'active'
+        },
+        {
+          id: 3,
+          firstName: 'Ana',
+          lastName: 'Martínez',
+          email: 'ana.martinez@colegio.edu.co',
+          subjects: ['Ciencias Naturales'],
+          students: 42,
+          status: 'active'
+        },
+        {
+          id: 4,
+          firstName: 'Luis',
+          lastName: 'Pérez',
+          email: 'luis.perez@colegio.edu.co',
+          subjects: ['Sociales', 'Historia'],
+          students: 35,
+          status: 'active'
         }
-      });
-      
-      if (studentsResponse.ok) {
-        const studentsData = await studentsResponse.json();
-        console.log('👨‍🎓 Estudiantes cargados:', studentsData);
-        setStudents(studentsData.students || []);
-      } else {
-        console.error('❌ Error cargando estudiantes:', studentsResponse.status);
-      }
-      
+      ];
+
+      // ✅ ESTUDIANTES FICTICIOS REALISTAS
+      const mockStudents = [
+        {
+          id: 1,
+          firstName: 'Sofia',
+          lastName: 'Ramírez',
+          email: 'sofia.ramirez@estudiante.edu.co',
+          grade: '3° A',
+          average: 4.5,
+          status: 'active'
+        },
+        {
+          id: 2,
+          firstName: 'Diego',
+          lastName: 'Torres',
+          email: 'diego.torres@estudiante.edu.co',
+          grade: '3° B',
+          average: 4.2,
+          status: 'active'
+        },
+        {
+          id: 3,
+          firstName: 'Valentina',
+          lastName: 'López',
+          email: 'valentina.lopez@estudiante.edu.co',
+          grade: '2° A',
+          average: 4.7,
+          status: 'active'
+        },
+        {
+          id: 4,
+          firstName: 'Sebastián',
+          lastName: 'García',
+          email: 'sebastian.garcia@estudiante.edu.co',
+          grade: '2° B',
+          average: 4.0,
+          status: 'active'
+        }
+      ];
+
+      setTeachers(mockTeachers);
+      setStudents(mockStudents);
+      console.log('✅ Datos ficticios cargados exitosamente');
+
     } catch (error) {
       console.error('❌ Error loading users:', error);
-      alert('Error de conexión al cargar usuarios: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
@@ -75,7 +153,7 @@ const CoordinatorDashboard: React.FC = () => {
             Bienvenido, {user?.firstName}. Gestión institucional y supervisión académica
           </p>
         </div>
-        <Button 
+        <Button
           onClick={loadUsersData}
           variant="outline"
           className="border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2"
@@ -264,7 +342,7 @@ const CoordinatorDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {teachers.slice(0, 10).map((teacher: any) => (
+                {teachers.slice(0, 10).map((teacher: Teacher) => (
                   <div key={teacher.id} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-neutral-black text-sm">{teacher.firstName} {teacher.lastName}</p>
@@ -307,7 +385,7 @@ const CoordinatorDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {students.slice(0, 10).map((student: any) => (
+                {students.slice(0, 10).map((student: Student) => (
                   <div key={student.id} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg hover:bg-secondary-100 transition-colors">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-neutral-black text-sm">{student.firstName} {student.lastName}</p>
@@ -353,7 +431,7 @@ const CoordinatorDashboard: React.FC = () => {
                   <p className="font-medium text-neutral-black">Listar Usuarios</p>
                   <p className="text-xs sm:text-sm text-secondary">Ver y editar usuarios existentes</p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => loadUsersData()}
                   className="bg-accent-green hover:bg-accent-green/80 text-neutral-white border-0"
                   disabled={loading}

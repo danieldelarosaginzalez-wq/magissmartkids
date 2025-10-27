@@ -9,10 +9,10 @@ export interface Institution {
   nit?: string;
 }
 
-export interface AcademicGrade {
+export interface SchoolGrade {
   id: string;
-  name: string;
-  level: number;
+  gradeName: string;
+  gradeLevel: number;
 }
 
 export interface User {
@@ -22,7 +22,7 @@ export interface User {
   lastName: string;
   role: UserRole;
   institution?: Institution | null;
-  academicGrade?: AcademicGrade | null;
+  schoolGrade?: SchoolGrade | null;
   isActive: boolean;
   createdAt: string;
 }

@@ -25,4 +25,11 @@ public interface TeacherSubjectRepository extends JpaRepository<TeacherSubject, 
     Long countStudentsByGrade(@Param("grade") String grade);
     
     boolean existsByTeacherIdAndSubjectIdAndGrade(Long teacherId, Long subjectId, String grade);
+    
+    // Métodos adicionales para CoordinatorService
+    @Query("SELECT s.name FROM TeacherSubject ts JOIN ts.subject s WHERE ts.teacherId = :teacherId")
+    List<String> findSubjectNamesByTeacherId(@Param("teacherId") Long teacherId);
+    
+    @Query("SELECT ts FROM TeacherSubject ts WHERE ts.subjectId = :subjectId")
+    List<TeacherSubject> findBySubjectId(@Param("subjectId") Long subjectId);
 }

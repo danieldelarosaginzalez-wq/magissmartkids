@@ -37,8 +37,8 @@ public class Activity {
     private Institution institution;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "academic_grade_id")
-    private AcademicGrade academicGrade;
+    @JoinColumn(name = "school_grade_id")
+    private SchoolGrade schoolGrade;
     
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -82,8 +82,8 @@ public class Activity {
     public Institution getInstitution() { return institution; }
     public void setInstitution(Institution institution) { this.institution = institution; }
     
-    public AcademicGrade getAcademicGrade() { return academicGrade; }
-    public void setAcademicGrade(AcademicGrade academicGrade) { this.academicGrade = academicGrade; }
+    public SchoolGrade getSchoolGrade() { return schoolGrade; }
+    public void setSchoolGrade(SchoolGrade schoolGrade) { this.schoolGrade = schoolGrade; }
     
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

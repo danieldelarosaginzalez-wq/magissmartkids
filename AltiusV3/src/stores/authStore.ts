@@ -21,7 +21,7 @@ export const useAuthStore = create<AuthState>()(
         // DEBUG: Verificar datos del usuario en el store
         console.log('Guardando usuario en store:', user);
         console.log('Institución del usuario:', user.institution);
-        console.log('Grado académico:', user.academicGrade);
+        console.log('Grado escolar:', user.schoolGrade);
 
         set({ user, token, isAuthenticated: true });
       },

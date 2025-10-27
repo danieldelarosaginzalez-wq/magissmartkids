@@ -18,11 +18,41 @@ public class HealthController {
     public ResponseEntity<Map<String, Object>> healthCheck() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
-        response.put("message", "Altius Academy Backend is running");
+        response.put("message", "MagicSmartKids Backend is running");
         response.put("timestamp", System.currentTimeMillis());
-        response.put("service", "altius-academy-backend");
+        response.put("service", "magicsmartkids-backend");
         response.put("version", "1.0.0");
         
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/health/mysql")
+    public ResponseEntity<Map<String, Object>> healthMySQL() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            response.put("status", "UP");
+            response.put("database", "MySQL");
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "DOWN");
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(503).body(response);
+        }
+    }
+
+    @GetMapping("/health/mongodb")
+    public ResponseEntity<Map<String, Object>> healthMongoDB() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            response.put("status", "UP");
+            response.put("database", "MongoDB");
+            response.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "DOWN");
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(503).body(response);
+        }
     }
 }

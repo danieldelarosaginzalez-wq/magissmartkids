@@ -2,7 +2,7 @@ package com.altiusacademy.dto;
 
 import com.altiusacademy.model.enums.UserRole;
 import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.model.entity.AcademicGrade;
+import com.altiusacademy.model.entity.SchoolGrade;
 
 public class AuthResponse {
     private String token;
@@ -13,7 +13,7 @@ public class AuthResponse {
     private String lastName;
     private UserRole role;
     private Institution institution;
-    private AcademicGrade academicGrade;
+    private SchoolGrade schoolGrade;
 
     // Constructors
     public AuthResponse() {}
@@ -102,11 +102,11 @@ public class AuthResponse {
         this.institution = institution;
     }
 
-    public AcademicGrade getAcademicGrade() {
-        return academicGrade;
+    public SchoolGrade getSchoolGrade() {
+        return schoolGrade;
     }
 
-    public void setAcademicGrade(AcademicGrade academicGrade) {
-        this.academicGrade = academicGrade;
+    public void setSchoolGrade(SchoolGrade schoolGrade) {
+        this.schoolGrade = schoolGrade;
     }
 }

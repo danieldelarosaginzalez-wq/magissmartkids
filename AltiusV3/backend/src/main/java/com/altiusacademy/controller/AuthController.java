@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,7 +47,7 @@ public class AuthController {
             user.put("email", authResponse.getEmail());
             user.put("role", authResponse.getRole().toString().toLowerCase()); // Frontend expects lowercase
             user.put("institution", authResponse.getInstitution()); // ✅ INCLUIR INSTITUCIÓN
-            user.put("academicGrade", authResponse.getAcademicGrade()); // ✅ INCLUIR GRADO ACADÉMICO
+            user.put("schoolGrade", authResponse.getSchoolGrade()); // ✅ INCLUIR GRADO ESCOLAR
             user.put("isActive", true);
             user.put("createdAt", java.time.LocalDateTime.now().toString());
 
@@ -63,7 +64,7 @@ public class AuthController {
             response.put("token", authResponse.getToken());
             response.put("tokenType", authResponse.getTokenType());
             response.put("institution", authResponse.getInstitution()); // ✅ INCLUIR INSTITUCIÓN
-            response.put("academicGrade", authResponse.getAcademicGrade()); // ✅ INCLUIR GRADO ACADÉMICO (puede ser null)
+            response.put("schoolGrade", authResponse.getSchoolGrade()); // ✅ INCLUIR GRADO ESCOLAR (puede ser null)
             
             System.out.println("✅ Login exitoso - Usuario ID: " + authResponse.getUserId() + ", Rol: " + authResponse.getRole());
             return ResponseEntity.ok(response);
@@ -107,7 +108,7 @@ public class AuthController {
             user.put("email", authResponse.getEmail());
             user.put("role", authResponse.getRole().toString().toLowerCase()); // Frontend expects lowercase
             user.put("institution", authResponse.getInstitution()); // ✅ INCLUIR INSTITUCIÓN
-            user.put("academicGrade", authResponse.getAcademicGrade()); // ✅ INCLUIR GRADO ACADÉMICO
+            user.put("schoolGrade", authResponse.getSchoolGrade()); // ✅ INCLUIR GRADO ESCOLAR
             user.put("isActive", true);
             user.put("createdAt", java.time.LocalDateTime.now().toString());
             
@@ -120,7 +121,7 @@ public class AuthController {
             response.put("token", authResponse.getToken());
             response.put("tokenType", authResponse.getTokenType());
             response.put("institution", authResponse.getInstitution()); // ✅ INCLUIR INSTITUCIÓN
-            response.put("academicGrade", authResponse.getAcademicGrade()); // ✅ INCLUIR GRADO ACADÉMICO
+            response.put("schoolGrade", authResponse.getSchoolGrade()); // ✅ INCLUIR GRADO ESCOLAR
             
             System.out.println("✅ Usuario registrado exitosamente:");
             System.out.println("   ID: " + authResponse.getUserId());
@@ -147,6 +148,32 @@ public class AuthController {
     }
 
 
+
+    /**
+     * Endpoint para verificar si ya existe un coordinador en el sistema
+     * ✅ NUEVO ENDPOINT PARA VALIDACIÓN DE COORDINADOR ÚNICO
+     */
+    @GetMapping("/check-coordinator")
+    public ResponseEntity<Map<String, Object>> checkCoordinatorExists() {
+        try {
+            boolean coordinatorExists = authService.coordinatorExists();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("exists", coordinatorExists);
+            response.put("message", coordinatorExists ? 
+                "Ya existe un coordinador en el sistema" : 
+                "No hay coordinador registrado");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("exists", false);
+            response.put("message", "Error al verificar coordinador: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 
     /**
      * Endpoint para cerrar sesión (logout)

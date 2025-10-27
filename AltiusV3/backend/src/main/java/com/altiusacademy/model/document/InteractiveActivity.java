@@ -36,8 +36,8 @@ public class InteractiveActivity {
     @Field("institution_id")
     private Long institutionId; // Referencia a MySQL Institution
     
-    @Field("academic_grade_id")
-    private Long academicGradeId; // Referencia a MySQL SchoolGrade
+    @Field("school_grade_id")
+    private Long schoolGradeId; // Referencia a MySQL SchoolGrade
     
     // Contenido flexible
     @Field("content")
@@ -275,8 +275,8 @@ public class InteractiveActivity {
     public Long getInstitutionId() { return institutionId; }
     public void setInstitutionId(Long institutionId) { this.institutionId = institutionId; }
     
-    public Long getAcademicGradeId() { return academicGradeId; }
-    public void setAcademicGradeId(Long academicGradeId) { this.academicGradeId = academicGradeId; }
+    public Long getSchoolGradeId() { return schoolGradeId; }
+    public void setSchoolGradeId(Long schoolGradeId) { this.schoolGradeId = schoolGradeId; }
     
     public ActivityContent getContent() { return content; }
     public void setContent(ActivityContent content) { this.content = content; }

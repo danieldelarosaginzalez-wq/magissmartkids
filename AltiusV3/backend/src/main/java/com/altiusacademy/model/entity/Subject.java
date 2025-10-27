@@ -42,8 +42,8 @@ public class Subject {
     private Institution institution;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "academic_grade_id")
-    private SchoolGrade academicGrade;
+    @JoinColumn(name = "school_grade_id")
+    private SchoolGrade schoolGrade;
     
     @OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
     private List<Task> tasks;
@@ -114,12 +114,12 @@ public class Subject {
         this.institution = institution;
     }
     
-    public SchoolGrade getAcademicGrade() {
-        return academicGrade;
+    public SchoolGrade getSchoolGrade() {
+        return schoolGrade;
     }
     
-    public void setAcademicGrade(SchoolGrade academicGrade) {
-        this.academicGrade = academicGrade;
+    public void setSchoolGrade(SchoolGrade schoolGrade) {
+        this.schoolGrade = schoolGrade;
     }
     
     public List<Task> getTasks() {

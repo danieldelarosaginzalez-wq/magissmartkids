@@ -28,7 +28,7 @@ public class RegisterRequest {
     private Long institutionId; // ID de la institución (opcional)
     
     // Campos específicos por rol
-    private String academicGrade; // Para estudiantes: "1°", "2°", etc.
+    private String schoolGrade; // Para estudiantes: "1° A", "2° B", etc.
     private List<String> teachingGrades; // Para profesores: múltiples grados
     private String institutionNit; // Para coordinadores: NIT de la institución
     private List<ChildInfo> children; // Para padres: información de hijos (DEPRECATED)
@@ -122,12 +122,12 @@ public class RegisterRequest {
         this.institutionId = institutionId;
     }
     
-    public String getAcademicGrade() {
-        return academicGrade;
+    public String getSchoolGrade() {
+        return schoolGrade;
     }
 
-    public void setAcademicGrade(String academicGrade) {
-        this.academicGrade = academicGrade;
+    public void setSchoolGrade(String schoolGrade) {
+        this.schoolGrade = schoolGrade;
     }
 
     public List<String> getTeachingGrades() {

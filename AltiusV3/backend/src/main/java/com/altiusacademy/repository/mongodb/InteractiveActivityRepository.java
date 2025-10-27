@@ -23,8 +23,8 @@ public interface InteractiveActivityRepository extends MongoRepository<Interacti
     // Actividades por institución
     List<InteractiveActivity> findByInstitutionIdAndIsActiveOrderByCreatedAtDesc(Long institutionId, Boolean isActive);
     
-    // Actividades por grado académico
-    List<InteractiveActivity> findByAcademicGradeIdAndIsActiveOrderByCreatedAtDesc(Long academicGradeId, Boolean isActive);
+    // Actividades por grado escolar
+    List<InteractiveActivity> findBySchoolGradeIdAndIsActiveOrderByCreatedAtDesc(Long schoolGradeId, Boolean isActive);
     
     // Actividades por tipo
     List<InteractiveActivity> findByActivityTypeAndIsActiveOrderByCreatedAtDesc(InteractiveActivity.ActivityType activityType, Boolean isActive);
@@ -41,8 +41,8 @@ public interface InteractiveActivityRepository extends MongoRepository<Interacti
     List<InteractiveActivity> findByTagsIn(List<String> tags);
     
     // Actividades para un estudiante específico (por grado e institución)
-    @Query("{'institutionId': ?0, 'academicGradeId': ?1, 'isActive': true}")
-    List<InteractiveActivity> findActivitiesForStudent(Long institutionId, Long academicGradeId);
+    @Query("{'institutionId': ?0, 'schoolGradeId': ?1, 'isActive': true}")
+    List<InteractiveActivity> findActivitiesForStudent(Long institutionId, Long schoolGradeId);
     
     // Contar actividades por profesor
     Long countByTeacherIdAndIsActive(Long teacherId, Boolean isActive);
@@ -50,4 +50,9 @@ public interface InteractiveActivityRepository extends MongoRepository<Interacti
     // Actividades recientes
     @Query("{'isActive': true}")
     List<InteractiveActivity> findRecentActivities();
+    
+    // TEMPORALMENTE COMENTADO - MÉTODOS PROBLEMÁTICOS
+    // List<InteractiveActivity> findByStudentId(Long studentId);
+    // List<InteractiveActivity> findByCreatedBy(Long teacherId);
+    // List<InteractiveActivity> findByInstitutionNit(String institutionNit);
 }

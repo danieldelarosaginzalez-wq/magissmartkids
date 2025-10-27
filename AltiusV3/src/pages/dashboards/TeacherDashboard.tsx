@@ -6,7 +6,6 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Users, BookOpen, AlertCircle, FileText, School, Target, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
 import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
-import api from '../../services/api';
 
 interface TeacherDashboardStats {
   totalMaterias: number;
@@ -58,19 +57,63 @@ const TeacherDashboard: React.FC = () => {
   const loadStats = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/teacher/dashboard/stats');
-      setStats(response.data);
+
+      // 🎭 SIMULACIÓN DE LOADING PARA LA PRESENTACIÓN
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // ✅ DATOS FICTICIOS REALISTAS PARA LA PRESENTACIÓN
+      setStats({
+        totalMaterias: 4,
+        totalEstudiantes: 89,
+        tareasPendientesCorreccion: 12,
+        promedioGeneral: 4.2,
+        proximasEntregas: [
+          {
+            id: 1,
+            titulo: 'Examen de Matemáticas - Fracciones',
+            descripcion: 'Evaluación sobre suma y resta de fracciones',
+            materiaId: 1,
+            grados: ['3° A', '3° B'],
+            fechaEntrega: '2025-10-28',
+            tipo: 'traditional',
+            fechaCreacion: '2025-10-20'
+          },
+          {
+            id: 2,
+            titulo: 'Tarea de Español - Comprensión Lectora',
+            descripcion: 'Lectura del cuento "El patito feo" y preguntas',
+            materiaId: 2,
+            grados: ['2° A'],
+            fechaEntrega: '2025-10-30',
+            tipo: 'traditional',
+            fechaCreacion: '2025-10-22'
+          }
+        ],
+        actividadesRecientes: [
+          {
+            id: 3,
+            titulo: 'Actividad Interactiva - Los Colores',
+            descripcion: 'Juego educativo sobre colores primarios',
+            materiaId: 3,
+            grados: ['1° A', '1° B'],
+            fechaEntrega: '2025-10-25',
+            tipo: 'interactive',
+            fechaCreacion: '2025-10-23'
+          },
+          {
+            id: 4,
+            titulo: 'Dibujo de la Familia',
+            descripcion: 'Actividad artística sobre la familia',
+            materiaId: 4,
+            grados: ['2° B'],
+            fechaEntrega: '2025-10-26',
+            tipo: 'traditional',
+            fechaCreacion: '2025-10-21'
+          }
+        ]
+      });
     } catch (error) {
       console.error('Error loading teacher dashboard stats:', error);
-      // Datos de fallback
-      setStats({
-        totalMaterias: 0,
-        totalEstudiantes: 0,
-        tareasPendientesCorreccion: 0,
-        promedioGeneral: 0.0,
-        proximasEntregas: [],
-        actividadesRecientes: []
-      });
     } finally {
       setLoading(false);
     }
@@ -79,8 +122,45 @@ const TeacherDashboard: React.FC = () => {
   const loadSubjects = async () => {
     try {
       setLoadingSubjects(true);
-      const response = await api.get('/teacher/subjects');
-      setSubjects(response.data);
+
+      // 🎭 SIMULACIÓN DE LOADING PARA LA PRESENTACIÓN
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      // ✅ MATERIAS FICTICIAS REALISTAS PARA LA PRESENTACIÓN
+      setSubjects([
+        {
+          id: '1',
+          nombre: 'Matemáticas',
+          grado: '3° A',
+          estudiantes: 25,
+          progresoPromedio: 78,
+          color: '#3B82F6'
+        },
+        {
+          id: '2',
+          nombre: 'Español',
+          grado: '2° A',
+          estudiantes: 22,
+          progresoPromedio: 85,
+          color: '#10B981'
+        },
+        {
+          id: '3',
+          nombre: 'Ciencias Naturales',
+          grado: '1° A',
+          estudiantes: 20,
+          progresoPromedio: 72,
+          color: '#8B5CF6'
+        },
+        {
+          id: '4',
+          nombre: 'Sociales',
+          grado: '2° B',
+          estudiantes: 22,
+          progresoPromedio: 80,
+          color: '#F59E0B'
+        }
+      ]);
     } catch (error) {
       console.error('Error loading teacher subjects:', error);
       setSubjects([]);
@@ -90,309 +170,290 @@ const TeacherDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-magic text-neutral-black flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
+    <div className="bg-gray-50 min-h-screen">
+      <main className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
               👨‍🏫
             </div>
             Bienvenido, Profesor {user?.firstName}
           </h1>
-          <p className="text-sm sm:text-base text-secondary font-body">
+          <p className="text-gray-600 mt-2">
             Panel de control para gestionar tus clases y estudiantes
           </p>
+          <Button
+            onClick={loadDashboardData}
+            variant="outline"
+            className="mt-4 flex items-center gap-2"
+            disabled={loading}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Actualizar
+          </Button>
         </div>
-        <Button 
-          onClick={loadDashboardData}
-          variant="outline"
-          className="border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span className="hidden sm:inline">Actualizar</span>
-        </Button>
-      </div>
 
-      {/* Institution Info */}
-      {user?.institution ? (
-        <Card className="border-accent-green/20 bg-accent-green/5">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent-green/10 rounded-lg">
-                <School className="h-5 w-5 text-accent-green" />
-              </div>
-              <div className="flex-1">
-                <p className="text-neutral-black font-bold text-base sm:text-lg">
-                  {user.institution.name}
-                </p>
-                <p className="text-accent-green text-sm">
-                  {getRoleIcon(user.role)} {translateRole(user.role)}
-                </p>
-                {user.institution.address && (
-                  <p className="text-secondary text-sm mt-1">
-                    📍 {user.institution.address}
+        {/* Institution Info */}
+        {user?.institution ? (
+          <Card className="border-[#00368F]/20 bg-[#00368F]/5 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#00368F]/10 rounded-lg">
+                  <School className="h-8 w-8 text-[#00368F]" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {user.institution.name}
+                  </h3>
+                  <p className="text-gray-600 flex items-center gap-2">
+                    {getRoleIcon(user.role)} {translateRole(user.role)}
                   </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-accent-yellow/20 bg-accent-yellow/5">
-          <CardContent className="p-4 sm:p-6">
-            <p className="text-neutral-black font-medium flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-accent-yellow" />
-              Sin institución asignada
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <Card className="border-secondary-200 hover:shadow-lg transition-all duration-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-primary/10 rounded-lg">
-                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-secondary">Estudiantes</p>
-                <p className="text-xl sm:text-2xl font-bold text-neutral-black">
-                  {loading ? (
-                    <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
-                  ) : (
-                    stats?.totalEstudiantes || 0
+                  {user.institution.address && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {user.institution.address}
+                    </p>
                   )}
-                </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-yellow-200 bg-yellow-50 mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-6 w-6 text-yellow-600" />
+                <div>
+                  <p className="font-medium text-gray-900">Sin institución asignada</p>
+                  <p className="text-sm text-gray-600">Contacta al administrador del sistema</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="border-secondary-200 hover:shadow-lg transition-all duration-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-accent-green/10 rounded-lg">
-                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-accent-green" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-secondary">Materias</p>
-                <p className="text-xl sm:text-2xl font-bold text-neutral-black">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#2E5BFF]/10 rounded-lg">
+                  <Users className="h-8 w-8 text-[#2E5BFF]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Estudiantes</p>
                   {loading ? (
-                    <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-12"></div>
                   ) : (
-                    stats?.totalMaterias || 0
+                    <p className="text-2xl font-bold text-gray-900">{stats?.totalEstudiantes || 0}</p>
                   )}
-                </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-secondary-200 hover:shadow-lg transition-all duration-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-accent-yellow/10 rounded-lg">
-                <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-accent-yellow" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-secondary">Promedio General</p>
-                <p className="text-xl sm:text-2xl font-bold text-neutral-black">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#F5A623]/10 rounded-lg">
+                  <BookOpen className="h-8 w-8 text-[#F5A623]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Materias</p>
                   {loading ? (
-                    <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-12"></div>
                   ) : (
-                    `${(stats?.promedioGeneral || 0).toFixed(1)}`
+                    <p className="text-2xl font-bold text-gray-900">{stats?.totalMaterias || 0}</p>
                   )}
-                </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-secondary-200 hover:shadow-lg transition-all duration-200">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 bg-red-100 rounded-lg">
-                <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-secondary">Por Calificar</p>
-                <p className="text-xl sm:text-2xl font-bold text-neutral-black">
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-[#00C764]/10 rounded-lg">
+                  <BarChart3 className="h-8 w-8 text-[#00C764]" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Promedio General</p>
                   {loading ? (
-                    <div className="animate-pulse bg-secondary-200 h-6 w-8 rounded"></div>
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16"></div>
                   ) : (
-                    stats?.tareasPendientesCorreccion || 0
+                    <p className="text-2xl font-bold text-gray-900">{(stats?.promedioGeneral || 0).toFixed(1)}</p>
                   )}
-                </p>
+                </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gray-100 rounded-lg">
+                  <Clock className="h-8 w-8 text-gray-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Por Calificar</p>
+                  {loading ? (
+                    <div className="animate-pulse h-8 bg-gray-200 rounded w-16"></div>
+                  ) : (
+                    <p className="text-2xl font-bold text-gray-900">{stats?.tareasPendientesCorreccion || 0}</p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Actions */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-[#00368F]" />
+              Acciones Rápidas
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link to="/profesor/materias" className="block">
+                <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center gap-2 py-3">
+                  <BookOpen className="h-4 w-4" />
+                  Mis Materias
+                </Button>
+              </Link>
+              <Link to="/profesor/tareas" className="block">
+                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+                  <FileText className="h-4 w-4" />
+                  Tareas
+                </Button>
+              </Link>
+              <Link to="/profesor/calificaciones" className="block">
+                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+                  <BarChart3 className="h-4 w-4" />
+                  Calificaciones
+                </Button>
+              </Link>
+              <Link to="/actividades-interactivas" className="block">
+                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+                  <Target className="h-4 w-4" />
+                  Actividades
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Quick Actions */}
-      <Card className="border-secondary-200">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Acciones Rápidas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <Link to="/profesor/materias" className="block">
-              <Button className="w-full bg-primary hover:bg-primary-600 text-neutral-white border-0 flex items-center gap-2 py-3 sm:py-4">
-                <BookOpen className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Mis Materias</span>
-              </Button>
-            </Link>
-            <Link to="/profesor/tareas" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Tareas</span>
-              </Button>
-            </Link>
-            <Link to="/profesor/calificaciones" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Calificaciones</span>
-              </Button>
-            </Link>
-            <Link to="/actividades-interactivas" className="block">
-              <Button 
-                variant="outline" 
-                className="w-full border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2 py-3 sm:py-4"
-              >
-                <Target className="h-4 w-4" />
-                <span className="text-sm sm:text-base">Actividades</span>
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Mis Materias */}
-        <Card className="border-secondary-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <BookOpen className="h-5 w-5 text-primary" />
-              Mis Materias
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loadingSubjects ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse">
-                    <div className="flex items-center justify-between p-3 sm:p-4 bg-secondary-50 rounded-lg">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-secondary-200 rounded w-32"></div>
-                        <div className="h-3 bg-secondary-200 rounded w-24"></div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Mis Materias */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#2E5BFF]" />
+                Mis Materias
+              </h3>
+              {loadingSubjects ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-2 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : subjects.length === 0 ? (
+                <div className="text-center py-8">
+                  <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No hay materias asignadas</p>
+                  <p className="text-xs text-gray-400">
+                    Contacta al coordinador para que te asigne materias
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {subjects.map((subject) => (
+                    <Link
+                      key={subject.id}
+                      to={`/profesor/materias/${subject.id}`}
+                      className="block"
+                    >
+                      <div className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer border-l-4" style={{ borderLeftColor: subject.color }}>
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium text-gray-900">{subject.nombre} - {subject.grado}</h4>
+                          <Badge variant="outline" className="text-xs">
+                            Ver detalles
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {subject.estudiantes} estudiantes
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="h-2 rounded-full transition-all duration-300"
+                              style={{
+                                width: `${subject.progresoPromedio}%`,
+                                backgroundColor: subject.color
+                              }}
+                            ></div>
+                          </div>
+                          <span className="text-xs text-gray-500 w-12 text-right">{subject.progresoPromedio}%</span>
+                        </div>
                       </div>
-                      <div className="h-6 bg-secondary-200 rounded-full w-16"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : subjects.length === 0 ? (
-              <div className="text-center py-8">
-                <BookOpen className="h-12 w-12 text-secondary mx-auto mb-4" />
-                <p className="text-secondary">No hay materias asignadas</p>
-              </div>
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                {subjects.map((subject) => (
-                  <div 
-                    key={subject.id} 
-                    className="flex items-center justify-between p-3 sm:p-4 bg-secondary-50 rounded-lg border border-secondary-200 hover:border-primary-200 transition-all duration-200"
-                    style={{ borderLeftColor: subject.color, borderLeftWidth: '4px' }}
-                  >
-                    <div>
-                      <p className="font-medium text-neutral-black text-sm sm:text-base">
-                        {subject.nombre} - {subject.grado}
-                      </p>
-                      <p className="text-xs sm:text-sm text-secondary">
-                        {subject.estudiantes} estudiantes • {subject.progresoPromedio.toFixed(1)}% progreso
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 h-2 bg-secondary-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-accent-green transition-all duration-300"
-                          style={{ width: `${subject.progresoPromedio}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Actividades Recientes */}
-        <Card className="border-secondary-200">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <FileText className="h-5 w-5 text-primary" />
-              Actividades Recientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse">
-                    <div className="flex items-center justify-between p-3 border-l-4 border-secondary-200 bg-secondary-50">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-secondary-200 rounded w-40"></div>
-                        <div className="h-3 bg-secondary-200 rounded w-32"></div>
-                      </div>
-                      <div className="h-5 bg-secondary-200 rounded w-20"></div>
+          {/* Actividades Recientes */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#00C764]" />
+                Actividades Recientes
+              </h3>
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse p-3 bg-gray-100 rounded-lg">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : !stats?.actividadesRecientes || stats.actividadesRecientes.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-secondary mx-auto mb-4" />
-                <p className="text-secondary">No hay actividades recientes</p>
-              </div>
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                {stats.actividadesRecientes.map((task) => (
-                  <div key={task.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 border-l-4 border-primary bg-secondary-50 rounded-r-lg gap-2 sm:gap-0">
-                    <div className="flex-1">
-                      <p className="font-medium text-neutral-black text-sm sm:text-base">{task.titulo}</p>
-                      <p className="text-xs sm:text-sm text-secondary">
+                  ))}
+                </div>
+              ) : !stats?.actividadesRecientes || stats.actividadesRecientes.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No hay actividades recientes</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.actividadesRecientes.map((task) => (
+                    <div key={task.id} className="p-3 bg-gray-50 rounded-lg border-l-4 border-[#00368F]">
+                      <div className="flex justify-between items-start mb-1">
+                        <h4 className="font-medium text-gray-900">{task.titulo}</h4>
+                        <Badge className="text-xs bg-green-100 text-green-800">
+                          Reciente
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600">
                         {task.grados?.join(', ')} • {task.tipo === 'traditional' ? 'Tarea tradicional' : 'Actividad interactiva'}
                       </p>
                       {task.fechaCreacion && (
-                        <p className="text-xs text-secondary">
+                        <p className="text-xs text-gray-500 mt-1">
                           Creada: {new Date(task.fechaCreacion).toLocaleDateString()}
                         </p>
                       )}
                     </div>
-                    <Badge variant="default" className="text-xs self-start sm:self-center">
-                      Reciente
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 };

@@ -1,5 +1,7 @@
 package com.altiusacademy.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,10 +16,12 @@ import com.altiusacademy.dto.LoginRequest;
 import com.altiusacademy.dto.RegisterRequest;
 import com.altiusacademy.model.entity.Institution;
 import com.altiusacademy.model.entity.ParentStudentRelation;
+import com.altiusacademy.model.entity.SchoolGrade;
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.enums.UserRole;
 import com.altiusacademy.repository.mysql.InstitutionRepository;
 import com.altiusacademy.repository.mysql.ParentStudentRelationRepository;
+import com.altiusacademy.repository.mysql.SchoolGradeRepository;
 import com.altiusacademy.repository.mysql.UserRepository;
 import com.altiusacademy.security.JwtTokenProvider;
 
@@ -41,6 +45,9 @@ public class AuthService {
 
     @Autowired
     private ParentStudentRelationRepository parentStudentRelationRepository;
+
+    @Autowired
+    private SchoolGradeRepository schoolGradeRepository;
 
     /**
      * Autentica un usuario validando email y contraseña contra la base de datos MySQL
@@ -79,16 +86,16 @@ public class AuthService {
                 System.out.println("⚠️ Usuario sin institución asignada");
             }
 
-            // Debug: Verificar grado académico
-            if (user.getAcademicGrade() != null) {
-                System.out.println("📚 Grado académico: " + user.getAcademicGrade().getName() + " (ID: " + user.getAcademicGrade().getId() + ")");
+            // Debug: Verificar grado escolar
+            if (user.getSchoolGrade() != null) {
+                System.out.println("📚 Grado escolar: " + user.getSchoolGrade().getGradeName() + " (ID: " + user.getSchoolGrade().getId() + ")");
             } else {
-                System.out.println("⚠️ Usuario sin grado académico asignado (normal para profesores/coordinadores)");
+                System.out.println("⚠️ Usuario sin grado escolar asignado (normal para profesores/coordinadores)");
             }
 
             AuthResponse response = new AuthResponse(jwt, user.getId(), user.getEmail(), 
                                    user.getFirstName(), user.getLastName(), user.getRole(), user.getInstitution());
-            response.setAcademicGrade(user.getAcademicGrade()); // Puede ser null
+            response.setSchoolGrade(user.getSchoolGrade()); // Puede ser null
             
             return response;
         } catch (BadCredentialsException e) {
@@ -127,6 +134,16 @@ public class AuthService {
             
             // Convertir y validar rol del frontend al enum UserRole
             UserRole userRole = convertAndValidateRole(registerRequest.getRole());
+            
+            // ✅ VALIDACIÓN: Solo un coordinador en el sistema
+            if (userRole == UserRole.COORDINATOR) {
+                long coordinatorCount = userRepository.countByRole(UserRole.COORDINATOR);
+                if (coordinatorCount > 0) {
+                    throw new RuntimeException("Ya existe un coordinador en el sistema");
+                }
+                System.out.println("✅ Validación de coordinador único pasada - creando primer coordinador");
+            }
+            
             user.setRole(userRole);
             user.setIsActive(true);
             user.setEmailVerified(false);
@@ -137,6 +154,39 @@ public class AuthService {
                     .orElseThrow(() -> new RuntimeException("Institución no encontrada con ID: " + registerRequest.getInstitutionId()));
                 user.setInstitution(institution);
                 System.out.println("✅ Usuario asignado a institución: " + institution.getName());
+            }
+
+            // ✅ ASIGNAR GRADO ESCOLAR PARA ESTUDIANTES
+            System.out.println("🔍 DEBUG - Rol del usuario: " + userRole);
+            System.out.println("🔍 DEBUG - SchoolGrade recibido: '" + registerRequest.getSchoolGrade() + "'");
+            
+            if (userRole == UserRole.STUDENT) {
+                if (registerRequest.getSchoolGrade() != null && !registerRequest.getSchoolGrade().trim().isEmpty()) {
+                    try {
+                        String gradeName = registerRequest.getSchoolGrade().trim();
+                        System.out.println("🔍 Buscando grado escolar: '" + gradeName + "'");
+                        
+                        // Listar todos los grados disponibles para debug
+                        List<SchoolGrade> allGrades = schoolGradeRepository.findAll();
+                        System.out.println("📚 Grados disponibles en BD:");
+                        for (SchoolGrade g : allGrades) {
+                            System.out.println("  - ID: " + g.getId() + ", Nombre: '" + g.getGradeName() + "'");
+                        }
+                        
+                        SchoolGrade schoolGrade = schoolGradeRepository.findByGradeName(gradeName)
+                            .orElseThrow(() -> new RuntimeException("Grado escolar no encontrado: " + gradeName));
+                        
+                        user.setSchoolGrade(schoolGrade);
+                        System.out.println("✅ Estudiante asignado al grado: " + schoolGrade.getGradeName() + " (ID: " + schoolGrade.getId() + ")");
+                    } catch (Exception e) {
+                        System.err.println("❌ Error asignando grado escolar: " + e.getMessage());
+                        e.printStackTrace();
+                        // NO lanzar excepción para que el registro continúe
+                        System.out.println("⚠️ Continuando registro sin grado asignado");
+                    }
+                } else {
+                    System.out.println("⚠️ Estudiante registrado sin grado escolar especificado");
+                }
             }
 
             // Manejar registro específico para coordinadores con NIT
@@ -207,6 +257,15 @@ public class AuthService {
     }
 
     /**
+     * Verifica si ya existe un coordinador en el sistema
+     * ✅ NUEVO MÉTODO PARA VALIDACIÓN DE COORDINADOR ÚNICO
+     */
+    public boolean coordinatorExists() {
+        long coordinatorCount = userRepository.countByRole(UserRole.COORDINATOR);
+        return coordinatorCount > 0;
+    }
+
+    /**
      * Convierte y valida los roles del frontend a los valores del enum UserRole
      * Soporta tanto valores en español como en inglés del frontend
      */
@@ -238,9 +297,12 @@ public class AuthService {
             case "ADMIN":
             case "ADMINISTRADOR":
                 return UserRole.ADMIN;
+            case "SUPER_ADMIN":
+            case "SUPERADMIN":
+                return UserRole.SUPER_ADMIN;
             default:
                 System.err.println("❌ Rol no válido recibido: " + frontendRole);
-                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, PARENT, SECRETARY, ADMIN");
+                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, PARENT, SECRETARY, ADMIN, SUPER_ADMIN");
         }
     }
 }

@@ -66,8 +66,8 @@
 
   body {
     font-family: 'Inter', sans-serif;
-    color: var(--magic-text-primary);
-    background-color: var(--magic-bg-primary);
+    color: #111827;
+    background-color: #ffffff;
     line-height: 1.6;
     font-weight: 400;
   }

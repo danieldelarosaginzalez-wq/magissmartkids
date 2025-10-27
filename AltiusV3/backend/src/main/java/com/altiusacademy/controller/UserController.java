@@ -1,5 +1,8 @@
 package com.altiusacademy.controller;
 
+import com.altiusacademy.dto.UserUpdateRequest;
+import com.altiusacademy.dto.PasswordUpdateRequest;
+
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.enums.UserRole;
 import com.altiusacademy.repository.mysql.UserRepository;

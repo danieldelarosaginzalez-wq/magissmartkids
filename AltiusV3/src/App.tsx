@@ -4,20 +4,16 @@ import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import { useScrollToTop } from './hooks/useScrollToTop';
 
 // Pages
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import AdminDashboard from './pages/dashboards/AdminDashboard';
-import CoordinatorDashboard from './pages/dashboards/CoordinatorDashboard';
-import ParentDashboard from './pages/dashboards/ParentDashboard';
-import SecretaryDashboard from './pages/dashboards/SecretaryDashboard';
-import StudentDashboard from './pages/dashboards/StudentDashboard';
-import TeacherDashboard from './pages/dashboards/TeacherDashboard';
+
 import ChangePassword from './pages/ChangePassword';
 import InstitutionRegistration from './pages/InstitutionRegistration';
-import Dashboard from './pages/Dashboard';
+import DashboardRouter from './components/DashboardRouter';
 import Subjects from './pages/Subjects';
 import Assignments from './pages/Assignments';
 import Grades from './pages/Grades';
@@ -38,12 +34,15 @@ import PerfilPage from './pages/PerfilPage';
 import TeacherSubjectsPage from './pages/teacher/TeacherSubjectsPage';
 import TeacherTasksPage from './pages/teacher/TeacherTasksPage';
 import TeacherGradesPage from './pages/teacher/TeacherGradesPage';
+import AdminDashboard from './pages/dashboards/AdminDashboard';
+import TeacherDashboard from './pages/dashboards/TeacherDashboard';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
 
   return (
     <Router>
+      <ScrollToTopWrapper />
       <Routes>
         {/* Public Routes */}
         <Route 
@@ -85,7 +84,7 @@ function App() {
           element={
             <ProtectedRoute>
               <Layout>
-                <Dashboard />
+                <DashboardRouter />
               </Layout>
             </ProtectedRoute>
           } 
@@ -280,7 +279,7 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['teacher']}>
               <Layout>
-                <Dashboard />
+                <TeacherDashboard />
               </Layout>
             </ProtectedRoute>
           } 
@@ -343,6 +342,12 @@ function App() {
       </Routes>
     </Router>
   );
+}
+
+// Componente wrapper para el scroll automático
+function ScrollToTopWrapper() {
+  useScrollToTop();
+  return null;
 }
 
 export default App;

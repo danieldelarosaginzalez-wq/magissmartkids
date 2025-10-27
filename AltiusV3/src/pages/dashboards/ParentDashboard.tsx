@@ -60,41 +60,28 @@ const ParentDashboard: React.FC = () => {
     ]);
   };
 
+  // 🎭 DATOS FICTICIOS PARA LA PRESENTACIÓN
   const loadStats = async () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
       
-      const response = await fetch('/api/parent/stats', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      // 🎭 SIMULACIÓN DE LOADING
+      await new Promise(resolve => setTimeout(resolve, 700));
       
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          totalChildren: data.totalChildren || 0,
-          totalSubjects: data.totalSubjects || 0,
-          averageGrade: data.averageGrade || 0,
-          upcomingTasks: data.upcomingTasks || 0,
-          loading: false
-        });
-      } else {
-        // Datos de fallback
-        setStats({
-          totalChildren: 2,
-          totalSubjects: 10,
-          averageGrade: 4.1,
-          upcomingTasks: 5,
-          loading: false
-        });
-      }
+      // ✅ ESTADÍSTICAS FICTICIAS REALISTAS
+      setStats({
+        totalChildren: 2,
+        totalSubjects: 10,
+        averageGrade: 4.4,
+        upcomingTasks: 5,
+        loading: false
+      });
     } catch (error) {
       console.error('Error loading parent stats:', error);
       setStats({
         totalChildren: 2,
         totalSubjects: 10,
-        averageGrade: 4.1,
+        averageGrade: 4.4,
         upcomingTasks: 5,
         loading: false
       });
@@ -114,64 +101,12 @@ const ParentDashboard: React.FC = () => {
         const data = await response.json();
         setChildren(data.children || []);
       } else {
-        // Datos de fallback
-        setChildren([
-          {
-            id: '1',
-            firstName: 'Ana María',
-            lastName: 'González',
-            grade: '5° Grado',
-            averageGrade: 4.2,
-            subjects: [
-              { name: 'Matemáticas', grade: 4.5 },
-              { name: 'Ciencias', grade: 4.2 },
-              { name: 'Español', grade: 3.8 },
-              { name: 'Historia', grade: 4.0 }
-            ]
-          },
-          {
-            id: '2',
-            firstName: 'Carlos Andrés',
-            lastName: 'González',
-            grade: '3° Grado',
-            averageGrade: 4.1,
-            subjects: [
-              { name: 'Matemáticas', grade: 4.0 },
-              { name: 'Lectura', grade: 4.3 },
-              { name: 'Ciencias', grade: 4.1 }
-            ]
-          }
-        ]);
+        // Sin datos de fallback - mostrar estado vacío
+        setChildren([]);
       }
     } catch (error) {
       console.error('Error loading children:', error);
-      setChildren([
-        {
-          id: '1',
-          firstName: 'Ana María',
-          lastName: 'González',
-          grade: '5° Grado',
-          averageGrade: 4.2,
-          subjects: [
-            { name: 'Matemáticas', grade: 4.5 },
-            { name: 'Ciencias', grade: 4.2 },
-            { name: 'Español', grade: 3.8 },
-            { name: 'Historia', grade: 4.0 }
-          ]
-        },
-        {
-          id: '2',
-          firstName: 'Carlos Andrés',
-          lastName: 'González',
-          grade: '3° Grado',
-          averageGrade: 4.1,
-          subjects: [
-            { name: 'Matemáticas', grade: 4.0 },
-            { name: 'Lectura', grade: 4.3 },
-            { name: 'Ciencias', grade: 4.1 }
-          ]
-        }
-      ]);
+      setChildren([]);
     } finally {
       setLoadingChildren(false);
     }
@@ -189,60 +124,12 @@ const ParentDashboard: React.FC = () => {
         const data = await response.json();
         setUpcomingEvents(data.events || []);
       } else {
-        // Datos de fallback
-        setUpcomingEvents([
-          {
-            id: '1',
-            title: 'Reunión de Padres',
-            description: 'Ana María - 5°A',
-            date: 'Viernes 15 de Marzo, 2:00 PM',
-            type: 'meeting',
-            childName: 'Ana María'
-          },
-          {
-            id: '2',
-            title: 'Entrega de Boletines',
-            description: 'Ambos hijos',
-            date: 'Lunes 18 de Marzo, 8:00 AM',
-            type: 'report'
-          },
-          {
-            id: '3',
-            title: 'Feria de Ciencias',
-            description: 'Carlos Andrés - 3°B',
-            date: 'Miércoles 20 de Marzo, 9:00 AM',
-            type: 'event',
-            childName: 'Carlos Andrés'
-          }
-        ]);
+        // Sin datos de fallback - mostrar estado vacío
+        setUpcomingEvents([]);
       }
     } catch (error) {
       console.error('Error loading upcoming events:', error);
-      setUpcomingEvents([
-        {
-          id: '1',
-          title: 'Reunión de Padres',
-          description: 'Ana María - 5°A',
-          date: 'Viernes 15 de Marzo, 2:00 PM',
-          type: 'meeting',
-          childName: 'Ana María'
-        },
-        {
-          id: '2',
-          title: 'Entrega de Boletines',
-          description: 'Ambos hijos',
-          date: 'Lunes 18 de Marzo, 8:00 AM',
-          type: 'report'
-        },
-        {
-          id: '3',
-          title: 'Feria de Ciencias',
-          description: 'Carlos Andrés - 3°B',
-          date: 'Miércoles 20 de Marzo, 9:00 AM',
-          type: 'event',
-          childName: 'Carlos Andrés'
-        }
-      ]);
+      setUpcomingEvents([]);
     }
   };
 

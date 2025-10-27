@@ -1,30 +1,30 @@
 package com.altiusacademy.repository.mysql;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.altiusacademy.model.entity.SchoolGrade;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.altiusacademy.model.entity.SchoolGrade;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SchoolGradeRepository extends JpaRepository<SchoolGrade, Long> {
     
-    // Encontrar grados activos ordenados por nivel
-    @Query("SELECT sg FROM SchoolGrade sg WHERE sg.isActive = true ORDER BY sg.gradeLevel ASC")
-    List<SchoolGrade> findActiveGradesOrderByLevel();
+    // Buscar grados activos ordenados por nivel
+    @Query("SELECT sg FROM SchoolGrade sg WHERE sg.isActive = true ORDER BY sg.gradeLevel, sg.gradeName")
+    List<SchoolGrade> findByIsActiveTrueOrderByGradeLevel();
     
-    // Encontrar por nombre de grado
+    // Buscar por nombre de grado
     Optional<SchoolGrade> findByGradeName(String gradeName);
     
-    // Encontrar por nivel de grado
-    Optional<SchoolGrade> findByGradeLevel(Integer gradeLevel);
+    // Buscar por nivel de grado
+    List<SchoolGrade> findByGradeLevel(Integer gradeLevel);
     
-    // Encontrar grados activos
-    List<SchoolGrade> findByIsActiveTrue();
-    
-    // Verificar si existe un grado por nombre
+    // Verificar si existe por nombre
     boolean existsByGradeName(String gradeName);
+    
+    // Buscar grados activos por nivel
+    @Query("SELECT sg FROM SchoolGrade sg WHERE sg.isActive = true AND sg.gradeLevel = ?1 ORDER BY sg.gradeName")
+    List<SchoolGrade> findByIsActiveTrueAndGradeLevel(Integer gradeLevel);
 }

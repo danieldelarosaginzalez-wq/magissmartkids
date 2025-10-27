@@ -118,8 +118,25 @@ public class InstitutionController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // ✅ VERIFICAR QUE NO EXISTA UNA INSTITUCIÓN CON EL MISMO NIT
+            if (institution.getNit() != null && !institution.getNit().trim().isEmpty()) {
+                if (institutionRepository.existsByNit(institution.getNit().trim())) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Ya existe una institución con ese NIT");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
             // Limpiar y configurar datos
             institution.setName(institution.getName().trim());
+            
+            // ✅ PROCESAR CAMPO NIT
+            if (institution.getNit() != null) {
+                institution.setNit(institution.getNit().trim());
+                System.out.println("📝 NIT procesado: " + institution.getNit());
+            }
+            
             if (institution.getAddress() != null) {
                 institution.setAddress(institution.getAddress().trim());
             }
@@ -156,8 +173,8 @@ public class InstitutionController {
     /**
      * Validar NIT de institución - Para registro de coordinadores
      */
-    @GetMapping("/validate-nit/{nit}")
-    public ResponseEntity<?> validateInstitutionNit(@PathVariable String nit) {
+    @GetMapping("/validate-nit")
+    public ResponseEntity<?> validateInstitutionNit(@RequestParam String nit) {
         try {
             System.out.println("🔍 Validando NIT de institución: " + nit);
 
@@ -239,8 +256,8 @@ public class InstitutionController {
     /**
      * Obtener grados académicos disponibles
      */
-    @GetMapping("/academic-grades")
-    public ResponseEntity<?> getAcademicGrades() {
+    @GetMapping("/school-grades")
+    public ResponseEntity<?> getSchoolGrades() {
         try {
             List<String> grades = List.of(
                 "1°", "2°", "3°", "4°", "5°", "6°", "7°", "8°", "9°", "10°", "11°"

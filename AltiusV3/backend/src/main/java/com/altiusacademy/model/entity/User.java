@@ -71,12 +71,8 @@ public class User {
     private Institution institution;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "academic_grade_id")
-    private AcademicGrade academicGrade; // Grado académico (1°, 2°, 3°, 4°, 5°)
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "school_grade_id")
-    private SchoolGrade schoolGrade; // Grado escolar específico (10° A, 10° B, etc.)
+    private SchoolGrade schoolGrade; // Grado escolar específico (1° A, 2° B, etc.)
 
     @Size(max = 20)
     private String phone;
@@ -125,6 +121,9 @@ public class User {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     // Constructors
     public User() {}
@@ -198,13 +197,7 @@ public class User {
         this.institution = institution;
     }
 
-    public AcademicGrade getAcademicGrade() {
-        return academicGrade;
-    }
 
-    public void setAcademicGrade(AcademicGrade academicGrade) {
-        this.academicGrade = academicGrade;
-    }
 
     public SchoolGrade getSchoolGrade() {
         return schoolGrade;
@@ -316,5 +309,13 @@ public class User {
 
     public void setInstitutions(Set<UserInstitutionRole> institutions) {
         this.institutions = institutions;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 }

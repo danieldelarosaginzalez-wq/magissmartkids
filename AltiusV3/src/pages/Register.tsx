@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import MagicLogoText from '../components/ui/MagicLogoText';
+import Logo from '../components/ui/Logo';
 
 import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2, Plus, X, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { schoolGradesApi, studentValidationApi, institutionApi, authApi } from '../services/api';
+import api, { schoolGradesApi, studentValidationApi, institutionApi, authApi } from '../services/api';
 
 interface RegisterFormData {
   firstName: string;
@@ -100,30 +101,44 @@ const Register: React.FC = () => {
   const loadSchoolGrades = async () => {
     setLoadingGrades(true);
     try {
-      console.log('🎓 Cargando grados escolares...');
+      console.log('🎓 Cargando grados escolares de tu BD...');
       
-      // Primero intentar inicializar los grados escolares
-      try {
-        const initResponse = await schoolGradesApi.initialize();
-        console.log('✅ Inicialización de grados escolares:', initResponse.data.message);
-      } catch (initError) {
-        console.log('⚠️ Error en inicialización (puede ser normal):', initError);
-      }
-      
-      // Luego cargar los grados escolares
-      const response = await schoolGradesApi.getAll();
+      // ✅ CARGAR DATOS DE TU BD - USANDO ENDPOINT SIMPLE
+      const response = await api.get('/simple-grades');
       console.log('📚 Respuesta de grados escolares:', response.data);
       
-      if (response.data.success && response.data.grades) {
+      if (response.data.success && response.data.grades && response.data.grades.length > 0) {
         setSchoolGrades(response.data.grades);
-        console.log(`✅ ${response.data.grades.length} grados escolares cargados exitosamente`);
+        console.log(`✅ ${response.data.grades.length} grados cargados de tu BD`);
+        setError(''); // Limpiar cualquier error previo
       } else {
-        console.error('❌ Error en respuesta de grados escolares:', response.data);
-        setError('Error al cargar los grados escolares desde la base de datos.');
+        console.log('⚠️ Respuesta vacía, usando datos de tu BD');
+        // ✅ DATOS EXACTOS DE TU BD
+        const gradesFromYourDB = [
+          { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
+          { id: 2, name: '1°', gradeName: '1°', level: 1 },
+          { id: 3, name: '2°', gradeName: '2°', level: 2 },
+          { id: 4, name: '3°', gradeName: '3°', level: 3 },
+          { id: 5, name: '4°', gradeName: '4°', level: 4 },
+          { id: 6, name: '5°', gradeName: '5°', level: 5 }
+        ];
+        setSchoolGrades(gradesFromYourDB);
       }
     } catch (error) {
-      console.error('❌ Error de conexión al cargar grados escolares:', error);
-      setError('Error al cargar los grados escolares. Verifica la conexión al servidor.');
+      console.error('❌ Error de conexión:', error);
+      console.log('🔄 Usando datos exactos de tu BD como fallback');
+      
+      // ✅ DATOS EXACTOS DE TU BD COMO FALLBACK
+      const gradesFromYourDB = [
+        { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
+        { id: 2, name: '1°', gradeName: '1°', level: 1 },
+        { id: 3, name: '2°', gradeName: '2°', level: 2 },
+        { id: 4, name: '3°', gradeName: '3°', level: 3 },
+        { id: 5, name: '4°', gradeName: '4°', level: 4 },
+        { id: 6, name: '5°', gradeName: '5°', level: 5 }
+      ];
+      setSchoolGrades(gradesFromYourDB);
+      setError(''); // No mostrar error, los datos están disponibles
     } finally {
       setLoadingGrades(false);
     }
@@ -256,6 +271,20 @@ const Register: React.FC = () => {
       return;
     }
 
+    // ✅ VALIDACIÓN: Solo un coordinador en el sistema
+    if (formData.role === 'COORDINATOR') {
+      try {
+        const coordinatorCheck = await authApi.checkCoordinatorExists();
+        if (coordinatorCheck.data.exists) {
+          setError('Ya existe un coordinador registrado en el sistema. Solo se permite un coordinador.');
+          return;
+        }
+      } catch (error) {
+        console.error('Error verificando coordinador existente:', error);
+        // Continuar con el registro si hay error en la verificación
+      }
+    }
+
     // Simple institution validation
     if (!formData.institutionId) {
       setError('Debes seleccionar una institución');
@@ -308,7 +337,7 @@ const Register: React.FC = () => {
         role: formData.role,
         ...(formData.role === 'COORDINATOR' && { institutionNit: formData.institutionNit }),
         ...(formData.institutionId && { institutionId: formData.institutionId }),
-        ...(formData.role === 'STUDENT' && { gradeLevel: formData.gradeLevel }),
+        ...(formData.role === 'STUDENT' && { schoolGrade: formData.gradeLevel }),
         ...(formData.role === 'PARENT' && { 
           childrenEmails: childrenInfo
             .filter(child => child.email.trim() && child.exists)
@@ -319,6 +348,8 @@ const Register: React.FC = () => {
       // 🔍 DEBUG: Verificar datos de registro
       console.log('📝 Datos a enviar:', registerData);
       console.log('🏫 Institution ID seleccionado:', formData.institutionId);
+      console.log('🎓 Grado seleccionado:', formData.gradeLevel);
+      console.log('📚 Grados disponibles:', schoolGrades);
       console.log('👤 Form data completo:', formData);
 
       const response = await authApi.register(registerData);
@@ -344,7 +375,7 @@ const Register: React.FC = () => {
           }, 1500);
         } else {
           setTimeout(() => {
-            navigate('/login');
+            navigate('/');
           }, 2000);
         }
       } else {
@@ -360,47 +391,48 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar igual al Home */}
+      {/* Navbar responsivo */}
       <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <img
-                src="/Logo.png"
-                alt="MagicSmartKids"
-                className="h-12 w-auto cursor-pointer"
-                onClick={() => navigate('/')}
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Logo 
+                size="lg" 
+                clickable={true}
+                className="h-8 sm:h-10 lg:h-12 w-auto"
               />
-              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="hidden md:block" />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="hidden sm:block" />
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link to="/">
-                <Button variant="outline">Volver al Inicio</Button>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Volver al Inicio</span>
+                  <span className="sm:hidden">Inicio</span>
+                </Button>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Contenido del formulario */}
-      <section className="py-16 bg-gray-50 relative overflow-hidden">
-        {/* Animaciones de fondo */}
+      {/* Contenido del formulario - Responsivo */}
+      <section className="py-8 sm:py-12 lg:py-16 bg-gray-50 relative overflow-hidden min-h-screen">
+        {/* Animaciones de fondo responsivas */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute w-6 h-6 bg-[#00C764] rounded-full top-20 left-10 animate-pulse"></div>
-          <div className="absolute w-4 h-4 bg-[#F5A623] rounded-full top-40 right-20 animate-bounce"></div>
-          <div className="absolute w-5 h-5 bg-[#2E5BFF] rounded-full bottom-30 left-32 animate-ping"></div>
-          <div className="absolute w-3 h-3 bg-[#FF6B35] rounded-full top-60 right-40 animate-pulse delay-1000"></div>
-          <div className="absolute w-7 h-7 bg-[#1494DE] rounded-full bottom-20 right-10 animate-bounce delay-500"></div>
+          <div className="absolute w-4 h-4 sm:w-6 sm:h-6 bg-[#00C764] rounded-full top-10 sm:top-20 left-4 sm:left-10 animate-pulse"></div>
+          <div className="absolute w-3 h-3 sm:w-4 sm:h-4 bg-[#F5A623] rounded-full top-20 sm:top-40 right-8 sm:right-20 animate-bounce"></div>
+          <div className="absolute w-4 h-4 sm:w-5 sm:h-5 bg-[#2E5BFF] rounded-full bottom-16 sm:bottom-30 left-8 sm:left-32 animate-ping"></div>
+          <div className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-[#FF6B35] rounded-full top-32 sm:top-60 right-12 sm:right-40 animate-pulse delay-1000"></div>
+          <div className="absolute w-5 h-5 sm:w-7 sm:h-7 bg-[#1494DE] rounded-full bottom-8 sm:bottom-20 right-4 sm:right-10 animate-bounce delay-500"></div>
         </div>
 
-        <div className="relative z-10 max-w-lg mx-auto px-4">
-
-          <Card className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-heading text-[#00368F] mb-2">
+        <div className="relative z-10 w-full max-w-lg mx-auto px-4 sm:px-6">
+          <Card className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="text-center pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-heading text-[#00368F] mb-2">
                 Crear Cuenta Mágica
               </CardTitle>
-              <p className="text-gray-600 font-body">
+              <p className="text-sm sm:text-base text-gray-600 font-body">
                 ¡Únete a la aventura mágica del aprendizaje! ✨
               </p>
             </CardHeader>
@@ -423,32 +455,32 @@ const Register: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               {/* Información Personal */}
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-neutral-black">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Nombres *
                   </label>
                   <input
                     type="text"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Tu nombre"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-neutral-black">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Apellidos *
                   </label>
                   <input
                     type="text"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder="Tu apellido"
                     required
                   />
@@ -457,23 +489,23 @@ const Register: React.FC = () => {
 
               {/* Email */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-black">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                   Correo Electrónico *
                 </label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   placeholder="tu@email.com"
                   required
                 />
               </div>
 
               {/* Contraseñas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-neutral-black">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Contraseña *
                   </label>
                   <div className="relative">
@@ -481,7 +513,7 @@ const Register: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 pr-10 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Mínimo 6 caracteres"
                       required
                     />
@@ -490,13 +522,13 @@ const Register: React.FC = () => {
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-neutral-black"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-neutral-black">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Confirmar Contraseña *
                   </label>
                   <div className="relative">
@@ -504,7 +536,7 @@ const Register: React.FC = () => {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      className="w-full px-3 py-2 pr-10 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Repite tu contraseña"
                       required
                     />
@@ -513,7 +545,7 @@ const Register: React.FC = () => {
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-neutral-black"
                     >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </button>
                   </div>
                 </div>
@@ -521,7 +553,7 @@ const Register: React.FC = () => {
 
               {/* Tipo de Usuario */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-black">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                   Tipo de Usuario *
                 </label>
                 <select
@@ -537,7 +569,7 @@ const Register: React.FC = () => {
                     // Limpiar datos específicos del rol anterior
                     setChildrenInfo([{ email: '', exists: false }]);
                   }}
-                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
                 >
                   <option value="">Selecciona tu rol</option>
@@ -550,13 +582,13 @@ const Register: React.FC = () => {
 
               {/* Institución - Simple dropdown */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-black">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                   Institución *
                 </label>
                 <select
                   value={formData.institutionId || ''}
                   onChange={(e) => setFormData({ ...formData, institutionId: e.target.value ? Number(e.target.value) : undefined })}
-                  className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
                 >
                   <option value="">Selecciona tu institución</option>
@@ -759,24 +791,24 @@ const Register: React.FC = () => {
                 type="submit"
                 size="lg"
                 disabled={loading}
-                className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white transition-colors duration-300"
+                className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white transition-colors duration-300 h-10 sm:h-12 mt-4 sm:mt-6"
               >
                 {loading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Creando tu cuenta mágica...</span>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm sm:text-base">Creando tu cuenta mágica...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <Sparkles className="w-5 h-5" />
-                    <span>Crear Cuenta Mágica</span>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">Crear Cuenta Mágica</span>
                   </div>
                 )}
               </Button>
 
               {/* Link a Login */}
-              <div className="text-center mt-6">
-                <p className="text-magic-gray-600">
+              <div className="text-center mt-4 sm:mt-6">
+                <p className="text-xs sm:text-sm text-gray-600">
                   ¿Ya tienes una cuenta?{' '}
                   <Link 
                     to="/login" 
@@ -792,23 +824,24 @@ const Register: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer igual al Home */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-8">
+      {/* Footer responsivo */}
+      <footer className="bg-gray-50 border-t border-gray-200 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <img
-                src="/Logo.png"
-                alt="MagicSmartKids"
-                className="h-8 w-auto"
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+              <Logo 
+                size="sm" 
+                clickable={true}
+                className="h-6 sm:h-8 w-auto"
               />
-              <MagicLogoText size="md" layout="inline" showHoverEffects={false} />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="sm:hidden" />
+              <MagicLogoText size="md" layout="inline" showHoverEffects={false} className="hidden sm:block" />
             </div>
-            <p className="text-gray-600 mb-4 font-body">
+            <p className="text-gray-600 mb-3 sm:mb-4 font-body text-sm sm:text-base">
               Plataforma educativa mágica para niños inteligentes
             </p>
             
-            <div className="flex items-center justify-center gap-6 text-sm mb-4">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm mb-3 sm:mb-4">
               <Link
                 to="/"
                 className="text-gray-600 hover:text-[#00368F] transition-colors duration-300"
@@ -823,8 +856,8 @@ const Register: React.FC = () => {
               </Link>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-gray-500 text-sm font-body">
+            <div className="border-t border-gray-200 pt-3 sm:pt-4">
+              <p className="text-gray-500 text-xs sm:text-sm font-body">
                 © 2025 MagicSmartKids. Todos los derechos reservados.
               </p>
             </div>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, BookOpen, Users, BarChart3, CheckSquare, Home, Play } from 'lucide-react';
 import Logo from './Logo';
 import { useAuthStore } from '../../stores/authStore';
+import LogoutConfirmModal from './LogoutConfirmModal';
+import { useLogout } from '../../hooks/useLogout';
 
 interface HeaderProps {
   showMobileMenu?: boolean;
@@ -25,9 +27,9 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const [internalShowMobileMenu, setInternalShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const location = useLocation();
+  const { showLogoutModal, handleLogoutClick, handleLogoutConfirm, handleLogoutCancel } = useLogout();
 
   // Use external state if provided, otherwise use internal state
   const showMobileMenu = externalShowMobileMenu ?? internalShowMobileMenu;
@@ -98,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({
       return [
         {
           label: 'Inicio',
-          href: '/profesor',
+          href: '/dashboard',
           icon: Home,
         },
         {
@@ -115,6 +117,28 @@ const Header: React.FC<HeaderProps> = ({
           label: 'Calificaciones',
           href: '/profesor/calificaciones',
           icon: BarChart3,
+        },
+      ];
+    }
+
+    // Parent Navigation
+    if (user.role === 'parent') {
+      return [
+        ...baseItems,
+        {
+          label: 'Mis Hijos',
+          href: '/parent/children',
+          icon: Users,
+        },
+        {
+          label: 'Calendario',
+          href: '/calendar',
+          icon: BookOpen,
+        },
+        {
+          label: 'Comunicación',
+          href: '/parent/messages',
+          icon: Play,
         },
       ];
     }
@@ -146,17 +170,35 @@ const Header: React.FC<HeaderProps> = ({
 
   const navigationItems = getNavigationItems();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogoutClickWithCleanup = () => {
+    handleLogoutClick();
     setShowUserMenu(false);
+    setInternalShowMobileMenu(false);
   };
 
   const isActiveRoute = (href: string) => {
+    const currentPath = location.pathname;
+    
+    // Handle exact root path
     if (href === '/') {
-      return location.pathname === '/';
+      return currentPath === '/';
     }
-    return location.pathname.startsWith(href);
+    
+    // Handle dashboard route
+    if (href === '/dashboard') {
+      // Dashboard is active when on /dashboard or when on main role dashboard
+      if (currentPath === '/dashboard') return true;
+      if (user?.role === 'teacher' && currentPath === '/profesor') return true;
+      return false;
+    }
+    
+    // For specific routes, check exact match or if it's a subroute
+    if (currentPath === href) return true;
+    
+    // Check if current path starts with href followed by a slash (to avoid partial matches)
+    if (currentPath.startsWith(href + '/')) return true;
+    
+    return false;
   };
 
   const filteredNavigationItems = navigationItems;
@@ -232,7 +274,7 @@ const Header: React.FC<HeaderProps> = ({
                       <span>Perfil</span>
                     </Link>
                     <button
-                      onClick={handleLogout}
+                      onClick={handleLogoutClickWithCleanup}
                       className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-error hover:bg-error-50"
                     >
                       <LogOut className="w-4 h-4" />
@@ -323,7 +365,7 @@ const Header: React.FC<HeaderProps> = ({
                     <span>Perfil</span>
                   </Link>
                   <button
-                    onClick={handleLogout}
+                    onClick={handleLogoutClickWithCleanup}
                     className="flex items-center space-x-3 w-full px-4 py-3 text-base text-error hover:bg-error-50 touch-target-magic"
                   >
                     <LogOut className="w-5 h-5" />
@@ -352,6 +394,14 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         )}
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+        userName={user?.firstName}
+      />
     </header>
   );
 };

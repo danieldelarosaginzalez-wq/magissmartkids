@@ -27,6 +27,7 @@ api.interceptors.request.use(
     const publicEndpoints = [
       '/auth/login',
       '/auth/register',
+      '/auth/check-coordinator', // ✅ NUEVO ENDPOINT PÚBLICO
       '/school-grades/initialize',
       '/school-grades',
       '/student-validation/validate-student',
@@ -61,7 +62,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().logout();
-      window.location.href = '/login';
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
@@ -74,6 +75,9 @@ export const authApi = {
   
   register: (userData: any) =>
     publicApi.post('/auth/register', userData), // PUBLIC
+  
+  checkCoordinatorExists: () =>
+    publicApi.get('/auth/check-coordinator'), // PUBLIC - ✅ NUEVO MÉTODO
   
   refreshToken: () =>
     api.post('/auth/refresh'), // Protected
@@ -153,23 +157,35 @@ export const reportsApi = {
   getGlobalStats: () => api.get('/reportes/global'),
   exportReport: (type: string, params: any) => 
     api.post(`/reportes/export/${type}`, params, { responseType: 'blob' }),
-};
-
-// Academic Grades endpoints (PUBLIC - no auth required)
-export const academicGradesApi = {
-  getAll: () => publicApi.get('/academic-grades'),
-  initialize: () => publicApi.post('/academic-grades/initialize'),
-  test: () => publicApi.get('/academic-grades/test'),
-  health: () => publicApi.get('/academic-grades/health'),
-  diagnostic: () => publicApi.get('/academic-grades/diagnostic'),
-  assignToUsers: () => publicApi.post('/academic-grades/assign-to-users'),
-  getById: (id: string) => api.get(`/academic-grades/${id}`), // Protected
+  
+  // New coordinator reporting endpoints
+  generateSubjectPerformanceReport: (request: any) =>
+    api.post('/coordinator/reports/subject-performance', request),
+  
+  generateTeacherActivityReport: (request: any) =>
+    api.post('/coordinator/reports/teacher-activity', request),
+  
+  generateStudentParticipationReport: (request: any) =>
+    api.post('/coordinator/reports/student-participation', request),
+  
+  exportSubjectPerformanceToExcel: (request: any) =>
+    api.post('/coordinator/export/subject-performance', request, { responseType: 'blob' }),
+  
+  exportTeacherActivityToExcel: (request: any) =>
+    api.post('/coordinator/export/teacher-activity', request, { responseType: 'blob' }),
+  
+  exportStudentParticipationToExcel: (request: any) =>
+    api.post('/coordinator/export/student-participation', request, { responseType: 'blob' }),
 };
 
 // School Grades endpoints (PUBLIC - no auth required)
 export const schoolGradesApi = {
   getAll: () => publicApi.get('/school-grades'),
   initialize: () => publicApi.post('/school-grades/initialize'),
+  test: () => publicApi.get('/school-grades/test'),
+  health: () => publicApi.get('/school-grades/health'),
+  diagnostic: () => publicApi.get('/school-grades/diagnostic'),
+  assignToUsers: () => publicApi.post('/school-grades/assign-to-users'),
   getById: (id: string) => api.get(`/school-grades/${id}`), // Protected
   create: (data: any) => api.post('/school-grades', data), // Protected
   update: (id: string, data: any) => api.put(`/school-grades/${id}`, data), // Protected
@@ -200,3 +216,96 @@ export const calendarApi = {
 };
 
 export default api;
+
+// Coordinator API functions
+export const coordinatorApi = {
+  getDashboard: (institutionId: number) => 
+    api.get(`/coordinator/dashboard?institutionId=${institutionId}`),
+  
+  getStats: (institutionId: number) => 
+    api.get(`/coordinator/stats?institutionId=${institutionId}`),
+  
+  getTeachers: (institutionId: number, limit = 10) => 
+    api.get(`/coordinator/teachers?institutionId=${institutionId}&limit=${limit}`),
+  
+  getStudents: (institutionId: number, limit = 10) => 
+    api.get(`/coordinator/students?institutionId=${institutionId}&limit=${limit}`),
+  
+  getSubjectPerformance: (institutionId: number) => 
+    api.get(`/coordinator/subjects/performance?institutionId=${institutionId}`),
+  
+  getRecentActivities: (institutionId: number, limit = 20) => 
+    api.get(`/coordinator/activities/recent?institutionId=${institutionId}&limit=${limit}`),
+  
+  generateMassiveData: (data: any) => 
+    api.post('/coordinator/generate-data', data),
+  
+  createTeacher: (data: any) => 
+    api.post('/coordinator/teachers', data),
+  
+  updateTeacher: (id: number, data: any) => 
+    api.put(`/coordinator/teachers/${id}`, data),
+  
+  deleteTeacher: (id: number) => 
+    api.delete(`/coordinator/teachers/${id}`),
+  
+  createStudent: (data: any) => 
+    api.post('/coordinator/students', data),
+  
+  updateStudent: (id: number, data: any) => 
+    api.put(`/coordinator/students/${id}`, data),
+  
+  deleteStudent: (id: number) => 
+    api.delete(`/coordinator/students/${id}`),
+  
+  generateReport: (type: string, institutionId: number, startDate?: string, endDate?: string) => 
+    api.get(`/coordinator/reports/${type}?institutionId=${institutionId}${startDate ? `&startDate=${startDate}` : ''}${endDate ? `&endDate=${endDate}` : ''}`),
+  
+  exportTeachers: (institutionId: number) => 
+    api.get(`/coordinator/export/teachers?institutionId=${institutionId}`, { responseType: 'blob' }),
+  
+  exportStudents: (institutionId: number) => 
+    api.get(`/coordinator/export/students?institutionId=${institutionId}`, { responseType: 'blob' })
+};
+
+// Unified Task API functions
+export const unifiedTaskApi = {
+  getAllTasks: () => 
+    api.get('/tasks/unified'),
+  
+  getStudentTasks: (studentId: number) => 
+    api.get(`/tasks/unified/student/${studentId}`),
+  
+  getTeacherTasks: (teacherId: number) => 
+    api.get(`/tasks/unified/teacher/${teacherId}`),
+  
+  filterTasks: (filters: any) => 
+    api.post('/tasks/unified/filter', filters)
+};
+
+// Parent API functions
+export const parentApi = {
+  getDashboardStats: () => 
+    api.get('/parent/stats'),
+  
+  getChildren: () => 
+    api.get('/parent/children'),
+  
+  getUpcomingEvents: () => 
+    api.get('/parent/events'),
+  
+  getChildProgress: (childId: number) => 
+    api.get(`/parent/children/${childId}/progress`),
+  
+  getChildGrades: (childId: number) => 
+    api.get(`/parent/children/${childId}/grades`),
+  
+  getChildTasks: (childId: number) => 
+    api.get(`/parent/children/${childId}/tasks`),
+  
+  sendMessageToTeacher: (teacherId: number, message: any) => 
+    api.post(`/parent/messages/teacher/${teacherId}`, message),
+  
+  scheduleParentMeeting: (teacherId: number, meetingData: any) => 
+    api.post(`/parent/meetings/teacher/${teacherId}`, meetingData)
+};

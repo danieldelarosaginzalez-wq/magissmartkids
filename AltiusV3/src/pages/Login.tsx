@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import MagicLogoText from '../components/ui/MagicLogoText';
+import Logo from '../components/ui/Logo';
 
 import { useAuthStore } from '../stores/authStore';
 import { authApi } from '../services/api';
@@ -80,7 +81,7 @@ const Login: React.FC = () => {
           role: normalizeRole(response.data.role), // Convertir rol del backend al frontend
           institutionId: response.data.institution?.id?.toString() || null,
           institution: response.data.institution ?? null, // INSTITUCIÓN (puede ser null)
-          academicGrade: response.data.academicGrade ?? null, // GRADO ACADÉMICO (puede ser null)
+          schoolGrade: response.data.schoolGrade ?? null, // GRADO ESCOLAR (puede ser null)
           isActive: true,
           createdAt: new Date().toISOString(),
         };
@@ -122,64 +123,65 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar igual al Home */}
+      {/* Navbar responsivo */}
       <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <img
-                src="/Logo.png"
-                alt="MagicSmartKids"
-                className="h-12 w-auto cursor-pointer"
-                onClick={() => navigate('/')}
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Logo 
+                size="lg" 
+                clickable={true}
+                className="h-8 sm:h-10 lg:h-12 w-auto"
               />
-              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="hidden md:block" />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="hidden sm:block" />
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Link to="/">
-                <Button variant="outline">Volver al Inicio</Button>
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Volver al Inicio</span>
+                  <span className="sm:hidden">Inicio</span>
+                </Button>
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Contenido del formulario */}
-      <section className="py-16 bg-gray-50 relative overflow-hidden">
-        {/* Animaciones de fondo */}
+      {/* Contenido del formulario - Responsivo */}
+      <section className="py-8 sm:py-12 lg:py-16 bg-gray-50 relative overflow-hidden min-h-screen flex items-center">
+        {/* Animaciones de fondo responsivas */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute w-6 h-6 bg-[#00C764] rounded-full top-20 left-10 animate-pulse"></div>
-          <div className="absolute w-4 h-4 bg-[#F5A623] rounded-full top-40 right-20 animate-bounce"></div>
-          <div className="absolute w-5 h-5 bg-[#2E5BFF] rounded-full bottom-30 left-32 animate-ping"></div>
-          <div className="absolute w-3 h-3 bg-[#FF6B35] rounded-full top-60 right-40 animate-pulse delay-1000"></div>
-          <div className="absolute w-7 h-7 bg-[#1494DE] rounded-full bottom-20 right-10 animate-bounce delay-500"></div>
+          <div className="absolute w-4 h-4 sm:w-6 sm:h-6 bg-[#00C764] rounded-full top-10 sm:top-20 left-4 sm:left-10 animate-pulse"></div>
+          <div className="absolute w-3 h-3 sm:w-4 sm:h-4 bg-[#F5A623] rounded-full top-20 sm:top-40 right-8 sm:right-20 animate-bounce"></div>
+          <div className="absolute w-4 h-4 sm:w-5 sm:h-5 bg-[#2E5BFF] rounded-full bottom-16 sm:bottom-30 left-8 sm:left-32 animate-ping"></div>
+          <div className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-[#FF6B35] rounded-full top-32 sm:top-60 right-12 sm:right-40 animate-pulse delay-1000"></div>
+          <div className="absolute w-5 h-5 sm:w-7 sm:h-7 bg-[#1494DE] rounded-full bottom-8 sm:bottom-20 right-4 sm:right-10 animate-bounce delay-500"></div>
         </div>
 
-        <div className="relative z-10 max-w-md mx-auto px-4">
-
-          <Card className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-heading text-[#00368F] mb-2">
+        <div className="relative z-10 w-full max-w-md mx-auto px-4 sm:px-6">
+          <Card className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 lg:p-8 hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="text-center pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-heading text-[#00368F] mb-2">
                 Iniciar Sesión
               </CardTitle>
-              <p className="text-gray-600 font-body">
+              <p className="text-sm sm:text-base text-gray-600 font-body">
                 Accede a tu mundo de aprendizaje mágico
               </p>
             </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-6 p-4 bg-error-50 border border-error-200 rounded-magic">
-                <p className="text-sm text-error-700 font-medium">{error}</p>
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700 font-medium">{error}</p>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-magic-gray-700 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                   Correo Electrónico
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-magic-gray-400 w-5 h-5" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <Input
                     id="email"
                     name="email"
@@ -187,20 +189,24 @@ const Login: React.FC = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="tu@magicsmartkids.com"
-                    className="input-magic pl-12 h-12 text-base"
+                    className="input-magic pl-10 sm:pl-12 h-10 sm:h-12 text-sm sm:text-base bg-white border-2 border-gray-200 focus:border-[#00368F] focus:ring-2 focus:ring-[#00368F]/20 transition-all duration-200"
+                    autoComplete="email"
                   />
                 </div>
                 {errors.email && (
-                  <p className="mt-2 text-sm text-error-600 font-medium">{errors.email}</p>
+                  <p className="mt-2 text-xs sm:text-sm text-red-600 font-medium">{errors.email}</p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-magic-gray-700 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                   Contraseña
+                  <span className="text-xs text-gray-500 ml-2 hidden sm:inline">
+                    {showPassword ? '(visible)' : '(oculta por seguridad)'}
+                  </span>
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-magic-gray-400 w-5 h-5" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                   <Input
                     id="password"
                     name="password"
@@ -208,37 +214,45 @@ const Login: React.FC = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Tu contraseña mágica"
-                    className="input-magic pl-12 pr-12 h-12 text-base"
+                    className="input-magic pl-10 sm:pl-12 pr-10 sm:pr-12 h-10 sm:h-12 text-sm sm:text-base bg-white border-2 border-gray-200 focus:border-[#00368F] focus:ring-2 focus:ring-[#00368F]/20 transition-all duration-200"
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-magic-gray-400 hover:text-primary transition-colors touch-target-magic"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#00368F] transition-colors touch-target-magic p-1 rounded-full hover:bg-gray-100"
                     aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
+                      <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" />
                     ) : (
-                      <Eye className="w-5 h-5" />
+                      <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                   </button>
                 </div>
+                {formData.password && !showPassword && (
+                  <p className="mt-1 text-xs text-green-600 flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Contraseña ingresada ({formData.password.length} caracteres)
+                  </p>
+                )}
                 {errors.password && (
-                  <p className="mt-2 text-sm text-error-600 font-medium">{errors.password}</p>
+                  <p className="mt-2 text-xs sm:text-sm text-red-600 font-medium">{errors.password}</p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    className="rounded border-magic-border-medium text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                    className="rounded border-gray-300 text-[#00368F] shadow-sm focus:border-[#00368F] focus:ring focus:ring-[#00368F]/20 focus:ring-opacity-50"
                   />
-                  <span className="ml-3 text-sm text-magic-gray-600">Recordarme</span>
+                  <span className="ml-3 text-xs sm:text-sm text-gray-600">Recordarme</span>
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-primary hover:text-primary-700 font-medium transition-colors"
+                  className="text-xs sm:text-sm text-[#00368F] hover:text-[#2E5BFF] font-medium transition-colors text-center sm:text-right"
                 >
                   ¿Olvidaste tu contraseña?
                 </Link>
@@ -247,29 +261,29 @@ const Login: React.FC = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white transition-colors duration-300"
+                className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white transition-colors duration-300 h-10 sm:h-12"
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Iniciando sesión...</span>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm sm:text-base">Iniciando sesión...</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <Sparkles className="w-5 h-5" />
-                    <span>Iniciar Sesión Mágica</span>
+                  <div className="flex items-center justify-center space-x-2">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">Iniciar Sesión Mágica</span>
                   </div>
                 )}
               </Button>
             </form>
 
-            <div className="mt-8 text-center">
-              <p className="text-magic-gray-600">
+            <div className="mt-6 sm:mt-8 text-center">
+              <p className="text-sm sm:text-base text-gray-600">
                 ¿No tienes una cuenta?{' '}
                 <Link 
                   to="/register" 
-                  className="text-primary hover:text-primary-700 font-semibold transition-colors"
+                  className="text-[#00368F] hover:text-[#2E5BFF] font-semibold transition-colors"
                 >
                   ¡Únete a la magia!
                 </Link>
@@ -282,23 +296,24 @@ const Login: React.FC = () => {
         </div>
       </section>
 
-      {/* Footer igual al Home */}
-      <footer className="bg-gray-50 border-t border-gray-200 py-8">
+      {/* Footer responsivo */}
+      <footer className="bg-gray-50 border-t border-gray-200 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-3 mb-4">
-              <img
-                src="/Logo.png"
-                alt="MagicSmartKids"
-                className="h-8 w-auto"
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+              <Logo 
+                size="sm" 
+                clickable={true}
+                className="h-6 sm:h-8 w-auto"
               />
-              <MagicLogoText size="md" layout="inline" showHoverEffects={false} />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="sm:hidden" />
+              <MagicLogoText size="md" layout="inline" showHoverEffects={false} className="hidden sm:block" />
             </div>
-            <p className="text-gray-600 mb-4 font-body">
+            <p className="text-gray-600 mb-3 sm:mb-4 font-body text-sm sm:text-base">
               Plataforma educativa mágica para niños inteligentes
             </p>
             
-            <div className="flex items-center justify-center gap-6 text-sm mb-4">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm mb-3 sm:mb-4">
               <Link
                 to="/"
                 className="text-gray-600 hover:text-[#00368F] transition-colors duration-300"
@@ -313,8 +328,8 @@ const Login: React.FC = () => {
               </Link>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <p className="text-gray-500 text-sm font-body">
+            <div className="border-t border-gray-200 pt-3 sm:pt-4">
+              <p className="text-gray-500 text-xs sm:text-sm font-body">
                 © 2025 MagicSmartKids. Todos los derechos reservados.
               </p>
             </div>

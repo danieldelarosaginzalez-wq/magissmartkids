@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigateHome } from '../../hooks/useNavigateHome';
 
 interface LogoProps {
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -16,7 +16,7 @@ const Logo: React.FC<LogoProps> = ({
   className = '',
   onClick
 }) => {
-  const navigate = useNavigate();
+  const { navigateToHome } = useNavigateHome();
 
   const sizeClasses = {
     xs: 'h-6 w-auto',
@@ -31,7 +31,7 @@ const Logo: React.FC<LogoProps> = ({
     if (onClick) {
       onClick();
     } else if (clickable) {
-      navigate('/');
+      navigateToHome();
     }
   };
 

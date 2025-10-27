@@ -16,12 +16,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.altiusacademy.model.entity.AcademicGrade;
+import com.altiusacademy.model.entity.SchoolGrade;
 import com.altiusacademy.model.entity.Activity;
 import com.altiusacademy.model.entity.ActivityResult;
 import com.altiusacademy.model.entity.Institution;
 import com.altiusacademy.model.entity.User;
-import com.altiusacademy.repository.mysql.AcademicGradeRepository;
+import com.altiusacademy.repository.mysql.SchoolGradeRepository;
 import com.altiusacademy.repository.mysql.ActivityRepository;
 import com.altiusacademy.repository.mysql.ActivityResultRepository;
 import com.altiusacademy.repository.mysql.InstitutionRepository;
@@ -36,7 +36,7 @@ public class ActivityController {
     @Autowired private ActivityResultRepository activityResultRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private InstitutionRepository institutionRepository;
-    @Autowired private AcademicGradeRepository academicGradeRepository;
+    @Autowired private SchoolGradeRepository schoolGradeRepository;
 
     /**
      * Obtener actividades para un estudiante (filtradas por institución y grado)
@@ -51,10 +51,10 @@ public class ActivityController {
                 new RuntimeException("Estudiante no encontrado"));
             
             List<Activity> activities;
-            if (student.getAcademicGrade() != null) {
+            if (student.getSchoolGrade() != null) {
                 activities = activityRepository.findByInstitutionAndGrade(
                     student.getInstitution().getId(), 
-                    student.getAcademicGrade()
+                    student.getSchoolGrade().getId()
                 );
             } else {
                 activities = activityRepository.findByInstitutionIdAndIsActiveTrue(
@@ -160,11 +160,11 @@ public class ActivityController {
             activity.setTeacher(teacher);
             activity.setInstitution(institution);
             
-            // Grado académico opcional
-            if (request.get("academicGradeId") != null) {
-                Long gradeId = Long.valueOf(request.get("academicGradeId").toString());
-                AcademicGrade grade = academicGradeRepository.findById(gradeId).orElse(null);
-                activity.setAcademicGrade(grade);
+            // Grado escolar opcional
+            if (request.get("schoolGradeId") != null) {
+                Long gradeId = Long.valueOf(request.get("schoolGradeId").toString());
+                SchoolGrade grade = schoolGradeRepository.findById(gradeId).orElse(null);
+                activity.setSchoolGrade(grade);
             }
             
             // Configuraciones opcionales

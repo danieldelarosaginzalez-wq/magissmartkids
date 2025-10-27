@@ -24,6 +24,7 @@ interface Task {
   dueDate: string;
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   status: 'pending' | 'in_progress' | 'completed';
+  type?: 'interactive' | 'traditional';
 }
 
 interface Subject {
@@ -68,60 +69,73 @@ const StudentDashboard: React.FC = () => {
     loadRecentGrades();
   }, []);
 
-  // Cargar estadísticas del estudiante
+  // 🎭 DATOS FICTICIOS PARA LA PRESENTACIÓN
   const loadStudentStats = async () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
 
-      // Usar API real del backend
-      const response = await api.get('/students/dashboard/stats');
+      // 🎭 SIMULACIÓN DE LOADING PARA LA PRESENTACIÓN
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      if (response?.data) {
-        setStats({
-          totalSubjects: response.data.totalSubjects || 0,
-          pendingTasks: response.data.pendingTasks || 0,
-          completedTasks: response.data.completedTasks || 0,
-          averageGrade: response.data.averageGrade || 0,
-          studyHours: response.data.studyHours || '0h',
-          completedActivities: response.data.completedActivities || 0,
-          loading: false
-        });
-      } else {
-        throw new Error('No data received');
-      }
+      // ✅ ESTADÍSTICAS FICTICIAS REALISTAS
+      setStats({
+        totalSubjects: 5,
+        pendingTasks: 3,
+        completedTasks: 12,
+        averageGrade: 4.3,
+        studyHours: '2.5h',
+        completedActivities: 8,
+        loading: false
+      });
     } catch (error) {
       console.error('Error loading student stats:', error);
-      // Fallback solo en caso de error
       setStats({
-        totalSubjects: 0,
-        pendingTasks: 0,
-        completedTasks: 0,
-        averageGrade: 0,
-        studyHours: '0h',
+        totalSubjects: 5,
+        pendingTasks: 3,
+        completedTasks: 12,
+        averageGrade: 4.3,
+        studyHours: '2.5h',
         completedActivities: 0,
         loading: false
       });
     }
   };
 
-  // Cargar tareas pendientes
+  // 🎭 TAREAS FICTICIAS PARA LA PRESENTACIÓN
   const loadPendingTasks = async () => {
     try {
       setLoadingTasks(true);
+      
+      // 🎭 SIMULACIÓN DE LOADING
+      await new Promise(resolve => setTimeout(resolve, 600));
 
-      // Usar API real del backend
-      const response = await api.get('/students/tasks?status=pending');
-
-      if (response?.data) {
-        // Transformar fechas del backend
-        const transformedTasks = response.data.map((task: any) => ({
-          ...task,
-          dueDate: task.dueDate || new Date().toISOString().split('T')[0]
-        }));
-        setTasks(transformedTasks);
-      } else {
-        setTasks([]);
-      }
+      // ✅ TAREAS FICTICIAS REALISTAS
+      setTasks([
+        {
+          id: '1',
+          subject: 'Matemáticas',
+          title: 'Ejercicios de Sumas y Restas',
+          dueDate: '2025-10-28',
+          priority: 'HIGH',
+          status: 'pending'
+        },
+        {
+          id: '2',
+          subject: 'Español',
+          title: 'Lectura del Cuento "El Patito Feo"',
+          dueDate: '2025-10-30',
+          priority: 'MEDIUM',
+          status: 'pending'
+        },
+        {
+          id: '3',
+          subject: 'Ciencias',
+          title: 'Dibujar una Planta',
+          dueDate: '2025-11-02',
+          priority: 'LOW',
+          status: 'pending'
+        }
+      ]);
     } catch (error) {
       console.error('Error loading tasks:', error);
       setTasks([]);
@@ -130,19 +144,52 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  // Cargar progreso de materias
+  // 🎭 MATERIAS FICTICIAS PARA LA PRESENTACIÓN
   const loadSubjectsProgress = async () => {
     try {
       setLoadingSubjects(true);
+      
+      // 🎭 SIMULACIÓN DE LOADING
+      await new Promise(resolve => setTimeout(resolve, 700));
 
-      // Usar API real del backend
-      const response = await api.get('/students/subjects/progress');
-
-      if (response?.data) {
-        setSubjects(response.data);
-      } else {
-        setSubjects([]);
-      }
+      // ✅ MATERIAS FICTICIAS REALISTAS
+      setSubjects([
+        {
+          id: '1',
+          name: 'Matemáticas',
+          progress: 85,
+          grade: 4.5,
+          color: '#3B82F6'
+        },
+        {
+          id: '2',
+          name: 'Español',
+          progress: 92,
+          grade: 4.7,
+          color: '#10B981'
+        },
+        {
+          id: '3',
+          name: 'Ciencias Naturales',
+          progress: 78,
+          grade: 4.2,
+          color: '#8B5CF6'
+        },
+        {
+          id: '4',
+          name: 'Sociales',
+          progress: 88,
+          grade: 4.4,
+          color: '#F59E0B'
+        },
+        {
+          id: '5',
+          name: 'Inglés',
+          progress: 75,
+          grade: 4.0,
+          color: '#EF4444'
+        }
+      ]);
     } catch (error) {
       console.error('Error loading subjects:', error);
       setSubjects([]);
@@ -151,24 +198,57 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  // Cargar notas recientes
+  // 🎭 CALIFICACIONES FICTICIAS PARA LA PRESENTACIÓN
   const loadRecentGrades = async () => {
     try {
       setLoadingGrades(true);
+      
+      // 🎭 SIMULACIÓN DE LOADING
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Usar API real del backend
-      const response = await api.get('/students/grades/recent?limit=5');
-
-      if (response?.data) {
-        // Transformar fechas del backend
-        const transformedGrades = response.data.map((grade: any) => ({
-          ...grade,
-          date: grade.date || new Date().toISOString().split('T')[0]
-        }));
-        setRecentGrades(transformedGrades);
-      } else {
-        setRecentGrades([]);
-      }
+      // ✅ CALIFICACIONES FICTICIAS REALISTAS
+      setRecentGrades([
+        {
+          id: '1',
+          subject: 'Matemáticas',
+          assignment: 'Examen de Fracciones',
+          grade: 4.5,
+          maxGrade: 5.0,
+          date: '2025-10-20'
+        },
+        {
+          id: '2',
+          subject: 'Español',
+          assignment: 'Comprensión Lectora',
+          grade: 4.8,
+          maxGrade: 5.0,
+          date: '2025-10-18'
+        },
+        {
+          id: '3',
+          subject: 'Ciencias',
+          assignment: 'Tarea sobre Plantas',
+          grade: 4.2,
+          maxGrade: 5.0,
+          date: '2025-10-15'
+        },
+        {
+          id: '4',
+          subject: 'Sociales',
+          assignment: 'Dibujo de la Familia',
+          grade: 4.6,
+          maxGrade: 5.0,
+          date: '2025-10-12'
+        },
+        {
+          id: '5',
+          subject: 'Inglés',
+          assignment: 'Colores en Inglés',
+          grade: 4.0,
+          maxGrade: 5.0,
+          date: '2025-10-10'
+        }
+      ]);
     } catch (error) {
       console.error('Error loading recent grades:', error);
       setRecentGrades([]);
@@ -183,9 +263,9 @@ const StudentDashboard: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Header del dashboard */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white-900 flex items-center gap-3">
-            <div className="p-2 bg-[#00368F]/10 rounded-lg">
-              <User className="h-6 w-6 text-[#00368F]" />
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <User className="h-6 w-6 text-blue-600" />
             </div>
             ¡Hola, {user?.firstName}!
           </h1>
@@ -221,7 +301,7 @@ const StudentDashboard: React.FC = () => {
                   </h3>
                   <p className="text-gray-600 flex items-center gap-2">
                     <GraduationCap className="w-4 h-4" />
-                    {user.academicGrade ? `${user.academicGrade.name} - Estudiante` : 'Estudiante'}
+                    {user.schoolGrade ? `${user.schoolGrade.gradeName} - Estudiante` : 'Estudiante'}
                   </p>
                   {user.institution.address && (
                     <p className="text-sm text-gray-500 mt-1">
@@ -348,26 +428,39 @@ const StudentDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {tasks.map((task) => (
-                    <div key={task.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">{task.title}</h4>
-                        <Badge
-                          className={
-                            task.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
-                              task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                          }
-                        >
-                          {task.priority}
-                        </Badge>
+                    <Link
+                      key={task.id}
+                      to={`/tareas/${task.id}`}
+                      className="block"
+                    >
+                      <div className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-medium text-gray-900">{task.title}</h4>
+                          <Badge
+                            className={
+                              task.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
+                                task.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                            }
+                          >
+                            {task.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">{task.subject}</p>
+                        <div className="flex justify-between items-center mt-2">
+                          <p className="text-xs text-gray-500">Vence: {task.dueDate}</p>
+                          <Badge variant="outline" className="text-xs">
+                            {task.type === 'interactive' ? 'Interactiva' : 'Tradicional'}
+                          </Badge>
+                        </div>
                       </div>
-                      <p className="text-sm text-gray-600">{task.subject}</p>
-                      <p className="text-xs text-gray-500 mt-1">Vence: {task.dueDate}</p>
-                    </div>
+                    </Link>
                   ))}
                   {tasks.length === 0 && (
                     <div className="text-center py-6 text-gray-500">
-                      ¡No tienes tareas pendientes!
+                      <CheckSquare className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p className="font-medium">¡Excelente trabajo!</p>
+                      <p className="text-sm">No tienes tareas pendientes</p>
                     </div>
                   )}
                 </div>
