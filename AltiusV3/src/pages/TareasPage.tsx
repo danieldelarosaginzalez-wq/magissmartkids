@@ -19,25 +19,10 @@ import {
   FileIcon,
   X
 } from 'lucide-react';
-import api from '../services/api';
+import { tasksApi, type TaskResponse } from '../services/tasksApi';
+import { useUserInfo } from '../hooks/useUserInfo';
 
-interface StudentTask {
-  id: string;
-  subject: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  priority: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: string;
-  taskType: 'multimedia' | 'interactive';
-  allowedFormats?: string[];
-  maxFiles?: number;
-  maxSizeMb?: number;
-  activityConfig?: string;
-  maxScore?: number;
-  hasSubmission: boolean;
-  submissionStatus?: string;
-}
+type StudentTask = TaskResponse;
 
 type TaskFilter = 'todos' | 'multimedia' | 'interactive' | 'pending' | 'completed';
 
@@ -54,11 +39,13 @@ const TareasPage: React.FC = () => {
     loadTasks();
   }, []);
 
+  const { userInfo } = useUserInfo();
+  
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/students/tasks');
-      setTasks(response.data || []);
+      const tasks = await tasksApi.getStudentTasks(user?.id || '');
+      setTasks(tasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       setTasks([]);
@@ -146,9 +133,7 @@ const TareasPage: React.FC = () => {
       uploadFiles.forEach(file => formData.append('files', file));
       formData.append('submissionText', submissionText);
       
-      await api.post(`/students/tasks/${selectedTask.id}/submit-multimedia`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await tasksApi.submitTask(selectedTask.id, formData);
       
       setShowUploadModal(false);
       setUploadFiles([]);
@@ -161,10 +146,15 @@ const TareasPage: React.FC = () => {
     }
   };
 
-  const startInteractiveTask = (task: StudentTask) => {
-    // Aquí se abriría la actividad interactiva
-    alert(`Iniciando actividad interactiva: ${task.title}`);
-    // TODO: Implementar navegación a la actividad interactiva
+  const startInteractiveTask = async (task: TaskResponse) => {
+    try {
+      await tasksApi.startInteractiveTask(task.id);
+      // TODO: Navigate to interactive activity view
+      window.location.href = `/interactive-activity/${task.id}`;
+    } catch (error) {
+      console.error('Error starting interactive task:', error);
+      alert('Error al iniciar la actividad');
+    }
   };
 
   const getFileIcon = (fileName: string) => {
@@ -429,7 +419,7 @@ const TareasPage: React.FC = () => {
                 <input
                   type="file"
                   multiple={selectedTask.maxFiles !== 1}
-                  accept={selectedTask.allowedFormats?.map(f => `.${f}`).join(',')}
+                  accept={selectedTask.allowedFormats?.map((f: string) => `.${f}`).join(',')}
                   onChange={handleFileUpload}
                   className="hidden"
                   id="file-upload"

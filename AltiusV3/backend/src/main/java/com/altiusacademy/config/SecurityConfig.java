@@ -65,6 +65,7 @@ public class SecurityConfig {
                 // Public endpoints - ORDEN IMPORTANTE: Los más específicos primero
                 .requestMatchers("/", "/error").permitAll()
                 .requestMatchers("/api/tasks/grades").permitAll() // Grados para tareas público - DEBE IR ANTES QUE /api/tasks/**
+                .requestMatchers("/api/teacher/tasks/grades").permitAll() // Grados para tareas de profesor público
                 .requestMatchers("/api/auth/**").permitAll() // Autenticación pública
                 .requestMatchers("/api/roles/**").permitAll() // Roles públicos
                 .requestMatchers("/api/institutions/**").permitAll() // Instituciones públicas

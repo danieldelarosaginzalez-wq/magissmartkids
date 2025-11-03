@@ -54,4 +54,9 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     
     @Query("SELECT t FROM Task t WHERE t.teacher.id = :teacherId AND t.subject.id = :subjectId AND t.grade = :grade")
     List<Task> findByTeacherAndSubjectAndGrade(@Param("teacherId") Long teacherId, @Param("subjectId") Long subjectId, @Param("grade") String grade);
+    
+    // Métodos adicionales para TeacherTaskService y StudentTaskService
+    List<Task> findByTeacherIdAndStatus(Long teacherId, Task.TaskStatus status);
+    List<Task> findByTeacherIdAndSubjectId(Long teacherId, Long subjectId);
+    List<Task> findByStudentIdAndStatus(Long studentId, Task.TaskStatus status);
 }

@@ -19,13 +19,13 @@ import com.altiusacademy.repository.mysql.UserRepository;
 @Service
 public class InteractiveActivityService {
 
-    @Autowired
+    @Autowired(required = false)
     private InteractiveActivityRepository activityRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private ActivityAttemptRepository attemptRepository;
 
-    @Autowired
+    @Autowired(required = false)
     private UserRepository userRepository;
 
     /**

@@ -176,7 +176,7 @@ const TeacherTasksPage: React.FC = () => {
   const loadAvailableGrades = async () => {
     try {
       console.log('🎓 Cargando grados disponibles...');
-      const response = await fetch('/api/tasks/grades');
+      const response = await fetch('/api/teacher/tasks/grades');
       console.log('📡 Response status:', response.status);
       
       if (response.ok) {
@@ -213,7 +213,7 @@ const TeacherTasksPage: React.FC = () => {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/tasks/teacher', {
+      const response = await fetch('/api/teacher/tasks', {
         headers: {
           'Authorization': `Bearer ${token || ''}`
         }
@@ -221,14 +221,15 @@ const TeacherTasksPage: React.FC = () => {
       
       if (response.ok) {
         const data = await response.json();
-        // Convertir el formato del backend al formato del frontend
+        // data es un array de TaskResponse
         const formattedTasks = data.map((task: any) => ({
           id: task.id,
           titulo: task.title,
           descripcion: task.description,
-          grados: task.gradeLevel ? [task.gradeLevel] : (task.grade ? [task.grade] : []),
+          grados: task.grade ? [task.grade] : [],
+          fechaEntrega: task.dueDate,
           fechaCreacion: task.createdAt,
-          tipo: (task.taskType || task.type || '').toString().toLowerCase().includes('interactive') ? 'interactive' : 'traditional'
+          tipo: task.taskType === 'INTERACTIVE' ? 'interactive' : 'traditional'
         }));
         setTasks(formattedTasks);
       } else {
@@ -250,7 +251,7 @@ const TeacherTasksPage: React.FC = () => {
         return;
       }
       // Usar el endpoint correcto que implementamos
-      const response = await fetch('/api/tasks', {
+      const response = await fetch('/api/teacher/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,17 +260,20 @@ const TeacherTasksPage: React.FC = () => {
         body: JSON.stringify({
           title: createForm.titulo,
           description: createForm.descripcion,
-          gradeLevel: createForm.grados[0] || '', // Tomar el primer grado seleccionado
+          grades: createForm.grados, // Enviar array de grados
           dueDate: createForm.fechaEntrega,
           taskType: createForm.tipo === 'interactive' ? 'INTERACTIVE' : 'MULTIMEDIA',
-          activityId: createForm.actividadInteractivaId || null,
+          priority: 'MEDIUM',
+          activityConfig: createForm.actividadInteractivaId || null,
           allowedFormats: createForm.formatosPermitidos || [],
-          comment: createForm.comentario || ''
+          maxFiles: 3,
+          maxSizeMb: 10,
+          maxGrade: 5.0
         })
       });
       
-      const data = await response.json();
-      if (data.success) {
+      if (response.ok) {
+        const data = await response.json();
         setShowCreateForm(false);
         setCreateForm({
           titulo: '',
@@ -278,12 +282,16 @@ const TeacherTasksPage: React.FC = () => {
           grados: [],
           fechaEntrega: '',
           tipo: 'traditional',
+          formatosPermitidos: [],
+          comentario: '',
           archivosAdjuntos: []
         });
         loadTasks();
+        alert('Tarea creada exitosamente');
       } else {
-        console.error('Error creating task:', data.message);
-        alert('Error: ' + data.message);
+        const error = await response.json();
+        console.error('Error creating task:', error);
+        alert('Error: ' + (error.message || 'No se pudo crear la tarea'));
       }
     } catch (error) {
       console.error('Error creating task:', error);

@@ -214,7 +214,7 @@ public class TeacherController {
         return (int) (Math.random() * 10) + 3;
     }
     
-    @PostMapping("/tasks")
+    @PostMapping("/tasks/template")
     public ResponseEntity<TaskTemplate> createTask(@RequestBody TeacherTaskDto taskDto, Authentication authentication) {
         try {
             Long teacherId = getUserIdFromAuth(authentication);
@@ -226,7 +226,7 @@ public class TeacherController {
         }
     }
     
-    @GetMapping("/tasks")
+    @GetMapping("/tasks/overview")
     public ResponseEntity<List<TeacherTaskDto>> getTeacherTasks(Authentication authentication) {
         try {
             Long teacherId = getUserIdFromAuth(authentication);
