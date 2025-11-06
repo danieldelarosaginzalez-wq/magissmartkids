@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout';
@@ -28,266 +27,289 @@ import SuperAdminDashboard from './pages/dashboards/SuperAdminDashboard';
 import StudentManagement from './pages/StudentManagement';
 import TeachersManagement from './pages/TeachersManagement';
 
+// Scroll to top hook
+import { useScrollToTop } from './hooks/useScrollToTop';
+
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
+  
+  // Auto scroll to top on route changes
+  useScrollToTop();
 
   return (
     <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route 
-          path="/" 
-          element={
-            <PublicRoute>
-              <Home />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/register" 
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/institution-register" 
-          element={
-            <PublicRoute>
-              <InstitutionRegistration />
-            </PublicRoute>
-          } 
-        />
-
-        {/* Protected Routes */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Dashboard />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/change-password" 
-          element={
-            <ProtectedRoute>
-              <Layout>
+      <div className="App">
+        <Routes>
+          {/* Public Routes */}
+          <Route 
+            path="/" 
+            element={
+              <PublicRoute>
+                <Home />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/change-password" 
+            element={
+              <PublicRoute>
                 <ChangePassword />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Subjects Routes */}
-        <Route 
-          path="/subjects" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Subjects />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/institution-registration" 
+            element={
+              <PublicRoute>
+                <InstitutionRegistration />
+              </PublicRoute>
+            } 
+          />
 
-        {/* Assignments Routes */}
-        <Route 
-          path="/assignments" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher']}>
-              <Layout>
-                <Assignments />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Protected Routes */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Grades Routes */}
-        <Route 
-          path="/grades" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Grades />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Academic Routes */}
+          <Route 
+            path="/subjects" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Subjects />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/materias" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Subjects />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/assignments" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Assignments />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/tareas" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Assignments />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/grades" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Grades />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/notas" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Grades />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/calendar" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Calendar />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Calendar Routes */}
-        <Route 
-          path="/calendar" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Calendar />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Management Routes */}
+          <Route 
+            path="/users" 
+            element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <Layout>
+                  <Users />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/institutions" 
+            element={
+              <ProtectedRoute allowedRoles={['super_admin', 'coordinator']}>
+                <Layout>
+                  <Institutions />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Users Routes */}
-        <Route 
-          path="/users" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout>
-                <Users />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Coordinator Management */}
+          <Route 
+            path="/students" 
+            element={
+              <ProtectedRoute allowedRoles={['coordinator']}>
+                <Layout>
+                  <StudentManagement />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/teachers" 
+            element={
+              <ProtectedRoute allowedRoles={['coordinator']}>
+                <Layout>
+                  <TeachersManagement />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Institutions Management */}
-        <Route 
-          path="/institutions" 
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'secretary']}>
-              <Layout>
-                <Institutions />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Alias en español */}
+          <Route 
+            path="/instituciones" 
+            element={
+              <ProtectedRoute allowedRoles={['super_admin', 'coordinator']}>
+                <Layout>
+                  <Institutions />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Coordinator Management */}
-        <Route 
-          path="/students" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator']}>
-              <Layout>
-                <StudentManagement />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/teachers" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator']}>
-              <Layout>
-                <TeachersManagement />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Super Admin Dashboard */}
+          <Route 
+            path="/super-admin" 
+            element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <Layout>
+                  <SuperAdminDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Alias en español */}
-        <Route 
-          path="/instituciones" 
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'secretary']}>
-              <Layout>
-                <Institutions />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Reports Routes */}
+          <Route 
+            path="/reports" 
+            element={
+              <ProtectedRoute allowedRoles={['coordinator', 'super_admin']}>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Super Admin Dashboard */}
-        <Route 
-          path="/super-admin" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout>
-                <SuperAdminDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Settings Routes */}
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute allowedRoles={['super_admin']}>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Reports Routes */}
-        <Route 
-          path="/reports" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator', 'admin']}>
-              <Layout>
-                <Reports />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Interactive Activities */}
+          <Route 
+            path="/actividades-interactivas" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <InteractiveActivities />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Settings Routes */}
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout>
-                <Settings />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Quiz Solver */}
+          <Route 
+            path="/quiz/:activityId" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <QuizSolver />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Quiz Solver */}
-        <Route 
-          path="/quiz/:id" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <QuizSolver />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Teacher Task Manager */}
+          <Route 
+            path="/teacher-tasks" 
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherTaskManager />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Task Management Routes */}
-        <Route 
-          path="/teacher/tasks" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherTaskManager />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/student/tasks" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <StudentTaskView />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Student Task View */}
+          <Route 
+            path="/student-tasks" 
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <StudentTaskView />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Interactive Activities Routes - Módulo de actividades interactivas */}
-        <Route 
-          path="/actividades-interactivas" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <InteractiveActivities />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Catch all route */}
-        <Route 
-          path="*" 
-          element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" replace /> : 
-            <Navigate to="/" replace />
-          } 
-        />
-      </Routes>
+          {/* Redirect unknown routes */}
+          <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} replace />} />
+        </Routes>
+      </div>
     </Router>
   );
 }

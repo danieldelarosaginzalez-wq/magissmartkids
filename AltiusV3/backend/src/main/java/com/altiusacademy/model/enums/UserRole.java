@@ -2,12 +2,9 @@ package com.altiusacademy.model.enums;
 
 public enum UserRole {
     SUPER_ADMIN("super_admin"),
-    ADMIN("admin"),
-    SECRETARY("secretary"),
     COORDINATOR("coordinator"),
     TEACHER("teacher"),
-    STUDENT("student"),
-    PARENT("parent");
+    STUDENT("student");
 
     private final String value;
 

@@ -21,9 +21,7 @@ public class RoleController {
         roles.put("ESTUDIANTE", "Estudiante");
         roles.put("PROFESOR", "Profesor");
         roles.put("COORDINADOR", "Coordinador");
-        roles.put("PADRE", "Padre de Familia");
-        roles.put("SECRETARIA", "Secretaría");
-        roles.put("ADMIN", "Administrador");
+        roles.put("SUPER_ADMIN", "Super Administrador");
         
         response.put("success", true);
         response.put("roles", roles);

@@ -6,17 +6,13 @@ export const roleTranslations: Record<string, string> = {
   'STUDENT': 'Estudiante',
   'TEACHER': 'Profesor',
   'COORDINATOR': 'Coordinador',
-  'PARENT': 'Padre de Familia',
-  'SECRETARY': 'Secretario',
-  'ADMIN': 'Administrador',
+  'SUPER_ADMIN': 'Super Administrador',
   
   // Roles en minúsculas (formato backend actual)
   'student': 'Estudiante',
   'teacher': 'Profesor',
   'coordinator': 'Coordinador',
-  'parent': 'Padre de Familia',
-  'secretary': 'Secretario',
-  'admin': 'Administrador',
+  'super_admin': 'Super Administrador',
   'visitor': 'Visitante'
 };
 
@@ -52,9 +48,7 @@ export const getRoleIcon = (role: string): string => {
     'STUDENT': '👨‍🎓',
     'TEACHER': '👩‍🏫',
     'COORDINATOR': '👨‍💼',
-    'PARENT': '👨‍👩‍👧‍👦',
-    'SECRETARY': '📋',
-    'ADMIN': '🔧',
+    'SUPER_ADMIN': '👑',
     'VISITOR': '👁️'
   };
   return icons[normalizedRole] || '👤';
@@ -68,9 +62,7 @@ export const getRoleColor = (role: string): string => {
     'STUDENT': 'bg-blue-100 text-blue-800',
     'TEACHER': 'bg-green-100 text-green-800',
     'COORDINATOR': 'bg-purple-100 text-purple-800',
-    'PARENT': 'bg-yellow-100 text-yellow-800',
-    'SECRETARY': 'bg-gray-100 text-gray-800',
-    'ADMIN': 'bg-red-100 text-red-800',
+    'SUPER_ADMIN': 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
     'VISITOR': 'bg-orange-100 text-orange-800'
   };
   return colors[normalizedRole] || 'bg-gray-100 text-gray-800';

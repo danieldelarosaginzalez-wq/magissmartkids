@@ -1,24 +1,28 @@
 package com.altiusacademy.controller;
 
-import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.model.entity.User;
-import com.altiusacademy.model.entity.UserInstitutionRole;
-import com.altiusacademy.repository.mysql.UserRepository;
-import com.altiusacademy.service.InstitutionService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.altiusacademy.model.entity.User;
+import com.altiusacademy.model.entity.UserInstitutionRole;
+import com.altiusacademy.repository.mysql.UserRepository;
+import com.altiusacademy.service.InstitutionService;
+
 @RestController
 @RequestMapping("/api/multi-institution")
-@CrossOrigin(origins = "*")
 public class MultiInstitutionController {
 
     @Autowired private InstitutionService institutionService;
@@ -28,7 +32,7 @@ public class MultiInstitutionController {
      * Obtener estadísticas completas de una institución
      */
     @GetMapping("/stats/{institutionId}")
-    @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('COORDINATOR') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> getInstitutionStats(@PathVariable Long institutionId) {
         try {
             System.out.println("📊 Solicitando estadísticas para institución: " + institutionId);
@@ -54,7 +58,7 @@ public class MultiInstitutionController {
      * Obtener todos los usuarios de una institución agrupados por rol
      */
     @GetMapping("/users/{institutionId}")
-    @PreAuthorize("hasRole('COORDINATOR') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('COORDINATOR') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> getInstitutionUsers(@PathVariable Long institutionId) {
         try {
             System.out.println("👥 Solicitando usuarios para institución: " + institutionId);
@@ -116,14 +120,14 @@ public class MultiInstitutionController {
      * Asignar usuario a institución con rol específico
      */
     @PostMapping("/assign")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> assignUserToInstitution(@RequestBody Map<String, Object> request) {
         try {
             System.out.println("🔗 Asignando usuario a institución");
             
             Long userId = Long.valueOf(request.get("userId").toString());
             Long institutionId = Long.valueOf(request.get("institutionId").toString());
-            String role = (String) request.get("role");
+            String role = request.get("role").toString();
             
             UserInstitutionRole assignment = institutionService.assignUserToInstitution(userId, institutionId, role);
             
@@ -140,89 +144,6 @@ public class MultiInstitutionController {
             response.put("success", false);
             response.put("message", "Error al asignar usuario: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    /**
-     * Cambiar institución principal del usuario
-     */
-    @PutMapping("/change-primary")
-    public ResponseEntity<?> changePrimaryInstitution(@RequestBody Map<String, Object> request, Authentication authentication) {
-        try {
-            System.out.println("🔄 Cambiando institución principal");
-            
-            Optional<User> userOpt = userRepository.findByEmail(authentication.getName());
-            if (userOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Usuario no encontrado");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            User user = userOpt.get();
-            Long institutionId = Long.valueOf(request.get("institutionId").toString());
-            
-            // Verificar que el usuario pertenezca a esa institución
-            if (!institutionService.userBelongsToInstitution(user.getId(), institutionId)) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "No tienes acceso a esa institución");
-                return ResponseEntity.status(403).body(response);
-            }
-            
-            User updatedUser = institutionService.changeUserPrimaryInstitution(user.getId(), institutionId);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("user", updatedUser);
-            response.put("message", "Institución principal cambiada exitosamente");
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("❌ Error cambiando institución principal: " + e.getMessage());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Error al cambiar institución: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    /**
-     * Verificar acceso del usuario a una institución
-     */
-    @GetMapping("/check-access/{institutionId}")
-    public ResponseEntity<?> checkInstitutionAccess(@PathVariable Long institutionId, Authentication authentication) {
-        try {
-            System.out.println("🔍 Verificando acceso a institución: " + institutionId);
-            
-            Optional<User> userOpt = userRepository.findByEmail(authentication.getName());
-            if (userOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("hasAccess", false);
-                response.put("message", "Usuario no encontrado");
-                return ResponseEntity.ok(response);
-            }
-            
-            User user = userOpt.get();
-            boolean hasAccess = institutionService.userBelongsToInstitution(user.getId(), institutionId);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("hasAccess", hasAccess);
-            response.put("userId", user.getId());
-            response.put("institutionId", institutionId);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            System.err.println("❌ Error verificando acceso: " + e.getMessage());
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("hasAccess", false);
-            response.put("message", "Error al verificar acceso: " + e.getMessage());
-            return ResponseEntity.ok(response);
         }
     }
 }

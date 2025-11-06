@@ -23,7 +23,7 @@ public class RegisterRequest {
     private String lastName;
     
     @NotBlank(message = "Rol es requerido")
-    private String role; // STUDENT, TEACHER, COORDINATOR, PARENT
+    private String role; // STUDENT, TEACHER, COORDINATOR
     
     private Long institutionId; // ID de la institución (opcional)
     
@@ -31,7 +31,7 @@ public class RegisterRequest {
     private String academicGrade; // Para estudiantes: "1°", "2°", etc.
     private List<String> teachingGrades; // Para profesores: múltiples grados
     private String institutionNit; // Para coordinadores: NIT de la institución
-    private List<ChildInfo> children; // Para padres: información de hijos
+
     
     // Clase interna para información de hijos
     public static class ChildInfo {

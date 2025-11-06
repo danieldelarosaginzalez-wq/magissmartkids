@@ -96,14 +96,12 @@ public class InstitutionService {
             long teachers = userRepository.countByInstitutionAndRole(institutionId, UserRole.TEACHER);
             long students = userRepository.countByInstitutionAndRole(institutionId, UserRole.STUDENT);
             long coordinators = userRepository.countByInstitutionAndRole(institutionId, UserRole.COORDINATOR);
-            long parents = userRepository.countByInstitutionAndRole(institutionId, UserRole.PARENT);
             
             stats.put("institution", institution);
             stats.put("teachers", teachers);
             stats.put("students", students);
             stats.put("coordinators", coordinators);
-            stats.put("parents", parents);
-            stats.put("totalUsers", teachers + students + coordinators + parents);
+            stats.put("totalUsers", teachers + students + coordinators);
             
             System.out.println("✅ Estadísticas calculadas: " + stats);
             return stats;

@@ -15,12 +15,10 @@ import com.altiusacademy.dto.AuthResponse;
 import com.altiusacademy.dto.LoginRequest;
 import com.altiusacademy.dto.RegisterRequest;
 import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.model.entity.ParentStudentRelation;
 import com.altiusacademy.model.entity.SchoolGrade;
 import com.altiusacademy.model.entity.User;
 import com.altiusacademy.model.enums.UserRole;
 import com.altiusacademy.repository.mysql.InstitutionRepository;
-import com.altiusacademy.repository.mysql.ParentStudentRelationRepository;
 import com.altiusacademy.repository.mysql.SchoolGradeRepository;
 import com.altiusacademy.repository.mysql.UserRepository;
 import com.altiusacademy.security.JwtTokenProvider;
@@ -42,9 +40,6 @@ public class AuthService {
 
     @Autowired
     private InstitutionRepository institutionRepository;
-
-    @Autowired
-    private ParentStudentRelationRepository parentStudentRelationRepository;
 
     @Autowired
     private SchoolGradeRepository schoolGradeRepository;
@@ -199,38 +194,6 @@ public class AuthService {
 
             // Guardar usuario en la base de datos MySQL
             User savedUser = userRepository.save(user);
-            
-            // Manejar registro específico para padres con hijos
-            if (userRole == UserRole.PARENT && registerRequest.getChildrenEmails() != null && !registerRequest.getChildrenEmails().isEmpty()) {
-                System.out.println("👨‍👩‍👧‍👦 Procesando registro de padre con " + registerRequest.getChildrenEmails().size() + " hijos");
-                
-                // Validar y crear relaciones padre-hijo
-                try {
-                    for (String childEmail : registerRequest.getChildrenEmails()) {
-                        // Buscar el estudiante por email
-                        User student = userRepository.findByEmail(childEmail)
-                            .orElseThrow(() -> new RuntimeException("No se encontró estudiante con email: " + childEmail));
-                        
-                        // Verificar que sea un estudiante
-                        if (student.getRole() != UserRole.STUDENT) {
-                            throw new RuntimeException("El usuario con email " + childEmail + " no es un estudiante");
-                        }
-                        
-                        // Crear relación padre-estudiante
-                        if (!parentStudentRelationRepository.existsByParentAndStudent(savedUser, student)) {
-                            ParentStudentRelation relation = new ParentStudentRelation();
-                            relation.setParent(savedUser);
-                            relation.setStudent(student);
-                            relation.setRelationshipType("PARENT");
-                            parentStudentRelationRepository.save(relation);
-                        }
-                    }
-                    System.out.println("✅ Relaciones padre-hijo creadas exitosamente");
-                } catch (Exception e) {
-                    System.err.println("❌ Error creando relaciones padre-hijo: " + e.getMessage());
-                    throw new RuntimeException("Error al establecer relaciones con los hijos: " + e.getMessage());
-                }
-            }
             System.out.println("✅ Usuario guardado en MySQL:");
             System.out.println("   ID: " + savedUser.getId());
             System.out.println("   Email: " + savedUser.getEmail());
@@ -288,21 +251,13 @@ public class AuthService {
             case "COORDINADOR":
             case "COORDINATOR":
                 return UserRole.COORDINATOR;
-            case "PADRE":
-            case "PARENT":
-                return UserRole.PARENT;
-            case "SECRETARIA":
-            case "SECRETARY":
-                return UserRole.SECRETARY;
-            case "ADMIN":
-            case "ADMINISTRADOR":
-                return UserRole.ADMIN;
             case "SUPER_ADMIN":
             case "SUPERADMIN":
+            case "SUPERADMINISTRADOR":
                 return UserRole.SUPER_ADMIN;
             default:
                 System.err.println("❌ Rol no válido recibido: " + frontendRole);
-                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, PARENT, SECRETARY, ADMIN, SUPER_ADMIN");
+                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, SUPER_ADMIN");
         }
     }
 }

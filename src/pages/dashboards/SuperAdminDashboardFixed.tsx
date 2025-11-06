@@ -14,7 +14,6 @@ interface DashboardStats {
   totalStudents: number;
   totalTeachers: number;
   totalCoordinators: number;
-  totalParents: number;
   totalInstitutions: number;
   activeInstitutions: number;
   growthPercentage: number;

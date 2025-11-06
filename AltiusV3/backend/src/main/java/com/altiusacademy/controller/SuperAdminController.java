@@ -40,14 +40,14 @@ public class SuperAdminController {
             long totalTeachers = allUsers.stream().filter(u -> "teacher".equals(u.getRole().getValue())).count();
             long totalCoordinators = allUsers.stream().filter(u -> "coordinator".equals(u.getRole().getValue()))
                     .count();
-            long totalParents = allUsers.stream().filter(u -> "parent".equals(u.getRole().getValue())).count();
+
             long activeUsers = allUsers.stream().filter(u -> u.getIsActive() != null && u.getIsActive()).count();
 
             stats.put("totalUsers", allUsers.size());
             stats.put("totalStudents", (int) totalStudents);
             stats.put("totalTeachers", (int) totalTeachers);
             stats.put("totalCoordinators", (int) totalCoordinators);
-            stats.put("totalParents", (int) totalParents);
+
             stats.put("activeUsers", (int) activeUsers);
 
             // Institution statistics
@@ -96,7 +96,7 @@ public class SuperAdminController {
             defaultStats.put("totalStudents", 0);
             defaultStats.put("totalTeachers", 0);
             defaultStats.put("totalCoordinators", 0);
-            defaultStats.put("totalParents", 0);
+
             defaultStats.put("activeUsers", 0);
             defaultStats.put("totalInstitutions", 0);
             defaultStats.put("activeInstitutions", 0);
@@ -138,13 +138,12 @@ public class SuperAdminController {
                         .count();
                 long coordinatorCount = institutionUsers.stream()
                         .filter(u -> "coordinator".equals(u.getRole().getValue())).count();
-                long parentCount = institutionUsers.stream().filter(u -> "parent".equals(u.getRole().getValue()))
-                        .count();
+
 
                 instData.put("students", (int) studentCount);
                 instData.put("teachers", (int) teacherCount);
                 instData.put("coordinators", (int) coordinatorCount);
-                instData.put("parents", (int) parentCount);
+
                 instData.put("totalUsers", institutionUsers.size());
 
                 // Calculate average grade based on student count (mock calculation)

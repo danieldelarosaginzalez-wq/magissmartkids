@@ -102,13 +102,7 @@ public class User {
     @JsonIgnore
     private Set<Grade> grades = new HashSet<>();
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<ParentStudentRelation> parentRelations = new HashSet<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<ParentStudentRelation> studentRelations = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -271,21 +265,7 @@ public class User {
         this.grades = grades;
     }
 
-    public Set<ParentStudentRelation> getParentRelations() {
-        return parentRelations;
-    }
 
-    public void setParentRelations(Set<ParentStudentRelation> parentRelations) {
-        this.parentRelations = parentRelations;
-    }
-
-    public Set<ParentStudentRelation> getStudentRelations() {
-        return studentRelations;
-    }
-
-    public void setStudentRelations(Set<ParentStudentRelation> studentRelations) {
-        this.studentRelations = studentRelations;
-    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

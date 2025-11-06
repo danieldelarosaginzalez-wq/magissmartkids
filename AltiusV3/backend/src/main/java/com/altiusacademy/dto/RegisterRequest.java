@@ -23,7 +23,7 @@ public class RegisterRequest {
     private String lastName;
     
     @NotBlank(message = "Rol es requerido")
-    private String role; // STUDENT, TEACHER, COORDINATOR, PARENT
+    private String role; // STUDENT, TEACHER, COORDINATOR
     
     private Long institutionId; // ID de la institución (opcional)
     
@@ -31,27 +31,6 @@ public class RegisterRequest {
     private String schoolGrade; // Para estudiantes: "1° A", "2° B", etc.
     private List<String> teachingGrades; // Para profesores: múltiples grados
     private String institutionNit; // Para coordinadores: NIT de la institución
-    private List<ChildInfo> children; // Para padres: información de hijos (DEPRECATED)
-    private List<String> childrenEmails; // Para padres: correos de hijos (NUEVO FLUJO)
-    
-    // Clase interna para información de hijos (DEPRECATED - mantener por compatibilidad)
-    public static class ChildInfo {
-        private String institutionNit;
-        private String childEmail;
-        
-        public ChildInfo() {}
-        
-        public ChildInfo(String institutionNit, String childEmail) {
-            this.institutionNit = institutionNit;
-            this.childEmail = childEmail;
-        }
-        
-        public String getInstitutionNit() { return institutionNit; }
-        public void setInstitutionNit(String institutionNit) { this.institutionNit = institutionNit; }
-        
-        public String getChildEmail() { return childEmail; }
-        public void setChildEmail(String childEmail) { this.childEmail = childEmail; }
-    }
 
     // Constructors
     public RegisterRequest() {}
@@ -144,21 +123,5 @@ public class RegisterRequest {
 
     public void setInstitutionNit(String institutionNit) {
         this.institutionNit = institutionNit;
-    }
-
-    public List<ChildInfo> getChildren() {
-        return children;
-    }
-
-    public void setChildren(List<ChildInfo> children) {
-        this.children = children;
-    }
-
-    public List<String> getChildrenEmails() {
-        return childrenEmails;
-    }
-
-    public void setChildrenEmails(List<String> childrenEmails) {
-        this.childrenEmails = childrenEmails;
     }
 }

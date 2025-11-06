@@ -96,33 +96,7 @@ const ContextualNavigation: React.FC = () => {
           }
         ];
 
-      case 'parent':
-        return [
-          {
-            label: 'Dashboard',
-            href: '/dashboard',
-            icon: Home,
-            description: 'Seguimiento del progreso de tus hijos'
-          },
-          {
-            label: 'Mis Hijos',
-            href: '/parent/children',
-            icon: Users,
-            description: 'Información detallada de tus hijos'
-          },
-          {
-            label: 'Calendario',
-            href: '/calendar',
-            icon: Calendar,
-            description: 'Eventos y actividades importantes'
-          },
-          {
-            label: 'Comunicación',
-            href: '/parent/messages',
-            icon: MessageCircle,
-            description: 'Comunícate con profesores'
-          }
-        ];
+
 
       case 'coordinator':
       case 'admin':

@@ -17,8 +17,7 @@ public class StudentSummaryDto {
     private Long completedTasks;
     private Long pendingTasks;
     private Long totalActivities;
-    private String parentName;
-    private String parentEmail;
+
 
     // Constructors
     public StudentSummaryDto() {}
@@ -27,7 +26,7 @@ public class StudentSummaryDto {
                            String documentNumber, Boolean isActive, LocalDateTime lastLoginAt,
                            LocalDateTime createdAt, String gradeName, Long gradeId,
                            Double averageGrade, Long completedTasks, Long pendingTasks,
-                           Long totalActivities, String parentName, String parentEmail) {
+                           Long totalActivities) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -42,8 +41,6 @@ public class StudentSummaryDto {
         this.completedTasks = completedTasks;
         this.pendingTasks = pendingTasks;
         this.totalActivities = totalActivities;
-        this.parentName = parentName;
-        this.parentEmail = parentEmail;
     }
 
     // Getters and Setters
@@ -159,21 +156,7 @@ public class StudentSummaryDto {
         this.totalActivities = totalActivities;
     }
 
-    public String getParentName() {
-        return parentName;
-    }
 
-    public void setParentName(String parentName) {
-        this.parentName = parentName;
-    }
-
-    public String getParentEmail() {
-        return parentEmail;
-    }
-
-    public void setParentEmail(String parentEmail) {
-        this.parentEmail = parentEmail;
-    }
 
     public String getFullName() {
         return firstName + " " + lastName;

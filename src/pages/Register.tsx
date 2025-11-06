@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Mail, Lock, User, Eye, EyeOff, Building, GraduationCap, Users, Plus, X, Check, AlertCircle } from 'lucide-react';
+import { BookOpen, Mail, Lock, User, Eye, EyeOff, Building, GraduationCap } from 'lucide-react';
 import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '../components/ui';
 import { Badge } from '../components/ui/Badge';
 import CreateInstitutionModal from '../components/CreateInstitutionModal';
@@ -8,14 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import { authApi } from '../services/api';
 import { normalizeRole } from '../utils/roleUtils';
 
-interface ChildInfo {
-  institutionNit: string;
-  childEmail: string;
-  institutionName?: string;
-  validated?: boolean;
-  validating?: boolean;
-  error?: string;
-}
+
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -29,8 +22,7 @@ const Register: React.FC = () => {
     // Campos específicos por rol
     academicGrade: '', // Para estudiantes
     teachingGrades: [] as string[], // Para profesores
-    institutionNit: '', // Para coordinadores
-    children: [] as ChildInfo[] // Para padres
+    institutionNit: '' // Para coordinadores
   });
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [institutionsLoading, setInstitutionsLoading] = useState(true);
@@ -138,50 +130,7 @@ const Register: React.FC = () => {
     }
   };
 
-  const validateChildInInstitution = async (childIndex: number, email: string, institutionNit: string) => {
-    if (!email || !institutionNit) return;
 
-    const updatedChildren = [...formData.children];
-    updatedChildren[childIndex] = {
-      ...updatedChildren[childIndex],
-      validating: true,
-      validated: false,
-      error: undefined
-    };
-    setFormData(prev => ({ ...prev, children: updatedChildren }));
-
-    try {
-      const response = await fetch(`/api/institutions/validate-student?email=${email}&institutionNit=${institutionNit}`);
-      const data = await response.json();
-
-      const finalChildren = [...formData.children];
-      if (data.success && data.exists) {
-        finalChildren[childIndex] = {
-          ...finalChildren[childIndex],
-          validating: false,
-          validated: true,
-          institutionName: data.student.institutionName
-        };
-      } else {
-        finalChildren[childIndex] = {
-          ...finalChildren[childIndex],
-          validating: false,
-          validated: false,
-          error: 'Estudiante no encontrado en esta institución'
-        };
-      }
-      setFormData(prev => ({ ...prev, children: finalChildren }));
-    } catch (error) {
-      const errorChildren = [...formData.children];
-      errorChildren[childIndex] = {
-        ...errorChildren[childIndex],
-        validating: false,
-        validated: false,
-        error: 'Error validando estudiante'
-      };
-      setFormData(prev => ({ ...prev, children: errorChildren }));
-    }
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -223,33 +172,7 @@ const Register: React.FC = () => {
     }));
   };
 
-  const addChild = () => {
-    setFormData(prev => ({
-      ...prev,
-      children: [...prev.children, { institutionNit: '', childEmail: '' }]
-    }));
-  };
 
-  const removeChild = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      children: prev.children.filter((_, i) => i !== index)
-    }));
-  };
-
-  const updateChild = (index: number, field: keyof ChildInfo, value: string) => {
-    const updatedChildren = [...formData.children];
-    updatedChildren[index] = { ...updatedChildren[index], [field]: value };
-    setFormData(prev => ({ ...prev, children: updatedChildren }));
-
-    // Validar cuando se completen ambos campos
-    if (field === 'childEmail' || field === 'institutionNit') {
-      const child = updatedChildren[index];
-      if (child.childEmail && child.institutionNit) {
-        validateChildInInstitution(index, child.childEmail, child.institutionNit);
-      }
-    }
-  };
 
   const handleInstitutionCreated = (newInstitution: any) => {
     console.log('🎉 Nueva institución creada:', newInstitution);
@@ -303,19 +226,7 @@ const Register: React.FC = () => {
       }
     }
 
-    if (formData.role === 'parent') {
-      if (formData.children.length === 0) {
-        setError('Por favor agrega al menos un hijo.');
-        setIsLoading(false);
-        return;
-      }
-      const invalidChildren = formData.children.filter(child => !child.validated);
-      if (invalidChildren.length > 0) {
-        setError('Por favor valida la información de todos los hijos.');
-        setIsLoading(false);
-        return;
-      }
-    }
+
 
     if ((formData.role === 'student' || formData.role === 'teacher') && (!formData.institutionId || formData.institutionId === 'create-new')) {
       setError('Por favor selecciona una institución válida.');
@@ -354,11 +265,6 @@ const Register: React.FC = () => {
         registerData.institutionId = parseInt(formData.institutionId);
       } else if (formData.role === 'coordinator') {
         registerData.institutionNit = formData.institutionNit;
-      } else if (formData.role === 'parent') {
-        registerData.children = formData.children.map(child => ({
-          institutionNit: child.institutionNit,
-          childEmail: child.childEmail
-        }));
       }
 
       console.log('📤 Enviando al backend:', registerData);
@@ -579,15 +485,13 @@ const Register: React.FC = () => {
                   <option value="student">Estudiante</option>
                   <option value="teacher">Profesor</option>
                   <option value="coordinator">Coordinador</option>
-                  <option value="parent">Padre de Familia</option>
                 </select>
                 {formData.role && (
                   <p className="mt-1 text-xs text-accent-green">
                     ✓ Seleccionado: {
                       formData.role === 'student' ? 'Estudiante' :
                       formData.role === 'teacher' ? 'Profesor' :
-                      formData.role === 'coordinator' ? 'Coordinador' :
-                      formData.role === 'parent' ? 'Padre de Familia' : formData.role
+                      formData.role === 'coordinator' ? 'Coordinador' : formData.role
                     }
                   </p>
                 )}
@@ -714,106 +618,7 @@ const Register: React.FC = () => {
                 </div>
               )}
 
-              {/* PADRE: Información de hijos */}
-              {formData.role === 'parent' && (
-                <div className="p-4 bg-accent-yellow/5 border border-accent-yellow/20 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-accent-yellow" />
-                      <h3 className="font-medium text-neutral-black">Información de Hijos</h3>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={addChild}
-                      variant="outline"
-                      size="sm"
-                      className="border-accent-yellow text-accent-yellow hover:bg-accent-yellow/10"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Agregar Hijo
-                    </Button>
-                  </div>
-                  
-                  {formData.children.length === 0 && (
-                    <p className="text-sm text-secondary text-center py-4">
-                      Haz clic en "Agregar Hijo" para comenzar
-                    </p>
-                  )}
 
-                  <div className="space-y-4">
-                    {formData.children.map((child, index) => (
-                      <div key={index} className="p-3 bg-neutral-white border border-secondary-200 rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-neutral-black">
-                            Hijo #{index + 1}
-                          </h4>
-                          <Button
-                            type="button"
-                            onClick={() => removeChild(index)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              NIT Institución *
-                            </label>
-                            <Input
-                              value={child.institutionNit}
-                              onChange={(e) => updateChild(index, 'institutionNit', e.target.value)}
-                              placeholder="123456789-1"
-                              className="text-sm"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">
-                              Email del Hijo *
-                            </label>
-                            <div className="relative">
-                              <Input
-                                value={child.childEmail}
-                                onChange={(e) => updateChild(index, 'childEmail', e.target.value)}
-                                placeholder="hijo@colegio.edu"
-                                className="text-sm pr-8"
-                                type="email"
-                                required
-                              />
-                              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                                {child.validating && (
-                                  <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin"></div>
-                                )}
-                                {!child.validating && child.validated && (
-                                  <Check className="w-3 h-3 text-accent-green" />
-                                )}
-                                {!child.validating && child.childEmail && child.institutionNit && !child.validated && (
-                                  <AlertCircle className="w-3 h-3 text-red-500" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {child.validated && child.institutionName && (
-                          <p className="mt-2 text-xs text-accent-green">
-                            ✓ Estudiante encontrado en: {child.institutionName}
-                          </p>
-                        )}
-                        {child.error && (
-                          <p className="mt-2 text-xs text-red-600">
-                            ❌ {child.error}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Contraseñas */}
               <div className="grid grid-cols-1 gap-4">

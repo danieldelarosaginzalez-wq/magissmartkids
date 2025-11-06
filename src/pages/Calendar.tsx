@@ -40,8 +40,8 @@ const Calendar: React.FC = () => {
     },
     {
       id: 3,
-      title: 'Reunión de Padres',
-      description: 'Reunión trimestral con padres de familia',
+      title: 'Reunión de Coordinación',
+      description: 'Reunión trimestral de coordinación académica',
       date: '2025-01-20',
       time: '14:00',
       type: 'meeting',
@@ -146,7 +146,7 @@ const Calendar: React.FC = () => {
     return eventDate > today;
   };
 
-  const canCreateEvents = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'admin';
+  const canCreateEvents = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'super_admin';
 
   const upcomingEvents = events.filter(event => isUpcoming(event.date) && event.status === 'pending');
   const todayEvents = events.filter(event => isToday(event.date));

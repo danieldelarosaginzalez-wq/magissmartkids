@@ -104,12 +104,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     //         org.springframework.data.domain.PageRequest.of(0, limit));
     // }
     
-    // TEMPORALMENTE COMENTADO - MÉTODO PROBLEMÁTICO (User no tiene atributo parent)
-    // @Query("SELECT u FROM User u WHERE u.parent.id = :parentId AND u.role = 'STUDENT' AND u.isActive = true")
-    // List<User> findChildrenByParentId(@Param("parentId") Long parentId);
-    
-    // Implementación temporal que funciona
-    default List<User> findChildrenByParentId(Long parentId) {
-        return new java.util.ArrayList<>(); // Retorna lista vacía por ahora
-    }
+
 }

@@ -1,7 +1,11 @@
 package com.altiusacademy.security;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,8 +21,22 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Filtro de autenticación JWT
+ * 
+ * Extrae tokens JWT del header Authorization, los valida y establece
+ * el contexto de seguridad para usuarios autenticados.
+ * 
+ * @author Development Team
+ * @version 3.0
+ * @since 2024
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
     @Autowired
     private JwtTokenProvider tokenProvider;
@@ -26,87 +44,88 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
+    /**
+     * Rutas públicas que no requieren autenticación JWT
+     */
+    private static final List<String> PUBLIC_PATHS = Arrays.asList(
+        "/api/auth/",
+        "/api/roles/",
+        "/api/institutions/",
+        "/api/school-grades/",
+        "/api/simple-grades/",
+        "/api/academic-grades/",
+        "/api/health",
+        "/api/test/",
+        "/api/student-validation/",
+        "/actuator/",
+        "/swagger-ui/",
+        "/v3/api-docs/",
+        "/h2-console/",
+        "/",
+        "/error",
+        "/favicon.ico"
+    );
+
+    /**
+     * Procesa cada request HTTP para autenticación JWT
+     */
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, 
                                     @NonNull HttpServletResponse response, 
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+                                    @NonNull FilterChain filterChain) 
+                                    throws ServletException, IOException {
         
-        String path = request.getRequestURI();
+        String requestPath = request.getRequestURI();
         
-        // Lista de rutas públicas que NO requieren procesamiento JWT
-        String[] publicPaths = {
-            "/api/auth/",
-            "/api/school-grades/",
-            "/api/simple-grades/",
-            "/api/student-validation/",
-            "/api/institutions/",
-            "/api/health",
-            "/api/academic-grades/",
-            "/api/roles/",
-            "/api/test/",
-            "/actuator/",
-            "/swagger-ui/",
-            "/v3/api-docs/",
-            "/h2-console/"
-        };
-        
-        // Rutas públicas específicas (exactas)
-        String[] exactPublicPaths = {
-            "/api/tasks/grades"
-        };
-        
-        // Si es una ruta pública, saltar el procesamiento JWT
-        boolean isPublicPath = false;
-        
-        // Verificar rutas que empiezan con el path
-        for (String publicPath : publicPaths) {
-            if (path.startsWith(publicPath)) {
-                isPublicPath = true;
-                break;
-            }
-        }
-        
-        // Verificar rutas exactas
-        if (!isPublicPath) {
-            for (String exactPath : exactPublicPaths) {
-                if (path.equals(exactPath)) {
-                    isPublicPath = true;
-                    break;
-                }
-            }
-        }
-        
-        if (isPublicPath) {
-            logger.debug("Saltando autenticación JWT para ruta pública: " + path);
+        // Omitir rutas públicas
+        if (isPublicPath(requestPath)) {
             filterChain.doFilter(request, response);
             return;
         }
         
         try {
-            String jwt = getJwtFromRequest(request);
-
+            // Extraer y procesar token JWT
+            String jwt = extractJwtFromRequest(request);
+            
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 String username = tokenProvider.getUsernameFromToken(jwt);
-
-                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = 
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                if (StringUtils.hasText(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                    
+                    UsernamePasswordAuthenticationToken authentication = 
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    logger.debug("Autenticación JWT establecida para: {}", username);
+                }
             }
+            
         } catch (Exception ex) {
-            logger.error("No se pudo establecer la autenticación del usuario en el contexto de seguridad", ex);
+            logger.error("Error procesando autenticación JWT: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String getJwtFromRequest(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+    /**
+     * Verifica si una ruta es pública
+     */
+    private boolean isPublicPath(String path) {
+        return PUBLIC_PATHS.stream().anyMatch(publicPath -> path.startsWith(publicPath));
+    }
+
+    /**
+     * Extrae el token JWT del header Authorization
+     */
+    private String extractJwtFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
+        
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+            return bearerToken.substring(BEARER_PREFIX.length());
         }
+        
         return null;
     }
 }

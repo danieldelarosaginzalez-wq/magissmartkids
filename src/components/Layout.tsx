@@ -65,21 +65,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           { path: '/students', label: 'Estudiantes', icon: Users },
         ];
 
-      case 'parent':
-        return [
-          ...baseItems,
-          { path: '/children', label: 'Mis Hijos', icon: Users },
-          { path: '/progress', label: 'Progreso', icon: BarChart3 },
-        ];
 
-      case 'secretary':
-        return [
-          ...baseItems,
-          { path: '/institutions', label: 'Instituciones', icon: BookOpen },
-          { path: '/global-reports', label: 'Reportes Globales', icon: BarChart3 },
-        ];
 
-      case 'admin':
+      case 'super_admin':
         return [
           ...baseItems,
           { path: '/super-admin', label: 'Super Admin', icon: BarChart3 },

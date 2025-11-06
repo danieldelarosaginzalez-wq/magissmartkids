@@ -41,11 +41,11 @@ npm run dev
 
 ### **📊 Dashboards Especializados por Rol**
 - **👨‍💼 Administrador**: Control total del sistema, estadísticas globales, gestión de instituciones
-- **👩‍💼 Secretaria**: Monitoreo global, reportes educativos, estadísticas regionales
+
 - **👨‍🏫 Coordinador**: Gestión institucional, supervisión de profesores y estudiantes
 - **👩‍🏫 Profesor**: Actividades interactivas, gestión de materias, calificaciones
 - **👨‍🎓 Estudiante**: Progreso académico, tareas pendientes, actividades interactivas
-- **👨‍👩‍👧‍👦 Padre**: Seguimiento de hijos, comunicación con profesores, eventos escolares
+
 
 ### **🎮 Sistema de Actividades Interactivas**
 - **5 tipos de actividades**: Opción múltiple, respuesta corta, drag & drop, unir líneas, video interactivo
@@ -140,11 +140,11 @@ spring.datasource.url=jdbc:mysql://127.0.0.1:3306/altiusv3?createDatabaseIfNotEx
 ### **Credenciales Predefinidas**
 ```
 🔑 Administrador:  admin@magicsmartkids.com / 123456
-🔑 Secretaria:     secretary@magicsmartkids.com / 123456
+
 🔑 Coordinador:    coordinator@magicsmartkids.com / 123456
 🔑 Profesor:       teacher@magicsmartkids.com / 123456
 🔑 Estudiante:     student@magicsmartkids.com / 123456
-🔑 Padre:          parent@magicsmartkids.com / 123456
+
 ```
 
 ### **Creación Automática**
@@ -164,10 +164,10 @@ Los usuarios se crean automáticamente al iniciar el sistema o ejecutar:
 
 ### **Dashboards**
 - `GET /api/admin/stats` - Estadísticas de administrador
-- `GET /api/secretary/global-stats` - Estadísticas globales
+
 - `GET /api/teacher/stats` - Estadísticas de profesor
 - `GET /api/student/stats` - Estadísticas de estudiante
-- `GET /api/parent/stats` - Estadísticas de padre
+
 
 ### **Sistema**
 - `GET /api/health` - Estado del sistema

@@ -109,7 +109,7 @@ const Assignments: React.FC = () => {
     });
   };
 
-  const canCreateAssignments = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'admin';
+  const canCreateAssignments = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'super_admin';
   const isStudent = user?.role === 'student';
 
   const activeAssignments = assignments.filter(a => a.status === 'active');

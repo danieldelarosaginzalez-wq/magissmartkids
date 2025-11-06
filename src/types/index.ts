@@ -19,7 +19,7 @@ export interface AcademicGrade {
   level: number;
 }
 
-export type UserRole = 'admin' | 'secretary' | 'coordinator' | 'teacher' | 'student' | 'parent' | 'visitor';
+export type UserRole = 'super_admin' | 'coordinator' | 'teacher' | 'student' | 'visitor';
 
 export interface Institution {
   id: string;

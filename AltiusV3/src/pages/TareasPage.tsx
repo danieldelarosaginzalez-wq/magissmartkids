@@ -67,12 +67,48 @@ const TareasPage: React.FC = () => {
       // 🎭 DATOS FALSOS PARA LA PRESENTACIÓN - Consistentes con el dashboard
       await new Promise(resolve => setTimeout(resolve, 800)); // Simular loading
       
-      // Intentar cargar datos guardados del localStorage
+      // 🔄 CARGAR TAREAS DEL PROFESOR Y CONVERTIRLAS A FORMATO ESTUDIANTE
+      const teacherTasks = localStorage.getItem('altiusv3-teacher-tasks');
+      let teacherActivities: StudentTask[] = [];
+      
+      if (teacherTasks) {
+        try {
+          const parsedTeacherTasks = JSON.parse(teacherTasks);
+          console.log('📚 Tareas del profesor encontradas:', parsedTeacherTasks);
+          
+          // Convertir tareas del profesor a formato de estudiante
+          teacherActivities = parsedTeacherTasks.map((teacherTask: any, index: number) => ({
+            id: `teacher-${teacherTask.id || index}`,
+            title: teacherTask.titulo,
+            description: teacherTask.descripcion || 'Actividad creada por el profesor',
+            subject: teacherTask.materia || 'Actividad Interactiva',
+            dueDate: teacherTask.fechaEntrega || '2025-11-15',
+            priority: 'MEDIUM',
+            status: 'pending',
+            taskType: 'interactive',
+            hasSubmission: false,
+            maxScore: 100,
+            timeLimit: 480, // 8 minutos
+            activityConfig: teacherTask.activityConfig || teacherTask.activity || {
+              type: 'custom',
+              questions: teacherTask.questions || []
+            }
+          }));
+          
+          console.log('✅ Actividades del profesor convertidas:', teacherActivities);
+        } catch (error) {
+          console.warn('Error parsing teacher tasks:', error);
+        }
+      }
+      
+      // Intentar cargar datos guardados del localStorage del estudiante
       const savedTasks = localStorage.getItem('altiusv3-student-tasks');
       if (savedTasks) {
         try {
           const parsedTasks = JSON.parse(savedTasks);
-          setTasks(parsedTasks);
+          // Combinar tareas del estudiante con las del profesor
+          const combinedTasks = [...teacherActivities, ...parsedTasks];
+          setTasks(combinedTasks);
           setLoading(false);
           return;
         } catch (error) {
@@ -80,8 +116,11 @@ const TareasPage: React.FC = () => {
         }
       }
       
+      // Si hay actividades del profesor, combinarlas con las tareas por defecto
       const fakeTasks: StudentTask[] = [
-        // 3 TAREAS PENDIENTES
+        // Primero agregar las actividades del profesor
+        ...teacherActivities,
+        // Luego las tareas por defecto (solo si no hay actividades del profesor)
         {
           id: '1',
           title: 'Ejercicios de Sumas y Restas',
@@ -346,8 +385,9 @@ const TareasPage: React.FC = () => {
       
       setTasks(fakeTasks);
       
-      // Guardar datos iniciales en localStorage si no existen
-      localStorage.setItem('altiusv3-student-tasks', JSON.stringify(fakeTasks));
+      // Guardar solo las tareas por defecto (no las del profesor) en localStorage del estudiante
+      const studentOnlyTasks = fakeTasks.filter(task => !task.id.startsWith('teacher-'));
+      localStorage.setItem('altiusv3-student-tasks', JSON.stringify(studentOnlyTasks));
     } catch (error) {
       console.error('Error loading tasks:', error);
       setTasks([]);
@@ -544,42 +584,49 @@ const TareasPage: React.FC = () => {
       setTasks(updatedTasks);
       
       // 💾 GUARDAR EN LOCALSTORAGE PARA PERSISTENCIA
-      localStorage.setItem('altiusv3-student-tasks', JSON.stringify(updatedTasks));
+      // Separar tareas del profesor de las del estudiante
+      const studentTasks = updatedTasks.filter(task => !task.id.startsWith('teacher-'));
       
-      // También actualizar los datos del profesor
-      const teacherSubmission = {
-        studentId: 'student-1',
-        studentName: 'Estudiante Estudiante',
-        submissionDate: new Date().toISOString(),
-        score: score,
-        timeUsed: (selectedTask.timeLimit || 300) - timeLeft,
-        answers: selectedTask.activityConfig?.questions?.map((question: any, index: number) => ({
-          question: question.questionText,
-          userAnswer: answers[index] || 'Sin respuesta',
-          correctAnswer: question.correctAnswer,
-          isCorrect: answers[index] === question.correctAnswer
-        })) || []
-      };
+      // Guardar solo las tareas del estudiante
+      localStorage.setItem('altiusv3-student-tasks', JSON.stringify(studentTasks));
       
-      // Guardar entrega para el profesor
-      const savedTeacherTasks = localStorage.getItem('altiusv3-teacher-tasks');
-      if (savedTeacherTasks) {
-        try {
-          const teacherTasks = JSON.parse(savedTeacherTasks);
-          const updatedTeacherTasks = teacherTasks.map((task: any) => {
-            if (task.titulo === selectedTask.title) {
-              return {
-                ...task,
-                submissions: [teacherSubmission]
-              };
-            }
-            return task;
-          });
-          localStorage.setItem('altiusv3-teacher-tasks', JSON.stringify(updatedTeacherTasks));
-        } catch (error) {
-          console.warn('Error updating teacher tasks');
+      // Actualizar las tareas del profesor si es una tarea del profesor completada
+      if (selectedTask.id.startsWith('teacher-')) {
+        const teacherSubmission = {
+          studentId: 'student-1',
+          studentName: 'Estudiante Estudiante',
+          submissionDate: new Date().toISOString(),
+          score: score,
+          timeUsed: (selectedTask.timeLimit || 300) - timeLeft,
+          answers: selectedTask.activityConfig?.questions?.map((question: any, index: number) => ({
+            question: question.questionText,
+            userAnswer: answers[index] || 'Sin respuesta',
+            correctAnswer: question.correctAnswer,
+            isCorrect: answers[index] === question.correctAnswer
+          })) || []
+        };
+        
+        const teacherTasksStorage = localStorage.getItem('altiusv3-teacher-tasks');
+        if (teacherTasksStorage) {
+          try {
+            const teacherTasksData = JSON.parse(teacherTasksStorage);
+            const updatedTeacherTasks = teacherTasksData.map((task: any) => {
+              if (`teacher-${task.id}` === selectedTask.id || task.titulo === selectedTask.title) {
+                return {
+                  ...task,
+                  submissions: [teacherSubmission]
+                };
+              }
+              return task;
+            });
+            localStorage.setItem('altiusv3-teacher-tasks', JSON.stringify(updatedTeacherTasks));
+          } catch (error) {
+            console.warn('Error updating teacher tasks');
+          }
         }
       }
+      
+
       
       // Mostrar mensaje de éxito
       setTimeout(() => {

@@ -20,15 +20,10 @@ export const normalizeRole = (role: string): UserRole => {
     case 'coordinator':
     case 'coordinador':
       return 'coordinator';
-    case 'parent':
-    case 'padre':
-      return 'parent';
-    case 'secretary':
-    case 'secretaria':
-      return 'secretary';
-    case 'admin':
-    case 'administrador':
-      return 'admin';
+    case 'super_admin':
+    case 'superadmin':
+    case 'superadministrador':
+      return 'super_admin';
     default:
       console.warn(`Rol no reconocido: ${role}, usando 'student' por defecto`);
       return 'student' as UserRole;
@@ -48,12 +43,8 @@ export const getRoleDisplayName = (role: string): string => {
       return 'Profesor';
     case 'coordinator':
       return 'Coordinador';
-    case 'parent':
-      return 'Padre de Familia';
-    case 'secretary':
-      return 'Secretaria';
-    case 'admin':
-      return 'Administrador';
+    case 'super_admin':
+      return 'Super Administrador';
     default:
       return 'Usuario';
   }

@@ -21,6 +21,10 @@ interface TeacherTask {
   tipo?: string;
   fechaCreacion?: string;
   submissions?: TaskSubmission[];
+  activityConfig?: {
+    type: string;
+    questions: any[];
+  };
 }
 
 interface TaskSubmission {
@@ -301,6 +305,73 @@ const TeacherTasksPage: React.FC = () => {
           fechaCreacion: '2025-10-26T10:00:00Z',
           tipo: 'interactive',
           materia: 'Ciencias Naturales',
+          activityConfig: {
+            type: 'animal_adventure',
+            questions: [
+              {
+                questionText: '🐱 ¿Qué sonido hace el gato?',
+                type: 'short-answer',
+                correctAnswer: 'Miau miau',
+                explanation: '¡Correcto! Los gatos hacen "miau miau" 🐱',
+                visual: '🐱'
+              },
+              {
+                questionText: '🦁 ¿Cuál de estos animales es el rey de la selva?',
+                type: 'multiple-choice',
+                options: ['🐯 Tigre', '🦁 León', '🐻 Oso', '🐺 Lobo'],
+                correctAnswer: '🦁 León',
+                explanation: '¡Excelente! El león es conocido como el rey de la selva 🦁',
+                visual: '🦁👑'
+              },
+              {
+                questionText: '🐄 ¿Qué nos da la vaca?',
+                type: 'multiple-choice',
+                options: ['🥛 Leche', '🍯 Miel', '🥚 Huevos', '🧀 Solo queso'],
+                correctAnswer: '🥛 Leche',
+                explanation: '¡Perfecto! Las vacas nos dan leche fresca 🥛',
+                visual: '🐄🥛'
+              },
+              {
+                questionText: '🐠 ¿Dónde viven los peces?',
+                type: 'multiple-choice',
+                options: ['🌳 En los árboles', '🌊 En el agua', '🏠 En casas', '☁️ En las nubes'],
+                correctAnswer: '🌊 En el agua',
+                explanation: '¡Genial! Los peces viven en el agua 🌊',
+                visual: '🐠🌊'
+              },
+              {
+                questionText: '🐸 ¿Cómo se mueve la rana?',
+                type: 'multiple-choice',
+                options: ['🏃 Corriendo', '🦘 Saltando', '🚶 Caminando', '🏊 Nadando'],
+                correctAnswer: '🦘 Saltando',
+                explanation: '¡Muy bien! Las ranas se mueven saltando 🦘',
+                visual: '🐸🦘'
+              },
+              {
+                questionText: 'Une cada animal con su hogar',
+                type: 'match-lines',
+                leftItems: ['🐝 Abeja', '🐻 Oso', '🐧 Pingüino', '🦅 Águila'],
+                rightItems: ['🏔️ Montañas', '🧊 Hielo', '🍯 Colmena', '🌲 Bosque'],
+                correctMatches: [2, 3, 1, 0],
+                explanation: '¡Fantástico! Cada animal tiene su hogar especial'
+              },
+              {
+                questionText: '🦋 ¿Qué animal sale de una oruga?',
+                type: 'short-answer',
+                correctAnswer: 'Mariposa',
+                explanation: '¡Increíble! De la oruga sale una hermosa mariposa 🦋',
+                visual: '🐛➡️🦋'
+              },
+              {
+                questionText: '🐘 ¿Cuál es el animal terrestre más grande?',
+                type: 'multiple-choice',
+                options: ['🦏 Rinoceronte', '🐘 Elefante', '🦒 Jirafa', '🐻 Oso'],
+                correctAnswer: '🐘 Elefante',
+                explanation: '¡Excelente! El elefante es el animal terrestre más grande 🐘',
+                visual: '🐘📏'
+              }
+            ]
+          },
           submissions: [
             {
               studentId: 'student-1',
@@ -327,6 +398,51 @@ const TeacherTasksPage: React.FC = () => {
           fechaCreacion: '2025-10-25T10:00:00Z',
           tipo: 'interactive',
           materia: 'Matemáticas',
+          activityConfig: {
+            type: 'math_adventure',
+            questions: [
+              {
+                questionText: '🍎 María tiene 5 manzanas y compra 3 más. ¿Cuántas manzanas tiene en total?',
+                type: 'multiple-choice',
+                options: ['6', '7', '8', '9'],
+                correctAnswer: '8',
+                explanation: '¡Correcto! 5 + 3 = 8 manzanas 🍎',
+                visual: '🍎🍎🍎🍎🍎 + 🍎🍎🍎 = 🍎🍎🍎🍎🍎🍎🍎🍎'
+              },
+              {
+                questionText: '🚗 En el estacionamiento hay 10 carros, se van 4. ¿Cuántos carros quedan?',
+                type: 'multiple-choice',
+                options: ['5', '6', '7', '8'],
+                correctAnswer: '6',
+                explanation: '¡Excelente! 10 - 4 = 6 carros 🚗',
+                visual: '🚗🚗🚗🚗🚗🚗🚗🚗🚗🚗 - 🚗🚗🚗🚗 = 🚗🚗🚗🚗🚗🚗'
+              },
+              {
+                questionText: '⭐ Si tienes 2 estrellas y encuentras 7 más, ¿cuántas estrellas tienes?',
+                type: 'multiple-choice',
+                options: ['8', '9', '10', '11'],
+                correctAnswer: '9',
+                explanation: '¡Fantástico! 2 + 7 = 9 estrellas ⭐',
+                visual: '⭐⭐ + ⭐⭐⭐⭐⭐⭐⭐ = ⭐⭐⭐⭐⭐⭐⭐⭐⭐'
+              },
+              {
+                questionText: '🎈 Ana tiene 15 globos y regala 8. ¿Cuántos globos le quedan?',
+                type: 'multiple-choice',
+                options: ['6', '7', '8', '9'],
+                correctAnswer: '7',
+                explanation: '¡Perfecto! 15 - 8 = 7 globos 🎈',
+                visual: '🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈 - 🎈🎈🎈🎈🎈🎈🎈🎈 = 🎈🎈🎈🎈🎈🎈🎈'
+              },
+              {
+                questionText: '🍪 En una caja hay 6 galletas, en otra hay 5. ¿Cuántas galletas hay en total?',
+                type: 'multiple-choice',
+                options: ['10', '11', '12', '13'],
+                correctAnswer: '11',
+                explanation: '¡Increíble! 6 + 5 = 11 galletas 🍪',
+                visual: '🍪🍪🍪🍪🍪🍪 + 🍪🍪🍪🍪🍪 = 🍪🍪🍪🍪🍪🍪🍪🍪🍪🍪🍪'
+              }
+            ]
+          },
           submissions: [
             {
               studentId: 'student-1',

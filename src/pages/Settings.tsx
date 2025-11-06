@@ -17,7 +17,7 @@ const Settings: React.FC = () => {
   const systemSettings = {
     siteName: 'Altius Academy',
     siteDescription: 'Plataforma educativa de refuerzo académico',
-    adminEmail: 'admin@altiusacademy.com',
+    adminEmail: 'superadmin@altiusacademy.com',
     supportEmail: 'soporte@altiusacademy.com',
     maxFileSize: '10MB',
     sessionTimeout: '30 minutos',
@@ -327,7 +327,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email del Administrador
+                    Email del Super Administrador
                   </label>
                   <Input type="email" defaultValue={systemSettings.adminEmail} />
                 </div>

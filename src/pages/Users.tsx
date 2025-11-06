@@ -79,22 +79,22 @@ const Users: React.FC = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'admin': return 'destructive';
+      case 'super_admin': return 'destructive';
       case 'coordinator': return 'default';
       case 'teacher': return 'secondary';
       case 'student': return 'outline';
-      case 'parent': return 'warning';
+
       default: return 'secondary';
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin': return 'Administrador';
+      case 'super_admin': return 'Super Administrador';
       case 'coordinator': return 'Coordinador';
       case 'teacher': return 'Profesor';
       case 'student': return 'Estudiante';
-      case 'parent': return 'Padre';
+
       default: return role;
     }
   };
@@ -114,11 +114,11 @@ const Users: React.FC = () => {
   });
 
   const usersByRole = {
-    admin: users.filter(u => (u.role || '').toLowerCase() === 'admin'),
+    super_admin: users.filter(u => (u.role || '').toLowerCase() === 'super_admin'),
     coordinator: users.filter(u => (u.role || '').toLowerCase() === 'coordinator'),
     teacher: users.filter(u => (u.role || '').toLowerCase() === 'teacher'),
     student: users.filter(u => (u.role || '').toLowerCase() === 'student'),
-    parent: users.filter(u => (u.role || '').toLowerCase() === 'parent')
+
   };
 
   const stats = {
@@ -127,7 +127,7 @@ const Users: React.FC = () => {
     inactive: users.filter(u => u.isActive === false).length,
     teachers: usersByRole.teacher.length,
     students: usersByRole.student.length,
-    parents: usersByRole.parent.length
+
   };
 
   return (
@@ -137,7 +137,7 @@ const Users: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestión de Usuarios 👥</h1>
           <p className="text-gray-600 mt-1">
-            Administra usuarios, roles y permisos del sistema
+            Gestiona usuarios y roles del sistema educativo
           </p>
         </div>
         <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
@@ -189,9 +189,9 @@ const Users: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="teacher">Profesor</SelectItem>
                     <SelectItem value="student">Estudiante</SelectItem>
-                    <SelectItem value="parent">Padre de Familia</SelectItem>
+
                     <SelectItem value="coordinator">Coordinador</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="super_admin">Super Administrador</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -259,8 +259,7 @@ const Users: React.FC = () => {
           <CardContent className="pt-6">
             <div className="text-center">
               <UsersIcon className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-gray-900">{stats.parents}</p>
-              <p className="text-sm text-gray-600">Padres</p>
+
             </div>
           </CardContent>
         </Card>
@@ -287,11 +286,11 @@ const Users: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los roles</SelectItem>
-                <SelectItem value="admin">Administradores</SelectItem>
+                <SelectItem value="super_admin">Super Administradores</SelectItem>
                 <SelectItem value="coordinator">Coordinadores</SelectItem>
                 <SelectItem value="teacher">Profesores</SelectItem>
                 <SelectItem value="student">Estudiantes</SelectItem>
-                <SelectItem value="parent">Padres</SelectItem>
+
               </SelectContent>
             </Select>
           </div>

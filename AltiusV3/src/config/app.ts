@@ -33,7 +33,7 @@ export const APP_CONFIG = {
   // Feature Flags
   features: {
     interactiveActivities: true,
-    parentDashboard: false, // Rol eliminado
+
     teacherReports: true,
     gamification: true,
     notifications: true,

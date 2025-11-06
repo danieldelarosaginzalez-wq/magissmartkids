@@ -13,7 +13,6 @@ const Grades: React.FC = () => {
   const [selectedSubject, setSelectedSubject] = useState('all');
 
   const isStudent = user?.role === 'student';
-  const isParent = user?.role === 'parent';
 
   const grades = [
     {
@@ -139,13 +138,11 @@ const Grades: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {isStudent ? 'Mis Notas 📊' : isParent ? 'Notas de mis Hijos 📊' : 'Calificaciones 📊'}
+            {isStudent ? 'Mis Notas 📊' : 'Calificaciones 📊'}
           </h1>
           <p className="text-gray-600 mt-1">
             {isStudent 
               ? 'Revisa tu progreso académico y mejoras'
-              : isParent
-              ? 'Seguimiento del rendimiento académico'
               : 'Gestiona las calificaciones de los estudiantes'
             }
           </p>

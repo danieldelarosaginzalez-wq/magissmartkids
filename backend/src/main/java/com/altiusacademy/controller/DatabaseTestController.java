@@ -156,7 +156,7 @@ public class DatabaseTestController {
                 createSampleUser("coordinator@altius.com", "Carlos", "Coordinador", UserRole.COORDINATOR),
                 createSampleUser("teacher@altius.com", "Ana", "Profesora", UserRole.TEACHER),
                 createSampleUser("student@altius.com", "Juan", "Estudiante", UserRole.STUDENT),
-                createSampleUser("parent@altius.com", "Pedro", "Padre", UserRole.PARENT)
+
             };
             
             int created = 0;

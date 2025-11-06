@@ -181,7 +181,7 @@ const Home: React.FC = () => {
               <CardContent>
                 <p className="text-gray-600">
                   Monitoreo detallado del progreso antes y después del refuerzo. 
-                  Reportes visuales para padres y profesores.
+                  Reportes visuales para profesores y coordinadores.
                 </p>
               </CardContent>
             </Card>
@@ -195,8 +195,8 @@ const Home: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">
-                  Dashboard para todos los roles: estudiantes, profesores, coordinadores, 
-                  padres y administradores. Cada uno con sus funcionalidades específicas.
+                  Dashboard para todos los roles: estudiantes, profesores, coordinadores 
+                  y super administradores. Cada uno con sus funcionalidades específicas.
                 </p>
               </CardContent>
             </Card>

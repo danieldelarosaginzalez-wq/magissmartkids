@@ -42,7 +42,7 @@ public class DashboardController {
             long totalStudents = userRepository.countByRole(UserRole.STUDENT);
             long totalTeachers = userRepository.countByRole(UserRole.TEACHER);
             long totalCoordinators = userRepository.countByRole(UserRole.COORDINATOR);
-            long totalParents = userRepository.countByRole(UserRole.PARENT);
+
 
             // Contar instituciones
             long totalInstitutions = institutionRepository.count();
@@ -60,7 +60,7 @@ public class DashboardController {
             stats.put("totalStudents", totalStudents);
             stats.put("totalTeachers", totalTeachers);
             stats.put("totalCoordinators", totalCoordinators);
-            stats.put("totalParents", totalParents);
+
             stats.put("totalInstitutions", totalInstitutions);
             stats.put("activeInstitutions", activeInstitutions);
             stats.put("growthPercentage", growthPercentage);

@@ -219,7 +219,7 @@ const StudentManagement: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Gestión de Estudiantes</h1>
-              <p className="text-gray-600 mt-1">Administra los estudiantes de tu institución</p>
+              <p className="text-gray-600 mt-1">Gestiona los estudiantes de tu institución</p>
             </div>
             <div className="flex space-x-3">
               <button

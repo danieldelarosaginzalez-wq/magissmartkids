@@ -5,7 +5,6 @@ import TeacherDashboard from './dashboards/TeacherDashboard';
 import CoordinatorDashboard from './dashboards/CoordinatorDashboard';
 // import ParentDashboard from './dashboards/ParentDashboard'; // Rol eliminado
 import AdminDashboard from './dashboards/AdminDashboard';
-import SecretaryDashboard from './dashboards/SecretaryDashboard';
 import { Card, CardContent } from '../components/ui/Card';
 import { AlertCircle } from 'lucide-react';
 
@@ -50,15 +49,10 @@ const Dashboard: React.FC = () => {
     case 'coordinator':
     case 'coordinador':
       return <CoordinatorDashboard />;
-    case 'parent':
-    case 'padre':
-      // Rol eliminado - redirigir a estudiante por defecto
-      return <StudentDashboard />;
-    case 'secretary':
-    case 'secretaria':
-      return <SecretaryDashboard />;
-    case 'admin':
-    case 'administrador':
+
+    case 'super_admin':
+    case 'superadmin':
+    case 'superadministrador':
       return <AdminDashboard />;
     default:
       return (

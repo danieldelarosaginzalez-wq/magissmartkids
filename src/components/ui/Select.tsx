@@ -184,9 +184,7 @@ const SelectValue: React.FC<SelectValueProps & { value?: string }> = ({ placehol
     'student': 'Estudiante',
     'teacher': 'Profesor',
     'coordinator': 'Coordinador',
-    'parent': 'Padre de Familia',
-    'secretary': 'Secretaría',
-    'admin': 'Administrador'
+    'super_admin': 'Super Administrador'
   };
   
   console.log('📋 SelectValue - value recibido:', value);

@@ -183,18 +183,14 @@ public class AuthService {
             case "COORDINADOR":
             case "COORDINATOR":
                 return UserRole.COORDINATOR;
-            case "PADRE":
-            case "PARENT":
-                return UserRole.PARENT;
-            case "SECRETARIA":
-            case "SECRETARY":
-                return UserRole.SECRETARY;
+
+
             case "ADMIN":
             case "ADMINISTRADOR":
                 return UserRole.ADMIN;
             default:
                 System.err.println("❌ Rol no válido recibido: " + frontendRole);
-                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, PARENT, SECRETARY, ADMIN");
+                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, SUPER_ADMIN");
         }
     }
 }
