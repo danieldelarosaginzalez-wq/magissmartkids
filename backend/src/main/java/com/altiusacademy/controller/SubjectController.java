@@ -1,273 +1,265 @@
 package com.altiusacademy.controller;
 
-import com.altiusacademy.model.entity.Subject;
-import com.altiusacademy.model.entity.User;
-import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.repository.SubjectRepository;
-import com.altiusacademy.repository.UserRepository;
-import com.altiusacademy.repository.InstitutionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.altiusacademy.model.entity.Subject;
+import com.altiusacademy.repository.mysql.SubjectRepository;
 
 @RestController
 @RequestMapping("/api/subjects")
-@CrossOrigin(origins = "*")
 public class SubjectController {
-
-    @Autowired private SubjectRepository subjectRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private InstitutionRepository institutionRepository;
-
-    // Listar todas las materias (para debugging)
-    @GetMapping
-    public ResponseEntity<?> getAllSubjects() {
+    
+    // Endpoint de debug público (temporal)
+    @GetMapping("/api/debug/preescolar-raw/{institutionId}")
+    public ResponseEntity<?> debugPreescolarPublic(@PathVariable Long institutionId) {
         try {
-            System.out.println("📚 Obteniendo TODAS las materias");
-            List<Subject> subjects = subjectRepository.findAll();
+            List<Subject> allSubjects = subjectRepository.findByInstitutionId(institutionId);
+            
+            List<Map<String, Object>> preescolarData = new ArrayList<>();
+            for (Subject s : allSubjects) {
+                if (s.getSchoolGrade() != null && s.getSchoolGrade().getGradeLevel() == 0) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("subjectId", s.getId());
+                    data.put("name", s.getName());
+                    data.put("teacherIdInDB", s.getTeacher() != null ? s.getTeacher().getId() : "NULL");
+                    data.put("teacherName", s.getTeacher() != null ? 
+                        s.getTeacher().getFirstName() + " " + s.getTeacher().getLastName() : "NULL");
+                    data.put("gradeLevel", s.getSchoolGrade().getGradeLevel());
+                    data.put("gradeName", s.getSchoolGrade().getGradeName());
+                    preescolarData.add(data);
+                }
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("subjects", subjects);
-            response.put("total", subjects.size());
+            response.put("institutionId", institutionId);
+            response.put("preescolarSubjects", preescolarData);
+            response.put("total", preescolarData.size());
             
-            System.out.println("✅ Total de materias en BD: " + subjects.size());
             return ResponseEntity.ok(response);
-            
         } catch (Exception e) {
-            System.err.println("❌ Error obteniendo todas las materias: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al cargar materias: " + e.getMessage());
+            response.put("error", e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Listar materias por institución
+    @Autowired
+    private SubjectRepository subjectRepository;
+
     @GetMapping("/institution/{institutionId}")
     public ResponseEntity<?> getSubjectsByInstitution(@PathVariable Long institutionId) {
         try {
-            System.out.println("📚 Obteniendo materias para institución: " + institutionId);
-            List<Subject> subjects = subjectRepository.findActiveSubjectsByInstitution(institutionId);
+            System.out.println("🔍 Buscando materias para institución: " + institutionId);
+            List<Subject> subjects = subjectRepository.findByInstitutionId(institutionId);
+            System.out.println("📊 Total materias encontradas: " + subjects.size());
+            
+            List<Map<String, Object>> subjectList = subjects.stream().map(subject -> {
+                Map<String, Object> subjectMap = new HashMap<>();
+                subjectMap.put("id", subject.getId());
+                subjectMap.put("name", subject.getName());
+                subjectMap.put("description", subject.getDescription());
+                subjectMap.put("color", subject.getColor());
+                subjectMap.put("isActive", subject.getIsActive());
+                
+                // Log para debug
+                System.out.println("📚 Materia: " + subject.getName() + 
+                    " | Teacher ID: " + (subject.getTeacher() != null ? subject.getTeacher().getId() : "NULL") +
+                    " | Grade Level: " + (subject.getSchoolGrade() != null ? subject.getSchoolGrade().getGradeLevel() : "NULL"));
+                
+                if (subject.getSchoolGrade() != null) {
+                    Map<String, Object> gradeMap = new HashMap<>();
+                    gradeMap.put("id", subject.getSchoolGrade().getId());
+                    gradeMap.put("gradeName", subject.getSchoolGrade().getGradeName());
+                    gradeMap.put("gradeLevel", subject.getSchoolGrade().getGradeLevel());
+                    subjectMap.put("schoolGrade", gradeMap);
+                }
+                
+                if (subject.getTeacher() != null) {
+                    Map<String, Object> teacherMap = new HashMap<>();
+                    teacherMap.put("id", subject.getTeacher().getId());
+                    teacherMap.put("firstName", subject.getTeacher().getFirstName());
+                    teacherMap.put("lastName", subject.getTeacher().getLastName());
+                    teacherMap.put("email", subject.getTeacher().getEmail());
+                    subjectMap.put("teacher", teacherMap);
+                } else {
+                    System.out.println("⚠️ Materia sin profesor: " + subject.getName());
+                }
+                
+                return subjectMap;
+            }).collect(Collectors.toList());
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("subjects", subjects);
-            response.put("total", subjects.size());
+            response.put("subjects", subjectList);
+            response.put("total", subjectList.size());
             
-            System.out.println("✅ Encontradas " + subjects.size() + " materias");
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            System.err.println("❌ Error obteniendo materias: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al cargar materias: " + e.getMessage());
+            response.put("message", "Error al obtener materias: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Listar materias del profesor autenticado
-    @GetMapping("/teacher")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> getTeacherSubjects(Authentication authentication) {
+    @GetMapping("/teacher/{teacherId}")
+    public ResponseEntity<?> getSubjectsByTeacher(@PathVariable Long teacherId) {
         try {
-            System.out.println("👩‍🏫 Obteniendo materias del profesor: " + authentication.getName());
+            List<Subject> subjects = subjectRepository.findByTeacherId(teacherId);
             
-            Optional<User> teacherOpt = userRepository.findByEmail(authentication.getName());
-            if (teacherOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Profesor no encontrado");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            User teacher = teacherOpt.get();
-            List<Subject> subjects = subjectRepository.findActiveSubjectsByTeacher(teacher.getId());
+            List<Map<String, Object>> subjectList = subjects.stream().map(subject -> {
+                Map<String, Object> subjectMap = new HashMap<>();
+                subjectMap.put("id", subject.getId());
+                subjectMap.put("name", subject.getName());
+                subjectMap.put("description", subject.getDescription());
+                subjectMap.put("color", subject.getColor());
+                subjectMap.put("isActive", subject.getIsActive());
+                
+                if (subject.getSchoolGrade() != null) {
+                    Map<String, Object> gradeMap = new HashMap<>();
+                    gradeMap.put("id", subject.getSchoolGrade().getId());
+                    gradeMap.put("gradeName", subject.getSchoolGrade().getGradeName());
+                    gradeMap.put("gradeLevel", subject.getSchoolGrade().getGradeLevel());
+                    subjectMap.put("schoolGrade", gradeMap);
+                }
+                
+                return subjectMap;
+            }).collect(Collectors.toList());
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("subjects", subjects);
-            response.put("total", subjects.size());
-            response.put("teacher", teacher.getFirstName() + " " + teacher.getLastName());
+            response.put("subjects", subjectList);
+            response.put("total", subjectList.size());
             
-            System.out.println("✅ Profesor tiene " + subjects.size() + " materias");
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            System.err.println("❌ Error obteniendo materias del profesor: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al cargar materias: " + e.getMessage());
+            response.put("message", "Error al obtener materias: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Crear nueva materia (solo profesores)
-    @PostMapping
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> createSubject(@RequestBody Map<String, Object> request, Authentication authentication) {
+    @GetMapping("/debug/raw/{institutionId}")
+    public ResponseEntity<?> debugRawData(@PathVariable Long institutionId) {
         try {
-            System.out.println("➕ Creando nueva materia");
+            // Obtener materias de Preescolar directamente
+            List<Subject> allSubjects = subjectRepository.findByInstitutionId(institutionId);
             
-            Optional<User> teacherOpt = userRepository.findByEmail(authentication.getName());
-            if (teacherOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Profesor no encontrado");
-                return ResponseEntity.badRequest().body(response);
+            List<Map<String, Object>> preescolarData = new ArrayList<>();
+            for (Subject s : allSubjects) {
+                if (s.getSchoolGrade() != null && s.getSchoolGrade().getGradeLevel() == 0) {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("subjectId", s.getId());
+                    data.put("name", s.getName());
+                    data.put("teacherIdInDB", s.getTeacher() != null ? s.getTeacher().getId() : "NULL");
+                    data.put("teacherName", s.getTeacher() != null ? 
+                        s.getTeacher().getFirstName() + " " + s.getTeacher().getLastName() : "NULL");
+                    data.put("gradeLevel", s.getSchoolGrade().getGradeLevel());
+                    data.put("gradeName", s.getSchoolGrade().getGradeName());
+                    preescolarData.add(data);
+                }
             }
-            
-            User teacher = teacherOpt.get();
-            if (teacher.getInstitution() == null) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "El profesor no tiene una institución asignada");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            Subject subject = new Subject();
-            subject.setName((String) request.get("name"));
-            subject.setDescription((String) request.get("description"));
-            subject.setTeacher(teacher);
-            subject.setInstitution(teacher.getInstitution());
-            subject.setIsActive(true);
-            
-            Subject savedSubject = subjectRepository.save(subject);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("subject", savedSubject);
-            response.put("message", "Materia creada exitosamente");
+            response.put("institutionId", institutionId);
+            response.put("preescolarSubjects", preescolarData);
+            response.put("total", preescolarData.size());
             
-            System.out.println("✅ Materia creada: " + savedSubject.getName());
             return ResponseEntity.ok(response);
-            
         } catch (Exception e) {
-            System.err.println("❌ Error creando materia: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al crear materia: " + e.getMessage());
+            response.put("error", e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Actualizar materia
-    @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> updateSubject(@PathVariable Long id, @RequestBody Map<String, Object> request, Authentication authentication) {
+    @GetMapping("/debug/preescolar/{institutionId}")
+    public ResponseEntity<?> debugPreescolar(@PathVariable Long institutionId) {
         try {
-            System.out.println("✏️ Actualizando materia ID: " + id);
+            List<Subject> preescolarSubjects = subjectRepository.findByInstitutionId(institutionId)
+                .stream()
+                .filter(s -> s.getSchoolGrade() != null && s.getSchoolGrade().getGradeLevel() == 0)
+                .collect(Collectors.toList());
             
-            Optional<User> teacherOpt = userRepository.findByEmail(authentication.getName());
-            if (teacherOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Profesor no encontrado");
-                return ResponseEntity.badRequest().body(response);
-            }
-            
-            Optional<Subject> subjectOpt = subjectRepository.findById(id);
-            if (subjectOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Materia no encontrada");
-                return ResponseEntity.notFound().build();
-            }
-            
-            Subject subject = subjectOpt.get();
-            User teacher = teacherOpt.get();
-            
-            // Verificar que el profesor sea el dueño de la materia
-            if (!subject.getTeacher().getId().equals(teacher.getId())) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "No tienes permisos para editar esta materia");
-                return ResponseEntity.status(403).body(response);
-            }
-            
-            // Actualizar campos
-            if (request.containsKey("name")) {
-                subject.setName((String) request.get("name"));
-            }
-            if (request.containsKey("description")) {
-                subject.setDescription((String) request.get("description"));
-            }
-            
-            Subject updatedSubject = subjectRepository.save(subject);
+            List<Map<String, Object>> debug = preescolarSubjects.stream().map(s -> {
+                Map<String, Object> info = new HashMap<>();
+                info.put("id", s.getId());
+                info.put("name", s.getName());
+                info.put("teacherId", s.getTeacher() != null ? s.getTeacher().getId() : null);
+                info.put("teacherName", s.getTeacher() != null ? 
+                    s.getTeacher().getFirstName() + " " + s.getTeacher().getLastName() : "NULL");
+                info.put("gradeLevel", s.getSchoolGrade().getGradeLevel());
+                info.put("gradeName", s.getSchoolGrade().getGradeName());
+                return info;
+            }).collect(Collectors.toList());
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("subject", updatedSubject);
-            response.put("message", "Materia actualizada exitosamente");
+            response.put("institutionId", institutionId);
+            response.put("totalPreescolar", preescolarSubjects.size());
+            response.put("subjects", debug);
             
             return ResponseEntity.ok(response);
-            
         } catch (Exception e) {
-            System.err.println("❌ Error actualizando materia: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al actualizar materia: " + e.getMessage());
+            response.put("error", e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
 
-    // Eliminar materia (desactivar)
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<?> deleteSubject(@PathVariable Long id, Authentication authentication) {
+    @GetMapping("/stats/institution/{institutionId}")
+    public ResponseEntity<?> getSubjectStats(@PathVariable Long institutionId) {
         try {
-            System.out.println("🗑️ Eliminando materia ID: " + id);
+            List<Subject> subjects = subjectRepository.findByInstitutionId(institutionId);
             
-            Optional<User> teacherOpt = userRepository.findByEmail(authentication.getName());
-            if (teacherOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Profesor no encontrado");
-                return ResponseEntity.badRequest().body(response);
-            }
+            long totalSubjects = subjects.size();
+            long activeSubjects = subjects.stream().filter(s -> s.getIsActive()).count();
+            long subjectsWithTeacher = subjects.stream().filter(s -> s.getTeacher() != null).count();
+            long subjectsWithoutTeacher = totalSubjects - subjectsWithTeacher;
             
-            Optional<Subject> subjectOpt = subjectRepository.findById(id);
-            if (subjectOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Materia no encontrada");
-                return ResponseEntity.notFound().build();
-            }
-            
-            Subject subject = subjectOpt.get();
-            User teacher = teacherOpt.get();
-            
-            // Verificar que el profesor sea el dueño de la materia
-            if (!subject.getTeacher().getId().equals(teacher.getId())) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "No tienes permisos para eliminar esta materia");
-                return ResponseEntity.status(403).body(response);
-            }
-            
-            // Desactivar en lugar de eliminar
-            subject.setIsActive(false);
-            subjectRepository.save(subject);
+            // Agrupar por grado
+            Map<String, Long> subjectsByGrade = subjects.stream()
+                .filter(s -> s.getSchoolGrade() != null)
+                .collect(Collectors.groupingBy(
+                    s -> s.getSchoolGrade().getGradeName(),
+                    Collectors.counting()
+                ));
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Materia eliminada exitosamente");
+            response.put("totalSubjects", totalSubjects);
+            response.put("activeSubjects", activeSubjects);
+            response.put("subjectsWithTeacher", subjectsWithTeacher);
+            response.put("subjectsWithoutTeacher", subjectsWithoutTeacher);
+            response.put("subjectsByGrade", subjectsByGrade);
             
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            System.err.println("❌ Error eliminando materia: " + e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Error al eliminar materia: " + e.getMessage());
+            response.put("message", "Error al obtener estadísticas: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }

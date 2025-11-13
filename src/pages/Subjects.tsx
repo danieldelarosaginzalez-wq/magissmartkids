@@ -70,7 +70,7 @@ const Subjects: React.FC = () => {
     // Aquí iría la lógica para crear la materia
   };
 
-  const canCreateSubjects = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'super_admin';
+  const canCreateSubjects = user?.role === 'teacher' || user?.role === 'coordinator' || user?.role === 'admin';
 
   return (
     <div className="space-y-6">

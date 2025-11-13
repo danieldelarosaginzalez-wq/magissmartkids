@@ -20,7 +20,6 @@ export const normalizeRole = (role: string): UserRole => {
     case 'coordinator':
     case 'coordinador':
       return 'coordinator';
-
     case 'super_admin':
     case 'superadmin':
     case 'superadministrador':
@@ -44,7 +43,6 @@ export const getRoleDisplayName = (role: string): string => {
       return 'Profesor';
     case 'coordinator':
       return 'Coordinador';
-
     case 'super_admin':
       return 'Super Administrador';
     default:

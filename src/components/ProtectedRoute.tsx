@@ -33,8 +33,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar si el usuario está autenticado
   if (!isAuthenticated || !user || !token) {
-    console.log('❌ Usuario no autenticado, redirigiendo al login');
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    console.log('❌ Usuario no autenticado, redirigiendo al inicio');
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // Verificar si hay roles específicos requeridos

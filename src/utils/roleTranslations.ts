@@ -6,12 +6,16 @@ export const roleTranslations: Record<string, string> = {
   'STUDENT': 'Estudiante',
   'TEACHER': 'Profesor',
   'COORDINATOR': 'Coordinador',
+
+
   'SUPER_ADMIN': 'Super Administrador',
   
   // Roles en minúsculas (formato backend actual)
   'student': 'Estudiante',
   'teacher': 'Profesor',
   'coordinator': 'Coordinador',
+
+
   'super_admin': 'Super Administrador',
   'visitor': 'Visitante'
 };
@@ -48,6 +52,8 @@ export const getRoleIcon = (role: string): string => {
     'STUDENT': '👨‍🎓',
     'TEACHER': '👩‍🏫',
     'COORDINATOR': '👨‍💼',
+
+
     'SUPER_ADMIN': '👑',
     'VISITOR': '👁️'
   };
@@ -62,6 +68,8 @@ export const getRoleColor = (role: string): string => {
     'STUDENT': 'bg-blue-100 text-blue-800',
     'TEACHER': 'bg-green-100 text-green-800',
     'COORDINATOR': 'bg-purple-100 text-purple-800',
+
+
     'SUPER_ADMIN': 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
     'VISITOR': 'bg-orange-100 text-orange-800'
   };

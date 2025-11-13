@@ -1,18 +1,34 @@
 package com.altiusacademy.model.entity;
 
-import com.altiusacademy.model.enums.UserRole;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import com.altiusacademy.model.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
@@ -55,8 +71,8 @@ public class User {
     private Institution institution;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "academic_grade_id")
-    private AcademicGrade academicGrade; // Grado académico (1°, 2°, 3°, 4°, 5°)
+    @JoinColumn(name = "school_grade_id")
+    private SchoolGrade schoolGrade; // Grado escolar específico (1° A, 2° B, etc.)
 
     @Size(max = 20)
     private String phone;
@@ -86,13 +102,7 @@ public class User {
     @JsonIgnore
     private Set<Grade> grades = new HashSet<>();
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<ParentStudentRelation> parentRelations = new HashSet<>();
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<ParentStudentRelation> studentRelations = new HashSet<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -105,6 +115,9 @@ public class User {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
 
     // Constructors
     public User() {}
@@ -178,12 +191,14 @@ public class User {
         this.institution = institution;
     }
 
-    public AcademicGrade getAcademicGrade() {
-        return academicGrade;
+
+
+    public SchoolGrade getSchoolGrade() {
+        return schoolGrade;
     }
 
-    public void setAcademicGrade(AcademicGrade academicGrade) {
-        this.academicGrade = academicGrade;
+    public void setSchoolGrade(SchoolGrade schoolGrade) {
+        this.schoolGrade = schoolGrade;
     }
 
     public String getPhone() {
@@ -250,21 +265,7 @@ public class User {
         this.grades = grades;
     }
 
-    public Set<ParentStudentRelation> getParentRelations() {
-        return parentRelations;
-    }
 
-    public void setParentRelations(Set<ParentStudentRelation> parentRelations) {
-        this.parentRelations = parentRelations;
-    }
-
-    public Set<ParentStudentRelation> getStudentRelations() {
-        return studentRelations;
-    }
-
-    public void setStudentRelations(Set<ParentStudentRelation> studentRelations) {
-        this.studentRelations = studentRelations;
-    }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -288,5 +289,13 @@ public class User {
 
     public void setInstitutions(Set<UserInstitutionRole> institutions) {
         this.institutions = institutions;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
     }
 }

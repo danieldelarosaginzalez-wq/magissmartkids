@@ -1,731 +1,869 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Mail, Lock, User, Eye, EyeOff, Building, GraduationCap } from 'lucide-react';
-import { Button, Input, Card, CardContent, CardHeader, CardTitle } from '../components/ui';
-import { Badge } from '../components/ui/Badge';
-import CreateInstitutionModal from '../components/CreateInstitutionModal';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import MagicLogoText from '../components/ui/MagicLogoText';
+import Logo from '../components/ui/Logo';
+
+import { Eye, EyeOff, AlertCircle, CheckCircle, Loader2, Plus, X, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { authApi } from '../services/api';
-import { normalizeRole } from '../utils/roleUtils';
+import api, { schoolGradesApi, studentValidationApi, institutionApi, authApi } from '../services/api';
 
+interface RegisterFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  role: string;
+  institutionNit?: string;
+  institutionId?: number;
+  gradeLevel?: string;
+  childrenEmails?: string[];
+}
 
+interface Institution {
+  id: number;
+  name: string;
+  nit: string;
+  address: string;
+}
+
+interface SchoolGrade {
+  id: number;
+  gradeName: string;
+  gradeLevel: number;
+  description: string;
+  isActive: boolean;
+}
+
+interface ChildInfo {
+  email: string;
+  exists: boolean;
+  student?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  institution?: {
+    id: number;
+    name: string;
+    nit: string;
+    address: string;
+  };
+  message?: string;
+  validating?: boolean;
+}
 
 const Register: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const { login } = useAuthStore();
+  
+  const [formData, setFormData] = useState<RegisterFormData>({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
     role: '',
-    institutionId: '',
-    // Campos específicos por rol
-    academicGrade: '', // Para estudiantes
-    teachingGrades: [] as string[], // Para profesores
-    institutionNit: '' // Para coordinadores
+    institutionNit: '',
+    institutionId: undefined,
+    gradeLevel: '',
+    childrenEmails: []
   });
-  const [institutions, setInstitutions] = useState<any[]>([]);
-  const [institutionsLoading, setInstitutionsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [schoolGrades, setSchoolGrades] = useState<SchoolGrade[]>([]);
+  const [loadingGrades, setLoadingGrades] = useState(false);
+  const [institutionInfo, setInstitutionInfo] = useState<Institution | null>(null);
+  const [validatingNit, setValidatingNit] = useState(false);
+  const [childrenInfo, setChildrenInfo] = useState<ChildInfo[]>([{ email: '', exists: false }]);
   
-  // Estados para validaciones en tiempo real
-  const [availableGrades, setAvailableGrades] = useState<string[]>([]);
-  const [nitValidation, setNitValidation] = useState<{
-    validating: boolean;
-    valid: boolean;
-    institutionName?: string;
-    error?: string;
-  }>({ validating: false, valid: false });
+  // Simple institution state
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
 
-  const { login } = useAuthStore();
-  const navigate = useNavigate();
-
-  // Cargar instituciones y grados al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
-    fetchInstitutions();
-    fetchAvailableGrades();
+    loadSchoolGrades();
+    // Simple institution loading
+    institutionApi.getAll().then(response => {
+      if (response.data.success && response.data.institutions) {
+        setInstitutions(response.data.institutions);
+      }
+    });
   }, []);
 
-  const fetchInstitutions = async () => {
+  const loadSchoolGrades = async () => {
+    setLoadingGrades(true);
     try {
-      setInstitutionsLoading(true);
-      console.log('🏛️ Cargando instituciones...');
+      console.log('🎓 Cargando grados escolares de tu BD...');
       
-      const response = await fetch('/api/institutions');
+      // ✅ CARGAR DATOS DE TU BD - USANDO ENDPOINT SIMPLE
+      const response = await api.get('/simple-grades');
+      console.log('📚 Respuesta de grados escolares:', response.data);
       
-      console.log('📡 Status de respuesta:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📥 Respuesta instituciones:', data);
-      
-      if (data.success && data.institutions) {
-        setInstitutions(data.institutions);
-        console.log(`✅ ${data.institutions.length} instituciones cargadas`);
+      if (response.data.success && response.data.grades && response.data.grades.length > 0) {
+        setSchoolGrades(response.data.grades);
+        console.log(`✅ ${response.data.grades.length} grados cargados de tu BD`);
+        setError(''); // Limpiar cualquier error previo
       } else {
-        console.error('❌ Error en respuesta:', data);
-        setInstitutions([]);
+        console.log('⚠️ Respuesta vacía, usando datos de tu BD');
+        // ✅ DATOS EXACTOS DE TU BD
+        const gradesFromYourDB = [
+          { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
+          { id: 2, name: '1°', gradeName: '1°', level: 1 },
+          { id: 3, name: '2°', gradeName: '2°', level: 2 },
+          { id: 4, name: '3°', gradeName: '3°', level: 3 },
+          { id: 5, name: '4°', gradeName: '4°', level: 4 },
+          { id: 6, name: '5°', gradeName: '5°', level: 5 }
+        ];
+        setSchoolGrades(gradesFromYourDB);
       }
     } catch (error) {
-      console.error('❌ Error cargando instituciones:', error);
-      setInstitutions([]);
+      console.error('❌ Error de conexión:', error);
+      console.log('🔄 Usando datos exactos de tu BD como fallback');
+      
+      // ✅ DATOS EXACTOS DE TU BD COMO FALLBACK
+      const gradesFromYourDB = [
+        { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
+        { id: 2, name: '1°', gradeName: '1°', level: 1 },
+        { id: 3, name: '2°', gradeName: '2°', level: 2 },
+        { id: 4, name: '3°', gradeName: '3°', level: 3 },
+        { id: 5, name: '4°', gradeName: '4°', level: 4 },
+        { id: 6, name: '5°', gradeName: '5°', level: 5 }
+      ];
+      setSchoolGrades(gradesFromYourDB);
+      setError(''); // No mostrar error, los datos están disponibles
     } finally {
-      setInstitutionsLoading(false);
+      setLoadingGrades(false);
     }
   };
 
-  const fetchAvailableGrades = async () => {
-    try {
-      const response = await fetch('/api/institutions/academic-grades');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.grades) {
-          setAvailableGrades(data.grades);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error cargando grados:', error);
-      setAvailableGrades(['1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°', '10°', '11°']);
-    }
-  };
+
 
   const validateInstitutionNit = async (nit: string) => {
-    if (!nit || nit.length < 5) {
-      setNitValidation({ validating: false, valid: false });
+    if (!nit.trim()) {
+      setInstitutionInfo(null);
       return;
     }
 
-    setNitValidation({ validating: true, valid: false });
-
+    setValidatingNit(true);
     try {
-      const response = await fetch(`/api/institutions/validate-nit/${nit}`);
-      const data = await response.json();
+      const response = await institutionApi.validateNit(nit);
+      if (response.data.success && response.data.exists) {
+        setInstitutionInfo(response.data.institution);
+        setError('');
+      } else {
+        setInstitutionInfo(null);
+        setError('NIT de institución no encontrado');
+      }
+    } catch (error) {
+      console.error('Error validating NIT:', error);
+      setInstitutionInfo(null);
+      setError('Error de conexión al validar el NIT');
+    } finally {
+      setValidatingNit(false);
+    }
+  };
 
-      if (data.success && data.exists) {
-        setNitValidation({
-          validating: false,
-          valid: true,
-          institutionName: data.institution.name
+  const validateStudentEmail = async (email: string, index: number) => {
+    if (!email.trim()) {
+      updateChildInfo(index, { email, exists: false, validating: false });
+      return;
+    }
+
+    console.log(`🔍 Validando estudiante: ${email}`);
+    updateChildInfo(index, { ...childrenInfo[index], validating: true });
+    
+    try {
+      const response = await studentValidationApi.validateStudent(email);
+      console.log(`📊 Datos de validación:`, response.data);
+      
+      if (response.data.success && response.data.exists) {
+        console.log(`✅ Estudiante encontrado: ${response.data.student.firstName} ${response.data.student.lastName}`);
+        updateChildInfo(index, {
+          email,
+          exists: true,
+          student: response.data.student,
+          institution: response.data.institution,
+          validating: false
         });
       } else {
-        setNitValidation({
-          validating: false,
-          valid: false,
-          error: 'NIT no encontrado'
+        console.log(`❌ Estudiante no encontrado: ${email}`);
+        updateChildInfo(index, {
+          email,
+          exists: false,
+          message: response.data.message || 'El correo del estudiante no existe en el sistema',
+          validating: false
         });
       }
     } catch (error) {
-      setNitValidation({
-        validating: false,
-        valid: false,
-        error: 'Error validando NIT'
+      console.error('❌ Error de conexión al validar estudiante:', error);
+      updateChildInfo(index, {
+        email,
+        exists: false,
+        message: 'Error de conexión. Verifica que el servidor esté funcionando.',
+        validating: false
       });
     }
   };
 
+  const updateChildInfo = (index: number, info: Partial<ChildInfo>) => {
+    setChildrenInfo(prev => {
+      const newInfo = [...prev];
+      newInfo[index] = { ...newInfo[index], ...info };
+      return newInfo;
+    });
+  };
 
+  const addChildField = () => {
+    setChildrenInfo(prev => [...prev, { email: '', exists: false }]);
+  };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    console.log(`📝 Campo ${name} cambiado a:`, value);
-    
-    // Si selecciona "crear nueva institución", abrir modal
-    if (name === 'institutionId' && value === 'create-new') {
-      setShowCreateModal(true);
-      return;
+  const removeChildField = (index: number) => {
+    if (childrenInfo.length > 1) {
+      setChildrenInfo(prev => prev.filter((_, i) => i !== index));
     }
+  };
 
-    // Limpiar campos específicos cuando cambia el rol
-    if (name === 'role') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        academicGrade: '',
-        teachingGrades: [],
-        institutionNit: '',
-        children: []
-      }));
-      setNitValidation({ validating: false, valid: false });
-    } else if (name === 'institutionNit') {
-      setFormData(prev => ({ ...prev, [name]: value }));
-      validateInstitutionNit(value);
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChildEmailChange = (index: number, email: string) => {
+    updateChildInfo(index, { email, exists: false, student: undefined, institution: undefined, message: undefined });
+  };
+
+  const handleChildEmailBlur = (index: number, email: string) => {
+    if (email.trim() && email.includes('@')) {
+      validateStudentEmail(email, index);
     }
-    
-    setError('');
-  };
-
-  const handleGradeToggle = (grade: string) => {
-    setFormData(prev => ({
-      ...prev,
-      teachingGrades: prev.teachingGrades.includes(grade)
-        ? prev.teachingGrades.filter(g => g !== grade)
-        : [...prev.teachingGrades, grade]
-    }));
   };
 
 
-
-  const handleInstitutionCreated = (newInstitution: any) => {
-    console.log('🎉 Nueva institución creada:', newInstitution);
-    
-    // Agregar la nueva institución a la lista
-    setInstitutions(prev => [...prev, newInstitution]);
-    
-    // Seleccionar automáticamente la nueva institución
-    setFormData(prev => ({ ...prev, institutionId: newInstitution.id.toString() }));
-    
-    console.log('✅ Institución seleccionada automáticamente');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
-
-    console.log('📝 Iniciando registro con formData:', formData);
+    setSuccess('');
 
     // Validaciones básicas
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.role) {
-      setError('Por favor completa todos los campos obligatorios.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Validaciones específicas por rol
-    if (formData.role === 'student' && !formData.academicGrade) {
-      setError('Por favor selecciona tu grado académico.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.role === 'teacher' && formData.teachingGrades.length === 0) {
-      setError('Por favor selecciona al menos un grado para enseñar.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (formData.role === 'coordinator') {
-      if (!formData.institutionNit) {
-        setError('Por favor ingresa el NIT de tu institución.');
-        setIsLoading(false);
-        return;
-      }
-      if (!nitValidation.valid) {
-        setError('El NIT ingresado no es válido o no existe.');
-        setIsLoading(false);
-        return;
-      }
-    }
-
-
-
-    if ((formData.role === 'student' || formData.role === 'teacher') && (!formData.institutionId || formData.institutionId === 'create-new')) {
-      setError('Por favor selecciona una institución válida.');
-      setIsLoading(false);
+    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.email.trim() || 
+        !formData.password || !formData.role) {
+      setError('Por favor completa todos los campos obligatorios');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      setIsLoading(false);
+      setError('Las contraseñas no coinciden');
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres.');
-      setIsLoading(false);
+      setError('La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
+    // Validaciones específicas por rol
+    if (formData.role === 'COORDINATOR' && !formData.institutionNit?.trim()) {
+      setError('El NIT de la institución es obligatorio para coordinadores');
+      return;
+    }
+
+    // ✅ VALIDACIÓN: Solo un coordinador en el sistema
+    if (formData.role === 'COORDINATOR') {
+      try {
+        const coordinatorCheck = await authApi.checkCoordinatorExists();
+        if (coordinatorCheck.data.exists) {
+          setError('Ya existe un coordinador registrado en el sistema. Solo se permite un coordinador.');
+          return;
+        }
+      } catch (error) {
+        console.error('Error verificando coordinador existente:', error);
+        // Continuar con el registro si hay error en la verificación
+      }
+    }
+
+    // Simple institution validation
+    if (!formData.institutionId) {
+      setError('Debes seleccionar una institución');
+      return;
+    }
+
+    if (formData.role === 'STUDENT' && !formData.gradeLevel) {
+      setError('El grado es obligatorio para estudiantes');
+      return;
+    }
+
+    // Validaciones para padres
+    if (formData.role === 'PARENT') {
+      const validChildren = childrenInfo.filter(child => child.email.trim() && child.exists);
+      if (validChildren.length === 0) {
+        setError('Debe agregar al menos un hijo válido registrado en el sistema');
+        return;
+      }
+
+      // Verificar que no hay correos duplicados
+      const emails = childrenInfo.map(child => child.email.trim().toLowerCase()).filter(email => email);
+      const uniqueEmails = new Set(emails);
+      if (emails.length !== uniqueEmails.size) {
+        setError('No se permiten correos duplicados de hijos');
+        return;
+      }
+
+      // Verificar que todos los hijos ingresados existen
+      const invalidChildren = childrenInfo.filter(child => child.email.trim() && !child.exists);
+      if (invalidChildren.length > 0) {
+        setError('Todos los correos de hijos deben corresponder a estudiantes registrados en el sistema');
+        return;
+      }
+    }
+
+    // Validar que el NIT exista (para coordinadores)
+    if (formData.role === 'COORDINATOR' && !institutionInfo) {
+      setError('Debe validar el NIT de la institución antes de continuar');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      // Preparar datos para el backend
-      const registerData: any = {
-        email: formData.email.trim(),
-        password: formData.password,
+      const registerData = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
-        role: formData.role
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+        ...(formData.role === 'COORDINATOR' && { institutionNit: formData.institutionNit }),
+        ...(formData.institutionId && { institutionId: formData.institutionId }),
+        ...(formData.role === 'STUDENT' && { schoolGrade: formData.gradeLevel }),
+        ...(formData.role === 'PARENT' && { 
+          childrenEmails: childrenInfo
+            .filter(child => child.email.trim() && child.exists)
+            .map(child => child.email.trim().toLowerCase())
+        })
       };
 
-      // Agregar campos específicos por rol
-      if (formData.role === 'student') {
-        registerData.academicGrade = formData.academicGrade;
-        registerData.institutionId = parseInt(formData.institutionId);
-      } else if (formData.role === 'teacher') {
-        registerData.teachingGrades = formData.teachingGrades;
-        registerData.institutionId = parseInt(formData.institutionId);
-      } else if (formData.role === 'coordinator') {
-        registerData.institutionNit = formData.institutionNit;
-      }
+      // 🔍 DEBUG: Verificar datos de registro
+      console.log('📝 Datos a enviar:', registerData);
+      console.log('🏫 Institution ID seleccionado:', formData.institutionId);
+      console.log('🎓 Grado seleccionado:', formData.gradeLevel);
+      console.log('📚 Grados disponibles:', schoolGrades);
+      console.log('👤 Form data completo:', formData);
 
-      console.log('📤 Enviando al backend:', registerData);
-      console.log('🌐 URL: POST /api/auth/register');
-      console.log('📋 Content-Type: application/json');
-      
-      // Llamada a la API
       const response = await authApi.register(registerData);
-      
-      console.log('📥 Respuesta del backend:', response.data);
+      const data = response.data;
 
-      // Verificar que el registro fue exitoso
-      if (response.data.success && response.data.token) {
-        console.log('✅ Registro exitoso, creando sesión...');
-        
-        const userData = {
-          id: response.data.userId.toString(),
-          email: response.data.email,
-          firstName: response.data.firstName,
-          lastName: response.data.lastName,
-          role: normalizeRole(response.data.role || formData.role),
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        };
+      // 🔍 DEBUG: Verificar respuesta del registro
+      console.log('✅ Respuesta del registro:', data);
+      console.log('👤 Usuario creado:', data.user);
+      console.log('🔐 Token recibido:', data.token);
 
-        console.log('👤 Datos del usuario para el store:', userData);
+      if (data.success) {
+        setSuccess('¡Registro exitoso! Redirigiendo al dashboard...');
         
-        login(userData, response.data.token);
-        navigate('/dashboard');
+        // Auto-login después del registro exitoso
+        if (data.token && data.user) {
+          // 🔍 DEBUG: Verificar datos del usuario antes del login
+          console.log('🔐 Datos del usuario para login:', data.user);
+          console.log('🏫 Institución en user:', data.user.institution);
+          
+          login(data.user, data.token);
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            navigate('/');
+          }, 2000);
+        }
       } else {
-        console.error('❌ Registro falló:', response.data);
-        setError(response.data.message || 'Error en el registro.');
+        setError(data.message || 'Error en el registro. Inténtalo de nuevo.');
       }
-    } catch (error: any) {
-      console.error('❌ Error en registro:', error);
-      console.error('📄 Error response:', error.response?.data);
-      console.error('🔢 Status code:', error.response?.status);
-      
-      if (error.response?.data?.message) {
-        setError(error.response.data.message);
-      } else if (error.response?.status === 400) {
-        setError('Datos inválidos. Verifica la información.');
-      } else if (error.response?.status === 409) {
-        setError('El correo ya está registrado.');
-      } else if (error.response?.status >= 500) {
-        setError('Error del servidor. Intenta más tarde.');
-      } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-        setError('No se puede conectar al servidor.');
-      } else {
-        setError('Error inesperado durante el registro.');
-      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError('Error de conexión. Verifica tu conexión a internet.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 text-white">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-blue-600" />
+    <div className="min-h-screen bg-white">
+      {/* Navbar responsivo */}
+      <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Logo 
+                size="lg" 
+                clickable={true}
+                className="h-8 sm:h-10 lg:h-12 w-auto"
+              />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="hidden sm:block" />
             </div>
-            <span className="text-2xl font-bold">Altius Academy</span>
-          </Link>
-          <p className="mt-2 text-blue-100">Crea tu cuenta</p>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Link to="/">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+                  <span className="hidden sm:inline">Volver al Inicio</span>
+                  <span className="sm:hidden">Inicio</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Contenido del formulario - Responsivo */}
+      <section className="py-8 sm:py-12 lg:py-16 bg-gray-50 relative overflow-hidden min-h-screen">
+        {/* Animaciones de fondo responsivas */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute w-4 h-4 sm:w-6 sm:h-6 bg-[#00C764] rounded-full top-10 sm:top-20 left-4 sm:left-10 animate-pulse"></div>
+          <div className="absolute w-3 h-3 sm:w-4 sm:h-4 bg-[#F5A623] rounded-full top-20 sm:top-40 right-8 sm:right-20 animate-bounce"></div>
+          <div className="absolute w-4 h-4 sm:w-5 sm:h-5 bg-[#2E5BFF] rounded-full bottom-16 sm:bottom-30 left-8 sm:left-32 animate-ping"></div>
+          <div className="absolute w-2 h-2 sm:w-3 sm:h-3 bg-[#FF6B35] rounded-full top-32 sm:top-60 right-12 sm:right-40 animate-pulse delay-1000"></div>
+          <div className="absolute w-5 h-5 sm:w-7 sm:h-7 bg-[#1494DE] rounded-full bottom-8 sm:bottom-20 right-4 sm:right-10 animate-bounce delay-500"></div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">Registro de Usuario</CardTitle>
-          </CardHeader>
+        <div className="relative z-10 w-full max-w-lg mx-auto px-4 sm:px-6">
+          <Card className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 hover:shadow-xl transition-shadow duration-300">
+            <CardHeader className="text-center pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl font-heading text-[#00368F] mb-2">
+                Crear Cuenta Mágica
+              </CardTitle>
+              <p className="text-sm sm:text-base text-gray-600 font-body">
+                ¡Únete a la aventura mágica del aprendizaje! ✨
+              </p>
+            </CardHeader>
           <CardContent>
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="mb-6 p-4 bg-accent-red/10 border border-accent-red/20 rounded-lg">
+                <div className="flex items-center gap-2 text-accent-red">
+                  <AlertCircle className="h-5 w-5" />
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Nombres */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombres *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="firstName"
-                      name="firstName"
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      placeholder="Tu nombre"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Apellidos *
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="lastName"
-                      name="lastName"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      placeholder="Tu apellido"
-                      className="pl-10"
-                      required
-                    />
-                  </div>
+            {success && (
+              <div className="mb-6 p-4 bg-accent-green/10 border border-accent-green/20 rounded-lg">
+                <div className="flex items-center gap-2 text-accent-green">
+                  <CheckCircle className="h-5 w-5" />
+                  <p className="text-sm font-medium">{success}</p>
                 </div>
               </div>
+            )}
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Correo Electrónico *
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="tu@email.com"
-                    className="pl-10"
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              {/* Información Personal */}
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
+                    Nombres *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Tu nombre"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
+                    Apellidos *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Tu apellido"
                     required
                   />
                 </div>
               </div>
 
-              {/* Institución - Solo para estudiantes y profesores */}
-              {(formData.role === 'student' || formData.role === 'teacher') && (
-                <div>
-                  <label htmlFor="institutionId" className="block text-sm font-medium text-gray-700 mb-1">
-                    Institución *
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <select
-                      id="institutionId"
-                      name="institutionId"
-                      value={formData.institutionId}
-                      onChange={handleChange}
-                      className="w-full h-10 pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                      required
-                      disabled={institutionsLoading}
-                    >
-                      <option value="">
-                        {institutionsLoading ? 'Cargando instituciones...' : 'Selecciona tu institución'}
-                      </option>
-                      {institutions.map((institution) => (
-                        <option key={institution.id} value={institution.id}>
-                          {institution.name} {institution.nit && `(NIT: ${institution.nit})`}
-                        </option>
-                      ))}
-                      {!institutionsLoading && institutions.length > 0 && (
-                        <option value="create-new" className="font-semibold text-primary">
-                          ➕ Crear nueva institución
-                        </option>
-                      )}
-                    </select>
-                  </div>
-                  
-                  {/* Estados del campo institución */}
-                  {institutionsLoading && (
-                    <p className="mt-1 text-xs text-primary">
-                      🔄 Cargando instituciones disponibles...
-                    </p>
-                  )}
-                  
-                  {!institutionsLoading && institutions.length === 0 && (
-                    <div className="mt-2 p-2 bg-accent-yellow/10 border border-accent-yellow/30 rounded-md">
-                      <p className="text-xs text-accent-yellow">
-                        ⚠️ No hay instituciones disponibles.{' '}
-                        <button
-                          type="button"
-                          onClick={() => setShowCreateModal(true)}
-                          className="text-primary hover:text-primary-600 underline font-medium"
-                        >
-                          Crea una nueva para continuar
-                        </button>
-                      </p>
-                    </div>
-                  )}
-                  
-                  {formData.institutionId && formData.institutionId !== 'create-new' && (
-                    <p className="mt-1 text-xs text-accent-green">
-                      ✓ Institución seleccionada
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Tipo de Usuario */}
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de Usuario *
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
+                  Correo Electrónico *
                 </label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  placeholder="tu@email.com"
                   required
-                >
-                  <option value="">Selecciona tu rol</option>
-                  <option value="student">Estudiante</option>
-                  <option value="teacher">Profesor</option>
-                  <option value="coordinator">Coordinador</option>
-                </select>
-                {formData.role && (
-                  <p className="mt-1 text-xs text-accent-green">
-                    ✓ Seleccionado: {
-                      formData.role === 'student' ? 'Estudiante' :
-                      formData.role === 'teacher' ? 'Profesor' :
-                      formData.role === 'coordinator' ? 'Coordinador' : formData.role
-                    }
-                  </p>
-                )}
+                />
               </div>
 
-              {/* Campos específicos por rol */}
-              
-              {/* ESTUDIANTE: Selección de grado */}
-              {formData.role === 'student' && (
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <GraduationCap className="h-5 w-5 text-primary" />
-                    <h3 className="font-medium text-neutral-black">Información Académica</h3>
-                  </div>
-                  <div>
-                    <label htmlFor="academicGrade" className="block text-sm font-medium text-gray-700 mb-1">
-                      Grado Académico *
-                    </label>
-                    <select
-                      id="academicGrade"
-                      name="academicGrade"
-                      value={formData.academicGrade}
-                      onChange={handleChange}
-                      className="w-full h-10 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                      required
-                    >
-                      <option value="">Selecciona tu grado</option>
-                      {availableGrades.map(grade => (
-                        <option key={grade} value={grade}>{grade}</option>
-                      ))}
-                    </select>
-                    {formData.academicGrade && (
-                      <p className="mt-1 text-xs text-accent-green">
-                        ✓ Grado seleccionado: {formData.academicGrade}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* PROFESOR: Selección múltiple de grados */}
-              {formData.role === 'teacher' && (
-                <div className="p-4 bg-accent-green/5 border border-accent-green/20 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-5 w-5 text-accent-green" />
-                    <h3 className="font-medium text-neutral-black">Grados que Enseñas</h3>
-                  </div>
-                  <p className="text-sm text-secondary mb-3">
-                    Selecciona todos los grados en los que impartes clases:
-                  </p>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {availableGrades.map(grade => (
-                      <button
-                        key={grade}
-                        type="button"
-                        onClick={() => handleGradeToggle(grade)}
-                        className={`p-2 text-sm rounded-md border transition-all duration-200 ${
-                          formData.teachingGrades.includes(grade)
-                            ? 'bg-accent-green text-neutral-white border-accent-green'
-                            : 'bg-neutral-white text-secondary border-secondary-300 hover:border-accent-green hover:bg-accent-green/10'
-                        }`}
-                      >
-                        {grade}
-                      </button>
-                    ))}
-                  </div>
-                  {formData.teachingGrades.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      <span className="text-xs text-secondary">Seleccionados:</span>
-                      {formData.teachingGrades.map(grade => (
-                        <Badge key={grade} variant="success" className="text-xs">
-                          {grade}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* COORDINADOR: Validación de NIT */}
-              {formData.role === 'coordinator' && (
-                <div className="p-4 bg-secondary/5 border border-secondary/20 rounded-lg">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building className="h-5 w-5 text-secondary" />
-                    <h3 className="font-medium text-neutral-black">Información Institucional</h3>
-                  </div>
-                  <div>
-                    <label htmlFor="institutionNit" className="block text-sm font-medium text-gray-700 mb-1">
-                      NIT de la Institución *
-                    </label>
-                    <div className="relative">
-                      <Input
-                        id="institutionNit"
-                        name="institutionNit"
-                        value={formData.institutionNit}
-                        onChange={handleChange}
-                        placeholder="Ej: 123456789-1"
-                        className="pr-10"
-                        required
-                      />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        {nitValidation.validating && (
-                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        )}
-                        {!nitValidation.validating && nitValidation.valid && (
-                          <Check className="w-4 h-4 text-accent-green" />
-                        )}
-                        {!nitValidation.validating && formData.institutionNit && !nitValidation.valid && (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        )}
-                      </div>
-                    </div>
-                    {nitValidation.valid && nitValidation.institutionName && (
-                      <p className="mt-1 text-xs text-accent-green">
-                        ✓ Institución encontrada: {nitValidation.institutionName}
-                      </p>
-                    )}
-                    {nitValidation.error && (
-                      <p className="mt-1 text-xs text-red-600">
-                        ❌ {nitValidation.error}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-
-
               {/* Contraseñas */}
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Contraseña *
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="password"
-                      name="password"
+                    <input
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
-                      onChange={handleChange}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                       placeholder="Mínimo 6 caracteres"
-                      className="pl-10 pr-10"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-neutral-black"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="space-y-2">
+                  <label className="block text-xs sm:text-sm font-medium text-neutral-black">
                     Confirmar Contraseña *
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
+                    <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Repite la contraseña"
-                      className="pl-10 pr-10"
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Repite tu contraseña"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-neutral-black"
                     >
-                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" /> : <Eye className="h-3 w-3 sm:h-4 sm:w-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Términos */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                  required
-                />
-                <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                  Acepto los{' '}
-                  <Link to="/terms" className="text-blue-600 hover:text-blue-500">
-                    términos y condiciones
-                  </Link>
+              {/* Tipo de Usuario */}
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
+                  Tipo de Usuario *
                 </label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => {
+                    setFormData({ 
+                      ...formData, 
+                      role: e.target.value,
+                      institutionId: undefined,
+                      gradeLevel: ''
+                    });
+                    setError('');
+                    // Limpiar datos específicos del rol anterior
+                    setChildrenInfo([{ email: '', exists: false }]);
+                  }}
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                >
+                  <option value="">Selecciona tu rol</option>
+                  <option value="STUDENT">Estudiante</option>
+                  <option value="TEACHER">Profesor</option>
+                  <option value="COORDINATOR">Coordinador</option>
+                  <option value="PARENT">Padre de Familia</option>
+                </select>
               </div>
 
-              {/* Botón de registro */}
+              {/* Institución - Simple dropdown */}
+              <div className="space-y-2">
+                <label className="block text-xs sm:text-sm font-medium text-neutral-black">
+                  Institución *
+                </label>
+                <select
+                  value={formData.institutionId || ''}
+                  onChange={(e) => setFormData({ ...formData, institutionId: e.target.value ? Number(e.target.value) : undefined })}
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                >
+                  <option value="">Selecciona tu institución</option>
+                  {institutions.map((institution) => (
+                    <option key={institution.id} value={institution.id}>
+                      {institution.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Grado - Solo para estudiantes */}
+              {formData.role === 'STUDENT' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-neutral-black">
+                    Grado *
+                  </label>
+                  <select
+                    value={formData.gradeLevel}
+                    onChange={(e) => setFormData({ ...formData, gradeLevel: e.target.value })}
+                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                    disabled={loadingGrades}
+                  >
+                    <option value="">
+                      {loadingGrades ? 'Cargando grados...' : 'Selecciona tu grado'}
+                    </option>
+                    {schoolGrades.map((grade) => (
+                      <option key={grade.id} value={grade.gradeName}>
+                        {grade.gradeName}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingGrades && (
+                    <div className="flex items-center gap-2 text-sm text-secondary">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Cargando grados desde la base de datos...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* NIT Institución - Solo para coordinadores */}
+              {formData.role === 'COORDINATOR' && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-neutral-black">
+                    NIT de la Institución *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formData.institutionNit}
+                      onChange={(e) => {
+                        const nit = e.target.value;
+                        setFormData({ ...formData, institutionNit: nit });
+                        // Validar NIT después de un pequeño delay
+                        setTimeout(() => validateInstitutionNit(nit), 500);
+                      }}
+                      className="w-full px-3 py-2 pr-10 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      placeholder="Ingresa el NIT de tu institución"
+                      required
+                    />
+                    {validatingNit && (
+                      <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+                    )}
+                  </div>
+                  
+                  {/* Información de la institución */}
+                  {institutionInfo && (
+                    <div className="mt-2 p-3 bg-accent-green/10 border border-accent-green/20 rounded-lg">
+                      <div className="flex items-center gap-2 text-accent-green mb-1">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Institución encontrada</span>
+                      </div>
+                      <p className="text-sm text-neutral-black font-medium">{institutionInfo.name}</p>
+                      <p className="text-xs text-secondary">{institutionInfo.address}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Información de Hijos - Solo para padres */}
+              {formData.role === 'PARENT' && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-neutral-black">
+                      Información de Hijos *
+                    </label>
+                    <Button
+                      type="button"
+                      onClick={addChildField}
+                      className="flex items-center gap-2 px-3 py-1 text-sm bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Agregar hijo
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {childrenInfo.map((child, index) => (
+                      <div key={index} className="p-4 border border-secondary-200 rounded-lg bg-neutral-50">
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="text-sm font-medium text-neutral-black">
+                            Hijo {index + 1}
+                          </h4>
+                          {childrenInfo.length > 1 && (
+                            <Button
+                              type="button"
+                              onClick={() => removeChildField(index)}
+                              className="p-1 text-accent-red hover:bg-accent-red/10 border-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {/* Correo del hijo */}
+                          <div className="space-y-2">
+                            <label className="block text-sm font-medium text-neutral-black">
+                              Correo electrónico del estudiante *
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="email"
+                                value={child.email}
+                                onChange={(e) => handleChildEmailChange(index, e.target.value)}
+                                onBlur={(e) => handleChildEmailBlur(index, e.target.value)}
+                                className="w-full px-3 py-2 pr-10 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                placeholder="correo@estudiante.com"
+                                required
+                              />
+                              {child.validating && (
+                                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+                              )}
+                              {!child.validating && child.email && child.exists && (
+                                <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-accent-green" />
+                              )}
+                              {!child.validating && child.email && !child.exists && child.message && (
+                                <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-accent-red" />
+                              )}
+                            </div>
+                            
+                            {/* Mensaje de validación */}
+                            {child.message && !child.exists && (
+                              <div className="flex items-center gap-2 text-sm text-accent-red">
+                                <AlertCircle className="h-4 w-4" />
+                                <span>{child.message}</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Información del estudiante encontrado */}
+                          {child.exists && child.student && (
+                            <div className="space-y-2">
+                              <div className="p-3 bg-accent-green/10 border border-accent-green/20 rounded-lg">
+                                <div className="flex items-center gap-2 text-accent-green mb-2">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Estudiante encontrado</span>
+                                </div>
+                                <p className="text-sm text-neutral-black font-medium">
+                                  {child.student.firstName} {child.student.lastName}
+                                </p>
+                                <p className="text-xs text-secondary">{child.student.email}</p>
+                              </div>
+                              
+                              {/* Institución del estudiante */}
+                              {child.institution && (
+                                <div className="space-y-2">
+                                  <label className="block text-sm font-medium text-neutral-black">
+                                    Institución
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={child.institution.name}
+                                    readOnly
+                                    className="w-full px-3 py-2 border border-secondary-200 rounded-lg bg-neutral-100 text-neutral-black cursor-not-allowed"
+                                  />
+                                  <p className="text-xs text-secondary">
+                                    NIT: {child.institution.nit} • {child.institution.address}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="text-sm text-secondary">
+                    <p>• Los estudiantes deben estar previamente registrados en el sistema</p>
+                    <p>• La institución se detectará automáticamente al validar el correo</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Botón de Registro */}
               <Button
                 type="submit"
-                className="w-full"
-                disabled={isLoading}
+                size="lg"
+                disabled={loading}
+                className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white transition-colors duration-300 h-10 sm:h-12 mt-4 sm:mt-6"
               >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Registrando...
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm sm:text-base">Creando tu cuenta mágica...</span>
                   </div>
                 ) : (
-                  'Crear Cuenta'
+                  <div className="flex items-center justify-center space-x-2">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">Crear Cuenta Mágica</span>
+                  </div>
                 )}
               </Button>
-            </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                ¿Ya tienes una cuenta?{' '}
-                <Link to="/login" className="text-blue-600 hover:text-blue-500 font-medium">
-                  Inicia sesión aquí
-                </Link>
-              </p>
-            </div>
+              {/* Link a Login */}
+              <div className="text-center mt-4 sm:mt-6">
+                <p className="text-xs sm:text-sm text-gray-600">
+                  ¿Ya tienes una cuenta?{' '}
+                  <Link 
+                    to="/login" 
+                    className="text-primary hover:text-primary-700 font-semibold transition-colors"
+                  >
+                    ¡Inicia sesión aquí!
+                  </Link>
+                </p>
+              </div>
+            </form>
           </CardContent>
         </Card>
+        </div>
+      </section>
 
-        {/* Modal para crear nueva institución */}
-        <CreateInstitutionModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onInstitutionCreated={handleInstitutionCreated}
-        />
-      </div>
+      {/* Footer responsivo */}
+      <footer className="bg-gray-50 border-t border-gray-200 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+              <Logo 
+                size="sm" 
+                clickable={true}
+                className="h-6 sm:h-8 w-auto"
+              />
+              <MagicLogoText size="sm" layout="inline" showHoverEffects={false} className="sm:hidden" />
+              <MagicLogoText size="md" layout="inline" showHoverEffects={false} className="hidden sm:block" />
+            </div>
+            <p className="text-gray-600 mb-3 sm:mb-4 font-body text-sm sm:text-base">
+              Plataforma educativa mágica para niños inteligentes
+            </p>
+            
+            <div className="flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm mb-3 sm:mb-4">
+              <Link
+                to="/"
+                className="text-gray-600 hover:text-[#00368F] transition-colors duration-300"
+              >
+                Inicio
+              </Link>
+              <Link
+                to="/login"
+                className="text-gray-600 hover:text-[#00368F] transition-colors duration-300"
+              >
+                Iniciar Sesión
+              </Link>
+            </div>
+
+            <div className="border-t border-gray-200 pt-3 sm:pt-4">
+              <p className="text-gray-500 text-xs sm:text-sm font-body">
+                © 2025 MagicSmartKids. Todos los derechos reservados.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

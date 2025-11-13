@@ -1,38 +1,476 @@
+/* Import MagicSmartKids Color System */
+@import './styles/colors.css';
+
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Utilidades adicionales para la paleta de colores Altius Academy */
+/* COLORES GLOBALES DEFINITIVOS - MAGICSMARTKIDS */
+:root {
+  --azul-oscuro: #00368F;
+  --azul: #2E5BFF;
+  --azul-celeste: #1494DE;
+  --amarillo: #F5A623;
+  --naranja: #FF6B35;
+  --verde: #00C764;
+}
+/* stylelint-enable at-rule-no-unknown */
+
+/* MagicSmartKids Base Styles */
+@layer base {
+  :root {
+    /* COLORES GLOBALES DEFINITIVOS */
+    --azul-oscuro: #00368F;
+    --azul: #2E5BFF;
+    --azul-celeste: #1494DE;
+    --amarillo: #F5A623;
+    --naranja: #FF6B35;
+    --verde: #00C764;
+    
+    /* Theme Variables */
+    --magic-font-family: 'Inter', 'Comic Neue', 'Nunito', 'Arial', sans-serif;
+    --magic-font-display: 'Fredoka One', 'Comic Neue', cursive;
+
+    /* Responsive Breakpoints */
+    --magic-breakpoint-mobile: 767px;
+    --magic-breakpoint-tablet: 1023px;
+    --magic-breakpoint-desktop: 1024px;
+    --magic-breakpoint-wide: 1440px;
+
+    /* Z-index Scale */
+    --magic-z-dropdown: 1000;
+    --magic-z-sticky: 1020;
+    --magic-z-fixed: 1030;
+    --magic-z-modal-backdrop: 1040;
+    --magic-z-modal: 1050;
+    --magic-z-popover: 1060;
+    --magic-z-tooltip: 1070;
+    --magic-z-toast: 1080;
+  }
+
+  /* Dark Mode Support */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --magic-bg-primary: var(--magic-gray-900);
+      --magic-bg-secondary: var(--magic-gray-800);
+      --magic-text-primary: var(--magic-white);
+      --magic-text-secondary: var(--magic-gray-300);
+    }
+  }
+
+  /* Base Typography - MagicSmartKids */
+  html {
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #111827;
+    background-color: #ffffff;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* Logo específico - Baloo 2 */
+  .font-logo,
+  .font-magic {
+    font-family: 'Baloo 2', sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1.1;
+  }
+
+  /* Títulos generales - Poppins */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-heading,
+  .font-fun {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  /* Contenido - Inter */
+  .font-body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Elementos decorativos mágicos */
+  .magic-decoration {
+    opacity: 0.1;
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .magic-decoration:nth-child(2) {
+    animation-delay: 2s;
+  }
+
+  .magic-decoration:nth-child(3) {
+    animation-delay: 4s;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+  }
+
+  /* Separadores sutiles y profesionales */
+  .magic-separator {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00368F, transparent);
+    margin: 40px 0;
+    opacity: 0.3;
+  }
+
+  /* Elementos decorativos con colores globales definitivos */
+  .magic-decoration-azul-oscuro {
+    color: rgba(0, 54, 143, 0.1);    /* #00368F - AZUL OSCURO con transparencia */
+  }
+
+  .magic-decoration-azul {
+    color: rgba(46, 91, 255, 0.1);   /* #2E5BFF - AZUL con transparencia */
+  }
+
+  .magic-decoration-azul-celeste {
+    color: rgba(20, 148, 222, 0.1);  /* #1494DE - AZUL CELESTE con transparencia */
+  }
+
+  .magic-decoration-amarillo {
+    color: rgba(245, 166, 35, 0.1);  /* #F5A623 - AMARILLO con transparencia */
+  }
+
+  .magic-decoration-naranja {
+    color: rgba(255, 107, 53, 0.1);  /* #FF6B35 - NARANJA con transparencia */
+  }
+
+  .magic-decoration-verde {
+    color: rgba(0, 199, 100, 0.1);   /* #00C764 - VERDE con transparencia */
+  }
+
+  /* Focus Styles */
+  *:focus {
+    outline: 2px solid var(--magic-blue-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection Styles */
+  ::selection {
+    background-color: var(--magic-blue-light);
+    color: var(--magic-blue-dark);
+  }
+}
+
+/* MagicSmartKids Component Styles */
+@layer components {
+
+  /* Magic Button Base */
+  .btn-magic {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-magic font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-magic-primary {
+    @apply btn-magic bg-primary text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply shadow-magic hover:shadow-magic-lg;
+  }
+
+  .btn-magic-secondary {
+    @apply btn-magic bg-secondary text-white hover:bg-secondary-700 focus:ring-secondary-500;
+    @apply shadow-magic hover:shadow-magic-lg;
+  }
+
+  .btn-magic-success {
+    @apply btn-magic bg-success text-white hover:bg-success-600 focus:ring-success-500;
+  }
+
+  .btn-magic-warning {
+    @apply btn-magic bg-warning text-gray-900 hover:bg-warning-600 focus:ring-warning-500;
+  }
+
+  .btn-magic-error {
+    @apply btn-magic bg-error text-white hover:bg-error-600 focus:ring-error-500;
+  }
+
+  /* Magic Card */
+  .card-magic {
+    @apply bg-white rounded-magic-lg shadow-magic border border-gray-200;
+    @apply transition-all duration-200 hover:shadow-magic-lg;
+  }
+
+  /* Magic Input */
+  .input-magic {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-magic;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply transition-all duration-200;
+  }
+
+  /* Magic Badge */
+  .badge-magic {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-magic-primary {
+    @apply badge-magic bg-primary-100 text-primary-800;
+  }
+
+  .badge-magic-secondary {
+    @apply badge-magic bg-secondary-100 text-secondary-800;
+  }
+
+  .badge-magic-success {
+    @apply badge-magic bg-success-100 text-success-800;
+  }
+
+  .badge-magic-warning {
+    @apply badge-magic bg-warning-100 text-warning-800;
+  }
+
+  .badge-magic-error {
+    @apply badge-magic bg-error-100 text-error-800;
+  }
+
+  /* Magic Loading Spinner */
+  .spinner-magic {
+    @apply animate-spin rounded-full border-2 border-gray-200;
+    border-top-color: #1E40AF;
+  }
+
+  /* Magic Gradient Text */
+  .text-magic-gradient {
+    background: var(--magic-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Magic Hover Effects */
+  .hover-magic {
+    @apply transition-all duration-200 hover:transform hover:scale-105;
+  }
+
+  .hover-magic-glow {
+    @apply transition-all duration-200 hover:shadow-magic-glow;
+  }
+}
+
+/* MagicSmartKids Utility Classes */
 @layer utilities {
+
+  /* Scrollbar Utilities */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
+  /* Line Clamp Utilities */
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-  
+
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Magic Responsive Utilities */
+  .magic-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .magic-grid {
+    @apply grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  /* Magic Animation Utilities */
+  .animate-magic-float {
+    animation: magicFloat 3s ease-in-out infinite;
+  }
+
+  .animate-magic-wiggle {
+    animation: magicWiggle 1s ease-in-out infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.8s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.8s ease-out forwards;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  /* Magic Accessibility Utilities */
+  .sr-only-magic {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Magic Touch Target */
+  .touch-target-magic {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
-/* Breakpoint personalizado para xs */
+/* Magic Animations */
+@keyframes magicFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes magicWiggle {
+
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+
+  25% {
+    transform: rotate(-3deg);
+  }
+
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 54, 143, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 54, 143, 0.5);
+  }
+}
+
+/* Responsive Breakpoints */
 @media (min-width: 475px) {
   .xs\:block {
     display: block;
   }
+
   .xs\:hidden {
     display: none;
+  }
+
+  .xs\:flex {
+    display: flex;
+  }
+
+  .xs\:grid {
+    display: grid;
+  }
+}
+
+/* Magic Mobile-First Responsive Design */
+@media (max-width: 767px) {
+  .mobile-magic {
+    @apply text-sm px-3 py-2;
+  }
+
+  .mobile-magic-header {
+    @apply text-lg font-bold;
+  }
+
+  .mobile-magic-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200;
+    z-index: var(--magic-z-fixed);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet-magic {
+    @apply text-base px-4 py-3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desktop-magic {
+    @apply text-lg px-6 py-4;
   }
 }

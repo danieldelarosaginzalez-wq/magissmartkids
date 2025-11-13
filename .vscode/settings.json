@@ -2,5 +2,10 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "typescript.autoClosingTags": false,
     "java.debug.settings.onBuildFailureProceed": true,
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.project.sourcePaths": ["backend/src/main/java"],
+    "java.project.outputPath": "backend/target/classes",
+    "java.project.referencedLibraries": [
+        "backend/target/**/*.jar"
+    ]
 }

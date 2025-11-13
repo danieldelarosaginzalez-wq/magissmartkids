@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User, Bell, Shield, Database, Mail, Palette, Globe, Save, RefreshCw, HardDrive, Download, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings as SettingsIcon, User, Bell, Shield, Database, Mail, Palette, Globe } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '../components/ui/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
+import { Badge } from '../components/ui/Badge';
 import { useAuthStore } from '../stores/authStore';
 
 const Settings: React.FC = () => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
-  const [passwordExpiration, setPasswordExpiration] = useState('90');
 
   const systemSettings = {
     siteName: 'Altius Academy',
     siteDescription: 'Plataforma educativa de refuerzo académico',
-    adminEmail: 'superadmin@altiusacademy.com',
+    adminEmail: 'admin@altiusacademy.com',
     supportEmail: 'soporte@altiusacademy.com',
     maxFileSize: '10MB',
     sessionTimeout: '30 minutos',
@@ -260,7 +259,7 @@ const Settings: React.FC = () => {
                     <h4 className="font-medium text-gray-900">Expiración de Contraseña</h4>
                     <p className="text-sm text-gray-600">Frecuencia de cambio obligatorio</p>
                   </div>
-                  <Select value={passwordExpiration} onValueChange={setPasswordExpiration}>
+                  <Select defaultValue="90">
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -327,7 +326,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email del Super Administrador
+                    Email del Administrador
                   </label>
                   <Input type="email" defaultValue={systemSettings.adminEmail} />
                 </div>

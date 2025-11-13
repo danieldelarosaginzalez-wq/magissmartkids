@@ -2,7 +2,7 @@ package com.altiusacademy.controller;
 
 import com.altiusacademy.model.entity.Attendance;
 import com.altiusacademy.model.entity.User;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 import com.altiusacademy.service.AttendanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

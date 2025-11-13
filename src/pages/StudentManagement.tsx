@@ -56,7 +56,7 @@ const StudentManagement: React.FC = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('/api/users/students/all', {
+      const response = await fetch('http://localhost:8080/api/users/students', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -116,8 +116,8 @@ const StudentManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingStudent 
-        ? `/api/users/students/${editingStudent.id}`
-        : '/api/users/students';
+        ? `http://localhost:8080/api/users/students/${editingStudent.id}`
+        : 'http://localhost:8080/api/users/students';
       
       const method = editingStudent ? 'PUT' : 'POST';
 
@@ -171,7 +171,7 @@ const StudentManagement: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`/api/users/students/${studentId}`, {
+      const response = await fetch(`http://localhost:8080/api/users/students/${studentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -219,7 +219,7 @@ const StudentManagement: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Gestión de Estudiantes</h1>
-              <p className="text-gray-600 mt-1">Gestiona los estudiantes de tu institución</p>
+              <p className="text-gray-600 mt-1">Administra los estudiantes de tu institución</p>
             </div>
             <div className="flex space-x-3">
               <button

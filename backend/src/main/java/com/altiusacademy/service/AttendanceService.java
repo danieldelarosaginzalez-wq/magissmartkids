@@ -2,8 +2,8 @@ package com.altiusacademy.service;
 
 import com.altiusacademy.model.entity.Attendance;
 import com.altiusacademy.model.entity.User;
-import com.altiusacademy.repository.AttendanceRepository;
-import com.altiusacademy.repository.UserRepository;
+import com.altiusacademy.repository.mysql.AttendanceRepository;
+import com.altiusacademy.repository.mysql.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;

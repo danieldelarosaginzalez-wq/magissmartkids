@@ -1,21 +1,31 @@
 package com.altiusacademy.controller;
 
-import com.altiusacademy.model.entity.Institution;
-import com.altiusacademy.repository.InstitutionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.altiusacademy.model.entity.Institution;
+import com.altiusacademy.repository.mysql.InstitutionRepository;
+
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/institutions")
-@CrossOrigin(origins = "*")
+
 public class InstitutionController {
 
     @Autowired
@@ -108,8 +118,25 @@ public class InstitutionController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // ✅ VERIFICAR QUE NO EXISTA UNA INSTITUCIÓN CON EL MISMO NIT
+            if (institution.getNit() != null && !institution.getNit().trim().isEmpty()) {
+                if (institutionRepository.existsByNit(institution.getNit().trim())) {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("success", false);
+                    response.put("message", "Ya existe una institución con ese NIT");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
             // Limpiar y configurar datos
             institution.setName(institution.getName().trim());
+
+            // ✅ PROCESAR CAMPO NIT
+            if (institution.getNit() != null) {
+                institution.setNit(institution.getNit().trim());
+                System.out.println("📝 NIT procesado: " + institution.getNit());
+            }
+
             if (institution.getAddress() != null) {
                 institution.setAddress(institution.getAddress().trim());
             }
@@ -146,24 +173,23 @@ public class InstitutionController {
     /**
      * Validar NIT de institución - Para registro de coordinadores
      */
-    @GetMapping("/validate-nit/{nit}")
-    public ResponseEntity<?> validateInstitutionNit(@PathVariable String nit) {
+    @GetMapping("/validate-nit")
+    public ResponseEntity<?> validateInstitutionNit(@RequestParam String nit) {
         try {
             System.out.println("🔍 Validando NIT de institución: " + nit);
 
             Optional<Institution> institutionOpt = institutionRepository.findByNit(nit);
-            
+
             Map<String, Object> response = new HashMap<>();
             if (institutionOpt.isPresent()) {
                 Institution institution = institutionOpt.get();
                 response.put("success", true);
                 response.put("exists", true);
                 response.put("institution", Map.of(
-                    "id", institution.getId(),
-                    "name", institution.getName(),
-                    "nit", institution.getNit(),
-                    "isActive", institution.getIsActive()
-                ));
+                        "id", institution.getId(),
+                        "name", institution.getName(),
+                        "nit", institution.getNit(),
+                        "isActive", institution.getIsActive()));
                 response.put("message", "Institución encontrada");
             } else {
                 response.put("success", true);
@@ -183,58 +209,17 @@ public class InstitutionController {
         }
     }
 
-    /**
-     * Validar email de estudiante en institución - Para registro de padres
-     */
-    @GetMapping("/validate-student")
-    public ResponseEntity<?> validateStudentInInstitution(
-            @RequestParam String email, 
-            @RequestParam String institutionNit) {
-        try {
-            System.out.println("🔍 Validando estudiante: " + email + " en institución NIT: " + institutionNit);
-
-            // Buscar la institución por NIT
-            Optional<Institution> institutionOpt = institutionRepository.findByNit(institutionNit);
-            if (institutionOpt.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
-                response.put("success", false);
-                response.put("message", "Institución no encontrada");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // TODO: Implementar búsqueda de estudiante por email en la institución
-            // Por ahora, simulamos la validación
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("exists", true); // Cambiar por lógica real
-            response.put("student", Map.of(
-                "email", email,
-                "institutionNit", institutionNit,
-                "institutionName", institutionOpt.get().getName()
-            ));
-            response.put("message", "Estudiante encontrado en la institución");
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            System.err.println("❌ Error validando estudiante: " + e.getMessage());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Error al validar estudiante: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
+    // MÉTODO ELIMINADO - Ya no se necesita validación de estudiantes para padres
+    // El rol de padre será eliminado del sistema
 
     /**
      * Obtener grados académicos disponibles
      */
-    @GetMapping("/academic-grades")
-    public ResponseEntity<?> getAcademicGrades() {
+    @GetMapping("/school-grades")
+    public ResponseEntity<?> getSchoolGrades() {
         try {
             List<String> grades = List.of(
-                "1°", "2°", "3°", "4°", "5°", "6°", "7°", "8°", "9°", "10°", "11°"
-            );
+                    "1°", "2°", "3°", "4°", "5°", "6°", "7°", "8°", "9°", "10°", "11°");
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -257,7 +242,7 @@ public class InstitutionController {
      * Actualizar institución - Solo coordinadores
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('COORDINATOR','ADMIN')")
+    @PreAuthorize("hasRole('COORDINATOR')")
     public ResponseEntity<?> updateInstitution(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         try {
             System.out.println("✏️ Actualizando institución ID: " + id);

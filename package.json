@@ -1,8 +1,35 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "magicsmartkids-platform",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "MagicSmartKids - Plataforma educativa interactiva que hace del aprendizaje una experiencia mágica",
+  "keywords": [
+    "education",
+    "learning",
+    "interactive",
+    "kids",
+    "magic",
+    "educational-platform",
+    "react",
+    "typescript",
+    "tailwindcss"
+  ],
+  "author": {
+    "name": "MagicSmartKids Team",
+    "email": "info@magicsmartkids.com",
+    "url": "https://magicsmartkids.com"
+  },
+  "homepage": "https://magicsmartkids.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/magicsmartkids/platform.git"
+  },
+  "bugs": {
+    "url": "https://github.com/magicsmartkids/platform/issues",
+    "email": "support@magicsmartkids.com"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,7 +40,6 @@
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
-    "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.13",
@@ -24,8 +50,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.2",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.3.0",

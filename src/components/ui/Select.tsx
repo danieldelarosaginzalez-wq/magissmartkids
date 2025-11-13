@@ -2,9 +2,8 @@ import * as React from "react"
 import { cn } from "../../lib/utils"
 
 interface SelectProps {
-  value?: string;
-  defaultValue?: string;
-  onValueChange?: (value: string) => void;
+  value: string;
+  onValueChange: (value: string) => void;
   children: React.ReactNode;
 }
 
@@ -27,14 +26,9 @@ interface SelectValueProps {
 }
 
 // Componente Select funcional con estado interno
-const Select: React.FC<SelectProps> = ({ value, defaultValue, onValueChange, children }) => {
+const Select: React.FC<SelectProps> = ({ value, onValueChange, children }) => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [internalValue, setInternalValue] = React.useState(defaultValue || '');
   const selectRef = React.useRef<HTMLDivElement>(null);
-
-  // Determinar si es controlado o no controlado
-  const isControlled = value !== undefined;
-  const currentValue = isControlled ? value : internalValue;
 
   // Cerrar dropdown al hacer click fuera
   React.useEffect(() => {
@@ -49,18 +43,13 @@ const Select: React.FC<SelectProps> = ({ value, defaultValue, onValueChange, chi
   }, []);
 
   const handleSelect = (selectedValue: string) => {
-    console.log('🎯 Valor seleccionado:', selectedValue);
-    
-    if (!isControlled) {
-      setInternalValue(selectedValue);
-    }
-    
-    onValueChange?.(selectedValue);
+    console.log('🎯 Rol seleccionado:', selectedValue);
+    onValueChange(selectedValue);
     setIsOpen(false);
   };
 
   const contextValue = {
-    value: currentValue,
+    value,
     onValueChange: handleSelect,
     isOpen,
     setIsOpen,
@@ -184,7 +173,9 @@ const SelectValue: React.FC<SelectValueProps & { value?: string }> = ({ placehol
     'student': 'Estudiante',
     'teacher': 'Profesor',
     'coordinator': 'Coordinador',
-    'super_admin': 'Super Administrador'
+    'parent': 'Padre de Familia',
+    'secretary': 'Secretaría',
+    'admin': 'Administrador'
   };
   
   console.log('📋 SelectValue - value recibido:', value);
