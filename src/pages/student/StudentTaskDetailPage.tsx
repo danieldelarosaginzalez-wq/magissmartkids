@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import MultipleChoiceActivity from '../../components/activities/MultipleChoiceActivity';
+import InteractiveMatchLinesActivity from '../../components/activities/InteractiveMatchLinesActivity';
+import InteractiveShortAnswerActivity from '../../components/activities/InteractiveShortAnswerActivity';
+import { Activity } from '../../components/activities/ActivityEditor';
 
 interface TaskDetail {
   id: number;
@@ -33,6 +37,192 @@ interface TaskDetail {
     feedback?: string;
     gradedAt?: string;
   };
+}
+
+// Componente para manejar tareas interactivas
+function InteractiveTaskView({ task, onComplete }: { task: TaskDetail; onComplete: () => void }) {
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
+  const [answers, setAnswers] = useState<any[]>([]);
+  const [score, setScore] = useState(0);
+  const [completed, setCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+
+  const activities: Activity[] = task.activityConfig ? JSON.parse(task.activityConfig) : [];
+  const currentActivity = activities[currentActivityIndex];
+  const progress = ((currentActivityIndex + 1) / activities.length) * 100;
+
+  const handleAnswer = async (answer: any, correct: boolean) => {
+    const currentQuestion = currentActivity.question;
+    let studentAnswer = '';
+    let correctAnswer = '';
+    
+    // Extraer respuesta del estudiante y respuesta correcta según el tipo
+    if (currentActivity.type === 'multiple-choice') {
+      studentAnswer = currentActivity.options[answer];
+      correctAnswer = currentActivity.options[currentActivity.correctAnswer];
+    } else if (currentActivity.type === 'short-answer') {
+      studentAnswer = answer;
+      correctAnswer = currentActivity.correctAnswer;
+    } else if (currentActivity.type === 'match-lines') {
+      studentAnswer = JSON.stringify(answer);
+      correctAnswer = JSON.stringify(currentActivity.correctMatches);
+    }
+    
+    const newAnswers = [...answers, { 
+      question: currentQuestion,
+      studentAnswer,
+      correctAnswer,
+      isCorrect: correct 
+    }];
+    
+    setAnswers(newAnswers);
+    setIsCorrect(correct);
+    setShowFeedback(true);
+
+    if (correct) {
+      setScore(score + 1);
+    }
+
+    setTimeout(async () => {
+      setShowFeedback(false);
+      
+      if (currentActivityIndex < activities.length - 1) {
+        setCurrentActivityIndex(currentActivityIndex + 1);
+      } else {
+        // Enviar resultados al backend
+        const finalScore = correct ? score + 1 : score;
+        const percentage = (finalScore / activities.length) * 100;
+        const finalGrade = (percentage / 100) * task.maxGrade;
+        
+        const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+        const token = authState?.state?.token;
+        
+        const submissionData = {
+          totalQuestions: activities.length,
+          correctAnswers: finalScore,
+          incorrectAnswers: activities.length - finalScore,
+          percentage: percentage.toFixed(2),
+          answers: newAnswers,
+          timeSpent: 'N/A'
+        };
+
+        try {
+          await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks/${task.id}/submit`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                submissionText: JSON.stringify(submissionData),
+                submissionFileUrl: null,
+              }),
+            }
+          );
+        } catch (error) {
+          console.error('Error al enviar resultados:', error);
+        }
+        
+        setCompleted(true);
+      }
+    }, 2000);
+  };
+
+  const renderActivity = (activity: Activity) => {
+    switch (activity.type) {
+      case 'multiple-choice':
+        return <MultipleChoiceActivity activity={activity} onAnswer={handleAnswer} />;
+      case 'match-lines':
+        return <InteractiveMatchLinesActivity activity={activity} onAnswer={handleAnswer} />;
+      case 'short-answer':
+        return <InteractiveShortAnswerActivity activity={activity} onAnswer={handleAnswer} />;
+      default:
+        return <div>Tipo de actividad no soportado</div>;
+    }
+  };
+
+  if (completed) {
+    const percentage = Math.round((score / activities.length) * 100);
+    return (
+      <div className="text-center py-12">
+        <div className="text-7xl mb-6 animate-bounce">
+          {percentage >= 80 ? '🏆' : percentage >= 60 ? '⭐' : '🎉'}
+        </div>
+        <h2 className="text-3xl font-bold mb-4">¡Actividad Completada!</h2>
+        <div className="bg-blue-50 rounded-lg p-8 max-w-md mx-auto mb-6">
+          <p className="text-lg font-semibold mb-2">Tu puntuación</p>
+          <p className="text-4xl font-bold text-blue-600 mb-4">
+            {score} / {activities.length}
+          </p>
+          <p className="text-2xl font-bold text-green-600">
+            {percentage}%
+          </p>
+        </div>
+        {percentage >= 80 && (
+          <p className="text-lg text-green-600 font-semibold">¡Excelente trabajo! 🌟</p>
+        )}
+        {percentage >= 60 && percentage < 80 && (
+          <p className="text-lg text-blue-600 font-semibold">¡Muy bien! Sigue practicando 💪</p>
+        )}
+        {percentage < 60 && (
+          <p className="text-lg text-yellow-600 font-semibold">¡Buen intento! Sigue aprendiendo 📚</p>
+        )}
+        <button
+          onClick={onComplete}
+          className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Ver resultados
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Progress */}
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">
+            Pregunta {currentActivityIndex + 1} de {activities.length}
+          </span>
+          <span className="text-sm font-semibold">
+            Puntuación: {score}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-3">
+          <div
+            className="bg-blue-600 h-full rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Activity */}
+      <div className="bg-white p-6 rounded-lg border">
+        {renderActivity(currentActivity)}
+      </div>
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className={`${isCorrect ? 'bg-green-500' : 'bg-yellow-500'} text-white p-12 rounded-lg text-center max-w-md`}>
+            <div className="text-7xl mb-4 animate-bounce">
+              {isCorrect ? '🎉' : '💪'}
+            </div>
+            <p className="text-3xl font-bold mb-2">
+              {isCorrect ? '¡Muy bien!' : '¡Sigue intentando!'}
+            </p>
+            <p className="text-lg">
+              {isCorrect ? 'Respuesta correcta' : 'Puedes hacerlo mejor'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function StudentTaskDetailPage() {
@@ -401,6 +591,17 @@ export default function StudentTaskDetailPage() {
                 </p>
               </div>
             )}
+          </div>
+        ) : task.taskType === 'INTERACTIVE' ? (
+          /* Vista de actividad interactiva */
+          <div className="border-t pt-6">
+            <InteractiveTaskView 
+              task={task}
+              onComplete={() => {
+                alert('¡Actividad completada exitosamente!');
+                loadTask();
+              }}
+            />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="border-t pt-6">

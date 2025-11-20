@@ -44,6 +44,9 @@ public class TeacherController {
     private TeacherService teacherService;
     
     @Autowired
+    private com.altiusacademy.service.TeacherSubjectService teacherSubjectService;
+    
+    @Autowired
     private TeacherSubjectRepository teacherSubjectRepository;
     
     @Autowired
@@ -84,141 +87,14 @@ public class TeacherController {
     @GetMapping("/subjects")
     public ResponseEntity<?> getTeacherSubjects(org.springframework.security.core.Authentication authentication) {
         try {
-            // DEBUG: Log para ver si el usuario llega
-            log.info("=== INICIO getTeacherSubjects ===");
-            log.info("Authentication object: {}", authentication);
-            log.info("Authentication principal: {}", authentication != null ? authentication.getPrincipal() : "NULL");
-            
-            // Obtener el ID del profesor autenticado
-            if (authentication == null || authentication.getPrincipal() == null) {
-                log.error("❌ No authenticated user found - authentication is NULL");
-                return ResponseEntity.ok(Map.of(
-                    "success", false,
-                    "message", "Usuario no autenticado",
-                    "subjects", List.of(),
-                    "total", 0
-                ));
-            }
-            
-            // Obtener el email del usuario autenticado
             String email = authentication.getName();
-            log.info("📧 Email from authentication: {}", email);
+            log.info("Getting subjects for teacher: {}", email);
             
-            // Cargar el usuario completo desde la base de datos
-            User user = userRepository.findByEmail(email).orElse(null);
-            if (user == null) {
-                log.error("❌ User not found in database for email: {}", email);
-                return ResponseEntity.ok(Map.of(
-                    "success", false,
-                    "message", "Usuario no encontrado",
-                    "subjects", List.of(),
-                    "total", 0
-                ));
-            }
-            
-            Long teacherId = user.getId();
-            log.info("✅ Getting subjects for authenticated teacher: {} {} (ID: {}, Email: {})", 
-                user.getFirstName(), user.getLastName(), teacherId, user.getEmail());
-            
-            // Obtener SOLO las materias asignadas al profesor autenticado
-            // CAMBIO: Usar findByTeacherId en lugar de findByTeacherIdWithSubject para evitar problemas con JOIN FETCH
-            List<TeacherSubject> teacherSubjects = teacherSubjectRepository.findByTeacherId(teacherId)
-                .stream()
-                .filter(ts -> ts.getIsActive() != null && ts.getIsActive())
-                .collect(Collectors.toList());
-            
-            log.info("📊 Found {} active teacher_subjects records for teacher {}", teacherSubjects.size(), teacherId);
-            
-            // DEBUG: Mostrar los IDs de las asignaciones encontradas
-            if (teacherSubjects.isEmpty()) {
-                log.warn("⚠️ No teacher_subjects found for teacher ID: {}", teacherId);
-                log.warn("⚠️ Checking all records for this teacher...");
-                List<TeacherSubject> allRecords = teacherSubjectRepository.findByTeacherId(teacherId);
-                log.warn("⚠️ Total records (including inactive): {}", allRecords.size());
-                allRecords.forEach(ts -> log.warn("   - ID: {}, SubjectId: {}, Grade: {}, Active: {}", 
-                    ts.getId(), ts.getSubjectId(), ts.getGrade(), ts.getIsActive()));
-            } else {
-                teacherSubjects.forEach(ts -> log.info("   ✓ TeacherSubject ID: {}, SubjectId: {}, Grade: {}", 
-                    ts.getId(), ts.getSubjectId(), ts.getGrade()));
-            }
-            
-            List<Map<String, Object>> subjects = teacherSubjects.stream()
-                .map(ts -> {
-                    try {
-                        // CAMBIO: Cargar la materia manualmente usando el subjectId
-                        Subject subject = subjectRepository.findById(ts.getSubjectId()).orElse(null);
-                        
-                        if (subject == null) {
-                            log.warn("Subject not found for ID: {} (TeacherSubject ID: {})", ts.getSubjectId(), ts.getId());
-                            return null;
-                        }
-                        
-                        log.debug("Processing subject: {} - {} for grade: {}", subject.getId(), subject.getName(), ts.getGrade());
-                        
-                        Map<String, Object> subjectMap = new java.util.HashMap<>();
-                        subjectMap.put("id", subject.getId());
-                        subjectMap.put("name", subject.getName());
-                        subjectMap.put("description", subject.getDescription());
-                        subjectMap.put("grade", ts.getGrade());
-                        subjectMap.put("color", subject.getColor() != null ? subject.getColor() : "#2E5BFF");
-                        
-                        // Contar estudiantes del grado
-                        try {
-                            long studentCount = teacherSubjectRepository.countStudentsByGrade(ts.getGrade());
-                            subjectMap.put("totalStudents", (int) studentCount);
-                        } catch (Exception e) {
-                            log.warn("Error counting students for grade {}: {}", ts.getGrade(), e.getMessage());
-                            subjectMap.put("totalStudents", 0);
-                        }
-                        
-                        // Calcular progreso y estadísticas reales
-                        try {
-                            int totalTasks = teacherService.countTasksBySubjectAndGrade(subject.getId(), ts.getGrade());
-                            int completedTasks = teacherService.countCompletedTasksBySubjectAndGrade(subject.getId(), ts.getGrade());
-                            int pendingTasks = totalTasks - completedTasks;
-                            double progress = totalTasks > 0 ? (completedTasks * 100.0 / totalTasks) : 0;
-                            double averageGrade = teacherService.getAverageGradeBySubjectAndGrade(subject.getId(), ts.getGrade());
-                            
-                            subjectMap.put("totalTasks", totalTasks);
-                            subjectMap.put("completedTasks", completedTasks);
-                            subjectMap.put("pendingTasks", pendingTasks);
-                            subjectMap.put("progress", Math.round(progress));
-                            subjectMap.put("averageGrade", Math.round(averageGrade * 10.0) / 10.0);
-                        } catch (Exception e) {
-                            log.warn("Error calculating stats for subject {}: {}", subject.getId(), e.getMessage());
-                            subjectMap.put("totalTasks", 0);
-                            subjectMap.put("completedTasks", 0);
-                            subjectMap.put("pendingTasks", 0);
-                            subjectMap.put("progress", 0);
-                            subjectMap.put("averageGrade", 0.0);
-                        }
-                        
-                        // TODO: Agregar próxima tarea si existe
-                        subjectMap.put("nextTask", null);
-                        
-                        return subjectMap;
-                    } catch (Exception e) {
-                        log.error("Error processing TeacherSubject {}: {}", ts.getId(), e.getMessage(), e);
-                        return null;
-                    }
-                })
-                .filter(subjectMap -> subjectMap != null)
-                .collect(Collectors.toList());
-            
-            log.info("Returning {} subjects for teacher {}", subjects.size(), teacherId);
-            
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "subjects", subjects,
-                "total", subjects.size()
-            ));
+            Map<String, Object> response = teacherSubjectService.getTeacherSubjectsWithStats(email);
+            return ResponseEntity.ok(response);
             
         } catch (Exception e) {
-            log.error("Error getting teacher subjects: {}", 
-                e.getMessage(), 
-                e);
-            
-            // Retornar respuesta vacía pero válida en caso de error
+            log.error("Error getting teacher subjects: {}", e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "subjects", List.of(),

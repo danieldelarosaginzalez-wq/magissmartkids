@@ -3,6 +3,8 @@ package com.altiusacademy.service;
 import com.altiusacademy.dto.task.*;
 import com.altiusacademy.model.entity.*;
 import com.altiusacademy.repository.mysql.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -143,6 +145,32 @@ public class StudentTaskService {
         submission.setSubmissionFileUrl(request.getSubmissionFileUrl());
         submission.setSubmittedAt(LocalDateTime.now());
         submission.setStatus(TaskSubmission.SubmissionStatus.SUBMITTED);
+        
+        // Si es una tarea interactiva, calificar automáticamente
+        if (task.getTaskType() == Task.TaskType.INTERACTIVE && request.getSubmissionText() != null) {
+            try {
+                // Parsear el JSON de resultados
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode results = mapper.readTree(request.getSubmissionText());
+                
+                int correctAnswers = results.get("correctAnswers").asInt();
+                int totalQuestions = results.get("totalQuestions").asInt();
+                double percentage = results.get("percentage").asDouble();
+                
+                // Calcular la nota basada en el porcentaje
+                double score = (percentage / 100.0) * task.getMaxGrade();
+                
+                submission.setScore(score);
+                submission.setStatus(TaskSubmission.SubmissionStatus.GRADED);
+                submission.setGradedAt(LocalDateTime.now());
+                submission.setFeedback(String.format("Calificación automática: %d/%d respuestas correctas (%.1f%%)", 
+                    correctAnswers, totalQuestions, percentage));
+                
+                System.out.println("✅ Tarea interactiva calificada automáticamente: " + score + "/" + task.getMaxGrade());
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al calificar automáticamente: " + e.getMessage());
+            }
+        }
         
         taskSubmissionRepository.save(submission);
         

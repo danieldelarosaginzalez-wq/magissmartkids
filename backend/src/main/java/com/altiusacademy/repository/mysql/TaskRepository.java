@@ -82,4 +82,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // Buscar todas las tareas de un grado (sin importar el profesor)
     @Query("SELECT t FROM Task t WHERE t.grade = :grade ORDER BY t.createdAt DESC")
     List<Task> findByGradeOrderByCreatedAtDesc(@Param("grade") String grade);
+    
+    // Contar tareas por grado
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.grade = :grade")
+    long countByGrade(@Param("grade") String grade);
 }

@@ -126,6 +126,13 @@
             <version>5.2.4</version>
         </dependency>
         
+        <!-- WEKA for Machine Learning -->
+        <dependency>
+            <groupId>nz.ac.waikato.cms.weka</groupId>
+            <artifactId>weka-stable</artifactId>
+            <version>3.8.6</version>
+        </dependency>
+        
         <!-- Development Tools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

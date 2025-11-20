@@ -44,6 +44,7 @@ import InitializationPage from './pages/InitializationPage';
 import UserGeneratorPage from './pages/UserGeneratorPage';
 import StudentGradeTasksPage from './pages/student/StudentGradeTasksPage';
 import StudentTaskDetailPage from './pages/student/StudentTaskDetailPage';
+import PredictionsPage from './pages/teacher/PredictionsPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -363,6 +364,17 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <Layout>
                 <SubjectTasksPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/profesor/predicciones" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <PredictionsPage />
               </Layout>
             </ProtectedRoute>
           } 

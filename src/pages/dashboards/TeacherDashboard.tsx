@@ -322,7 +322,7 @@ const TeacherDashboard: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-[#00368F]" />
               Acciones Rápidas
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <Link to="/profesor/materias" className="block">
                 <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center gap-2 py-3">
                   <BookOpen className="h-4 w-4" />
@@ -339,6 +339,12 @@ const TeacherDashboard: React.FC = () => {
                 <Button variant="outline" className="w-full flex items-center gap-2 py-3">
                   <BarChart3 className="h-4 w-4" />
                   Calificaciones
+                </Button>
+              </Link>
+              <Link to="/profesor/predicciones" className="block">
+                <Button variant="outline" className="w-full flex items-center gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50">
+                  <TrendingUp className="h-4 w-4" />
+                  Predicciones IA
                 </Button>
               </Link>
               <Link to="/actividades-interactivas" className="block">

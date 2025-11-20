@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings, BookOpen, Users, BarChart3, CheckSquare, Home, School, FileText } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, BookOpen, Users, BarChart3, CheckSquare, Home, School, FileText, TrendingUp } from 'lucide-react';
 import Logo from './Logo';
 import { useAuthStore } from '../../stores/authStore';
 import LogoutConfirmModal from './LogoutConfirmModal';
@@ -112,6 +112,11 @@ const Header: React.FC<HeaderProps> = ({
           label: 'Calificaciones',
           href: '/profesor/calificaciones',
           icon: BarChart3,
+        },
+        {
+          label: 'Predicciones IA',
+          href: '/profesor/predicciones',
+          icon: TrendingUp,
         },
       ];
     }

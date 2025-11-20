@@ -32,4 +32,10 @@ public interface TaskSubmissionRepository extends JpaRepository<TaskSubmission, 
     // Buscar entregas pendientes de calificación
     @Query("SELECT ts FROM TaskSubmission ts WHERE ts.status = 'SUBMITTED' AND ts.task.teacher.id = :teacherId")
     List<TaskSubmission> findPendingSubmissionsByTeacher(@Param("teacherId") Long teacherId);
+    
+    // Buscar entregas por lista de IDs de tareas
+    List<TaskSubmission> findByTaskIdIn(List<Long> taskIds);
+    
+    // Buscar entregas por estudiante y estado
+    List<TaskSubmission> findByStudentIdAndStatus(Long studentId, TaskSubmission.SubmissionStatus status);
 }
