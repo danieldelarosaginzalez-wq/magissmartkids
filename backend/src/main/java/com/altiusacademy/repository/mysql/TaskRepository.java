@@ -43,10 +43,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // List<Task> findByStudentAndStatusOrderByGradedAtDesc(User student, Task.TaskStatus status);
     
     // Methods for TeacherService
-    @Query("SELECT COUNT(t) FROM Task t WHERE t.teacher.id = :teacherId AND t.status = 'SUBMITTED'")
+    @Query(value = "SELECT COUNT(*) FROM task_submissions ts JOIN tasks t ON ts.task_id = t.id WHERE t.teacher_id = :teacherId AND ts.status = 'SUBMITTED'", nativeQuery = true)
     Long countPendingGradingByTeacher(@Param("teacherId") Long teacherId);
     
-    @Query("SELECT AVG(t.score) FROM Task t WHERE t.teacher.id = :teacherId AND t.score IS NOT NULL")
+    @Query(value = "SELECT AVG(ts.score) FROM task_submissions ts JOIN tasks t ON ts.task_id = t.id WHERE t.teacher_id = :teacherId AND ts.score IS NOT NULL", nativeQuery = true)
     Double getAverageScoreByTeacher(@Param("teacherId") Long teacherId);
     
     @Query("SELECT AVG(t.score) FROM Task t WHERE t.teacher.id = :teacherId AND t.subject.id = :subjectId AND t.grade = :grade AND t.score IS NOT NULL")
@@ -86,4 +86,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // Contar tareas por grado
     @Query("SELECT COUNT(t) FROM Task t WHERE t.grade = :grade")
     long countByGrade(@Param("grade") String grade);
+    
+    // Buscar tareas recientes por ID de profesor
+    @Query("SELECT t FROM Task t WHERE t.teacher.id = :teacherId ORDER BY t.createdAt DESC")
+    List<Task> findByTeacherIdOrderByCreatedAtDesc(@Param("teacherId") Long teacherId);
 }

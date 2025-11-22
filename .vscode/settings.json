@@ -7,5 +7,6 @@
     "java.project.outputPath": "backend/target/classes",
     "java.project.referencedLibraries": [
         "backend/target/**/*.jar"
-    ]
+    ],
+    "kiroAgent.configureMCP": "Disabled"
 }

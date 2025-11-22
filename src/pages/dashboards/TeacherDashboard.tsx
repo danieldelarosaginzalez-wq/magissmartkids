@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Users, BookOpen, AlertCircle, FileText, School, Target, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
-import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
 import { teacherApi } from '../../services/api';
 
 interface TeacherDashboardStats {
@@ -45,15 +44,9 @@ const TeacherDashboard: React.FC = () => {
   const [loadingSubjects, setLoadingSubjects] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
+    loadStats();
+    loadSubjects();
   }, []);
-
-  const loadDashboardData = async () => {
-    await Promise.all([
-      loadStats(),
-      loadSubjects()
-    ]);
-  };
 
   const loadStats = async () => {
     try {
@@ -62,7 +55,6 @@ const TeacherDashboard: React.FC = () => {
       setStats(response.data);
     } catch (error) {
       console.error('Error loading teacher dashboard stats:', error);
-      // Fallback a datos vacíos en caso de error
       setStats({
         totalMaterias: 0,
         totalEstudiantes: 0,
@@ -81,22 +73,15 @@ const TeacherDashboard: React.FC = () => {
       setLoadingSubjects(true);
       const response = await teacherApi.getSubjects();
       
-      console.log('📊 Respuesta completa del backend:', response.data);
+      const mappedSubjects = (response.data.subjects || []).map((subject: any) => ({
+        id: subject.id?.toString() || '',
+        nombre: subject.name || subject.subjectName || 'Sin nombre',
+        grado: subject.grade || 'Sin grado',
+        estudiantes: subject.totalStudents || subject.studentCount || 0,
+        progresoPromedio: subject.progress || subject.averageProgress || 0,
+        color: subject.color || '#3B82F6'
+      }));
       
-      // Mapear la respuesta del backend al formato esperado por el frontend
-      const mappedSubjects = (response.data.subjects || []).map((subject: any) => {
-        console.log('📚 Mapeando materia:', subject);
-        return {
-          id: subject.id?.toString() || '',
-          nombre: subject.name || subject.subjectName || 'Sin nombre',
-          grado: subject.grade || 'Sin grado',
-          estudiantes: subject.totalStudents || subject.studentCount || 0,
-          progresoPromedio: subject.progress || subject.averageProgress || 0,
-          color: subject.color || '#3B82F6'
-        };
-      });
-      
-      console.log('✅ Materias mapeadas:', mappedSubjects);
       setSubjects(mappedSubjects);
     } catch (error) {
       console.error('Error loading teacher subjects:', error);
@@ -106,14 +91,18 @@ const TeacherDashboard: React.FC = () => {
     }
   };
 
+  const refreshData = () => {
+    loadStats();
+    loadSubjects();
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       <main className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
-              👨‍🏫
+              <Users className="h-6 w-6 text-blue-600" />
             </div>
             Bienvenido, {user?.firstName} {user?.lastName}
           </h1>
@@ -121,17 +110,16 @@ const TeacherDashboard: React.FC = () => {
             Panel de control para gestionar tus clases y estudiantes
           </p>
           <Button
-            onClick={loadDashboardData}
+            onClick={refreshData}
             variant="outline"
             className="mt-4 flex items-center gap-2"
             disabled={loading}
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
         </div>
 
-        {/* Institution Info */}
         {user?.institution ? (
           <Card className="border-[#00368F]/20 bg-[#00368F]/5 mb-6">
             <CardContent className="p-6">
@@ -144,7 +132,8 @@ const TeacherDashboard: React.FC = () => {
                     {user.institution.name}
                   </h3>
                   <p className="text-gray-600 flex items-center gap-2">
-                    {getRoleIcon(user.role)} {translateRole(user.role)}
+                    <Users className="w-4 h-4" />
+                    Profesor
                   </p>
                   {user.institution.address && (
                     <p className="text-sm text-gray-500 mt-1">
@@ -152,6 +141,11 @@ const TeacherDashboard: React.FC = () => {
                     </p>
                   )}
                 </div>
+                {stats && stats.tareasPendientesCorreccion > 0 && (
+                  <Badge className="bg-yellow-100 text-yellow-800">
+                    {stats.tareasPendientesCorreccion} por calificar
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -169,7 +163,6 @@ const TeacherDashboard: React.FC = () => {
           </Card>
         )}
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
@@ -244,7 +237,6 @@ const TeacherDashboard: React.FC = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
         <Card className="mb-8">
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -252,32 +244,32 @@ const TeacherDashboard: React.FC = () => {
               Acciones Rápidas
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Link to="/profesor/materias" className="block">
-                <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center gap-2 py-3">
+              <Link to="/profesor/materias">
+                <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center justify-center gap-2">
                   <BookOpen className="h-4 w-4" />
                   Mis Materias
                 </Button>
               </Link>
-              <Link to="/profesor/tareas" className="block">
-                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+              <Link to="/profesor/tareas">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <FileText className="h-4 w-4" />
                   Tareas
                 </Button>
               </Link>
-              <Link to="/profesor/calificaciones" className="block">
-                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+              <Link to="/profesor/calificaciones">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Calificaciones
                 </Button>
               </Link>
-              <Link to="/profesor/predicciones" className="block">
-                <Button variant="outline" className="w-full flex items-center gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50">
+              <Link to="/profesor/predicciones">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <TrendingUp className="h-4 w-4" />
                   Predicciones IA
                 </Button>
               </Link>
-              <Link to="/actividades-interactivas" className="block">
-                <Button variant="outline" className="w-full flex items-center gap-2 py-3">
+              <Link to="/actividades-interactivas">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <Target className="h-4 w-4" />
                   Actividades
                 </Button>
@@ -286,9 +278,7 @@ const TeacherDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Main Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Mis Materias */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -305,32 +295,31 @@ const TeacherDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : subjects.length === 0 ? (
-                <div className="text-center py-8">
-                  <BookOpen className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">No hay materias asignadas</p>
-                  <p className="text-xs text-gray-400">
-                    Contacta al coordinador para que te asigne materias
-                  </p>
+                <div className="text-center py-6 text-gray-500">
+                  <BookOpen className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p className="font-medium">No hay materias asignadas</p>
+                  <p className="text-sm">Contacta al coordinador</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {subjects.map((subject) => (
-                    <div
-                      key={subject.id}
-                      className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border-l-4" 
-                      style={{ borderLeftColor: subject.color }}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">{subject.nombre} - {subject.grado}</h4>
+                    <div key={subject.id} className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium text-gray-900">
+                            {subject.nombre} - {subject.grado}
+                          </h4>
+                          <p className="text-sm text-gray-600 flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {subject.estudiantes} estudiantes
+                          </p>
+                        </div>
                         <Link to={`/profesor/estudiantes?grade=${encodeURIComponent(subject.grado)}`}>
-                          <Badge variant="outline" className="text-xs cursor-pointer hover:bg-blue-50">
-                            Ver detalles
+                          <Badge variant="outline" className="text-xs cursor-pointer">
+                            Ver →
                           </Badge>
                         </Link>
                       </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {subject.estudiantes} estudiantes
-                      </p>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
                           <div
@@ -350,7 +339,6 @@ const TeacherDashboard: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Actividades Recientes */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -367,14 +355,14 @@ const TeacherDashboard: React.FC = () => {
                   ))}
                 </div>
               ) : !stats?.actividadesRecientes || stats.actividadesRecientes.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No hay actividades recientes</p>
+                <div className="text-center py-6 text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p className="font-medium">No hay actividades recientes</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {stats.actividadesRecientes.map((task) => (
-                    <div key={task.id} className="p-3 bg-gray-50 rounded-lg border-l-4 border-[#00368F]">
+                    <div key={task.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex justify-between items-start mb-1">
                         <h4 className="font-medium text-gray-900">{task.titulo}</h4>
                         <Badge className="text-xs bg-green-100 text-green-800">
@@ -382,11 +370,11 @@ const TeacherDashboard: React.FC = () => {
                         </Badge>
                       </div>
                       <p className="text-sm text-gray-600">
-                        {task.grados?.join(', ')} • {task.tipo === 'traditional' ? 'Tarea tradicional' : 'Actividad interactiva'}
+                        {task.grados?.join(', ')} • {task.tipo === 'traditional' ? 'Tradicional' : 'Interactiva'}
                       </p>
                       {task.fechaCreacion && (
                         <p className="text-xs text-gray-500 mt-1">
-                          Creada: {new Date(task.fechaCreacion).toLocaleDateString()}
+                          {new Date(task.fechaCreacion).toLocaleDateString('es-ES')}
                         </p>
                       )}
                     </div>

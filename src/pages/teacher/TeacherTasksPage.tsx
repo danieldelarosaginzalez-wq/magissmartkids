@@ -82,6 +82,10 @@ const TeacherTasksPage: React.FC = () => {
   const [editingSubmissionId, setEditingSubmissionId] = useState<number | null>(null);
   const [editingScore, setEditingScore] = useState<number>(0);
   const [editingFeedback, setEditingFeedback] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'az' | 'za' | 'createdDate' | 'dueDate'>('createdDate');
+  const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [assignToAll, setAssignToAll] = useState(true);
   const [createForm, setCreateForm] = useState<CreateTaskForm>({
     titulo: '',
     descripcion: '',
@@ -360,6 +364,34 @@ const TeacherTasksPage: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading subjects:', error);
       setAvailableSubjects([]);
+    }
+  };
+
+  const loadStudentsForGrade = async (grade: string) => {
+    try {
+      const { token } = useAuthStore.getState();
+      if (!token || !grade) return;
+
+      const response = await fetch(`/api/students/by-grade?grade=${encodeURIComponent(grade)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const students = Array.isArray(data) ? data : (data.students || []);
+        setAvailableStudents(students);
+        // Por defecto, seleccionar todos
+        setSelectedStudents(students.map((s: any) => s.id));
+      } else {
+        setAvailableStudents([]);
+        setSelectedStudents([]);
+      }
+    } catch (error) {
+      console.error('Error loading students:', error);
+      setAvailableStudents([]);
+      setSelectedStudents([]);
     }
   };
 
@@ -898,7 +930,8 @@ const TeacherTasksPage: React.FC = () => {
         allowedFormats: createForm.formatosPermitidos || [],
         maxFiles: 3,
         maxSizeMb: 10,
-        maxGrade: 5.0
+        maxGrade: 5.0,
+        studentIds: assignToAll ? null : selectedStudents
       };
 
       const { token } = useAuthStore.getState();
@@ -937,6 +970,9 @@ const TeacherTasksPage: React.FC = () => {
         });
         setSelectedFiles([]);
         setDraftActivities([]);
+        setAvailableStudents([]);
+        setSelectedStudents([]);
+        setAssignToAll(true);
         
         const message = createForm.tipo === 'interactive'
           ? draftActivities.length > 0 
@@ -1009,6 +1045,20 @@ const TeacherTasksPage: React.FC = () => {
       (task.grados && task.grados.includes(selectedGradeFilter));
     
     return matchesType && matchesGrade;
+  }).sort((a, b) => {
+    // Ordenamiento
+    switch (sortBy) {
+      case 'az':
+        return a.titulo.localeCompare(b.titulo);
+      case 'za':
+        return b.titulo.localeCompare(a.titulo);
+      case 'createdDate':
+        return new Date(b.fechaCreacion || 0).getTime() - new Date(a.fechaCreacion || 0).getTime();
+      case 'dueDate':
+        return new Date(a.fechaEntrega || 0).getTime() - new Date(b.fechaEntrega || 0).getTime();
+      default:
+        return 0;
+    }
   });
 
   if (loading) {
@@ -1053,14 +1103,14 @@ const TeacherTasksPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="w-1 h-6 bg-primary rounded-full"></div>
-              <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+              <h3 className="text-lg font-semibold text-gray-800">Filtros y Ordenamiento</h3>
             </div>
             <span className="text-sm text-gray-500">
               {filteredTasks.length} de {tasks.length} tareas
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Filtro por tipo */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-3 block flex items-center gap-2">
@@ -1139,6 +1189,50 @@ const TeacherTasksPage: React.FC = () => {
                     {grade}
                   </Button>
                 ))}
+              </div>
+            </div>
+
+            {/* Ordenamiento */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-3 block flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-primary" />
+                Ordenar por
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={sortBy === 'az' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('az')}
+                  size="sm"
+                  className={sortBy === 'az' ? 'bg-primary text-white' : 'border-gray-300 hover:bg-gray-50'}
+                >
+                  A → Z
+                </Button>
+                <Button
+                  variant={sortBy === 'za' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('za')}
+                  size="sm"
+                  className={sortBy === 'za' ? 'bg-primary text-white' : 'border-gray-300 hover:bg-gray-50'}
+                >
+                  Z → A
+                </Button>
+                <Button
+                  variant={sortBy === 'createdDate' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('createdDate')}
+                  size="sm"
+                  className={sortBy === 'createdDate' ? 'bg-primary text-white' : 'border-gray-300 hover:bg-gray-50'}
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Creación
+                </Button>
+                <Button
+                  variant={sortBy === 'dueDate' ? 'default' : 'outline'}
+                  onClick={() => setSortBy('dueDate')}
+                  size="sm"
+                  className={sortBy === 'dueDate' ? 'bg-primary text-white' : 'border-gray-300 hover:bg-gray-50'}
+                >
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Entrega
+                </Button>
               </div>
             </div>
           </div>
@@ -1275,6 +1369,10 @@ const TeacherTasksPage: React.FC = () => {
                             materiaId: subjectId,
                             grados: selectedSubject ? [selectedSubject.grade] : []
                           });
+                          // Cargar estudiantes del grado seleccionado
+                          if (selectedSubject && selectedSubject.grade) {
+                            loadStudentsForGrade(selectedSubject.grade);
+                          }
                         }}
                         className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                         required
@@ -1307,6 +1405,62 @@ const TeacherTasksPage: React.FC = () => {
                   </select>
                 </div>
               </div>
+
+              {/* Selección de Estudiantes */}
+              {availableStudents.length > 0 && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold text-blue-800">Asignar a Estudiantes</h3>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={assignToAll}
+                        onChange={(e) => {
+                          setAssignToAll(e.target.checked);
+                          if (e.target.checked) {
+                            setSelectedStudents(availableStudents.map(s => s.id));
+                          } else {
+                            setSelectedStudents([]);
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-blue-700">Todos ({availableStudents.length})</span>
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-white rounded border border-blue-200">
+                    {availableStudents.map((student: any) => (
+                      <label
+                        key={student.id}
+                        className="flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedStudents.includes(student.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStudents([...selectedStudents, student.id]);
+                            } else {
+                              setSelectedStudents(selectedStudents.filter(id => id !== student.id));
+                              setAssignToAll(false);
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 truncate">{student.firstName} {student.lastName}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  <p className="text-xs text-blue-600 mt-2">
+                    {selectedStudents.length} estudiante{selectedStudents.length !== 1 ? 's' : ''} seleccionado{selectedStudents.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
 
               {/* Opciones según tipo de tarea - CUESTIONARIOS INTERACTIVOS */}
               {createForm.tipo === 'interactive' ? (
@@ -1885,8 +2039,9 @@ const TeacherTasksPage: React.FC = () => {
 
       {/* Modal de entregas */}
       {selectedTaskSubmissions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 py-20">
+          <div className="w-full max-w-4xl max-h-[calc(100vh-10rem)] overflow-y-auto">
+            <Card className="w-full">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
@@ -2216,10 +2371,17 @@ const TeacherTasksPage: React.FC = () => {
                                   }
 
                                   // Actualizar en la base de datos
+                                  const { token } = useAuthStore.getState();
+                                  if (!token) {
+                                    alert('❌ No hay sesión activa');
+                                    return;
+                                  }
+
                                   const response = await fetch(`/api/teacher/submissions/${(submission as any).id}/grade`, {
                                     method: 'PUT',
                                     headers: {
                                       'Content-Type': 'application/json',
+                                      'Authorization': `Bearer ${token}`
                                     },
                                     body: JSON.stringify({
                                       score: editingScore,
@@ -2285,7 +2447,7 @@ const TeacherTasksPage: React.FC = () => {
                                 onClick={() => {
                                   setEditingSubmissionId((submission as any).id);
                                   setEditingScore((submission as any).score || 0);
-                                  setEditingFeedback((submission as any).feedback || '');
+                                  setEditingFeedback((submission as unknown).feedback || '');
                                 }}
                                 variant="outline"
                                 size="sm"
@@ -2296,11 +2458,11 @@ const TeacherTasksPage: React.FC = () => {
                             </div>
                             
                             {/* Feedback del profesor */}
-                            {(submission as any).feedback && (submission as any).feedback !== 'null' && (
+                            {(submission as unknown).feedback && (submission as unknown).feedback !== 'null' && (
                               <div>
                                 <p className="text-sm font-medium text-gray-700 mb-2">Retroalimentación:</p>
                                 <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                  <p className="text-gray-700">{(submission as any).feedback}</p>
+                                  <p className="text-gray-700">{(submission as unknown).feedback}</p>
                                 </div>
                               </div>
                             )}
@@ -2310,7 +2472,7 @@ const TeacherTasksPage: React.FC = () => {
                             <p className="text-gray-600 mb-4">Esta entrega aún no ha sido calificada</p>
                             <Button 
                               onClick={() => {
-                                setEditingSubmissionId((submission as any).id);
+                                setEditingSubmissionId((submission as unknown).id);
                                 setEditingScore(3.0);
                                 setEditingFeedback('');
                               }}
@@ -2334,6 +2496,7 @@ const TeacherTasksPage: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>

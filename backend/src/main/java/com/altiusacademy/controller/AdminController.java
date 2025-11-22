@@ -131,4 +131,24 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("error", "Error obteniendo instituciones"));
         }
     }
+
+    /**
+     * Obtener estudiantes por grado
+     * Endpoint: /api/students/by-grade?grade=Cuarto C
+     */
+    @GetMapping("/api/students/by-grade")
+    @PreAuthorize("hasAnyRole('TEACHER', 'COORDINATOR', 'SUPER_ADMIN')")
+    public ResponseEntity<?> getStudentsByGrade(@RequestParam String grade) {
+        try {
+            logger.info("Obteniendo estudiantes del grado: {}", grade);
+            
+            List<User> students = userService.findStudentsByGrade(grade);
+            
+            return ResponseEntity.ok(students);
+            
+        } catch (Exception e) {
+            logger.error("Error obteniendo estudiantes del grado {}: {}", grade, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Error obteniendo estudiantes"));
+        }
+    }
 }

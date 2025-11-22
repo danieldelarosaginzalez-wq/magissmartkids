@@ -38,4 +38,16 @@ public interface TaskSubmissionRepository extends JpaRepository<TaskSubmission, 
     
     // Buscar entregas por estudiante y estado
     List<TaskSubmission> findByStudentIdAndStatus(Long studentId, TaskSubmission.SubmissionStatus status);
+    
+    // Calcular promedio de un estudiante
+    @Query(value = "SELECT AVG(score) FROM task_submissions WHERE student_id = :studentId AND score IS NOT NULL", nativeQuery = true)
+    Double getAverageScoreByStudent(@Param("studentId") Long studentId);
+    
+    // Contar tareas completadas (calificadas) de un estudiante
+    @Query(value = "SELECT COUNT(*) FROM task_submissions WHERE student_id = :studentId AND status = 'GRADED'", nativeQuery = true)
+    Long countCompletedTasksByStudent(@Param("studentId") Long studentId);
+    
+    // Contar tareas pendientes de un estudiante  
+    @Query(value = "SELECT COUNT(*) FROM task_submissions WHERE student_id = :studentId AND status = 'SUBMITTED'", nativeQuery = true)
+    Long countPendingTasksByStudent(@Param("studentId") Long studentId);
 }

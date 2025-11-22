@@ -39,8 +39,13 @@ const TeacherStudentsPage: React.FC = () => {
   const loadStudents = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Buscando estudiantes para el grado:', grade);
+      console.log('🔍 URL completa:', window.location.href);
+      
       const response = await teacherApi.getStudentsByGrade(grade);
+      console.log('✅ Respuesta del servidor:', response);
       console.log('✅ Estudiantes cargados:', response.data);
+      console.log('✅ Cantidad de estudiantes:', response.data?.length || 0);
       
       // Eliminar duplicados basándose en el ID del estudiante
       const uniqueStudents = (response.data || []).reduce((acc: Student[], current: Student) => {
@@ -52,9 +57,10 @@ const TeacherStudentsPage: React.FC = () => {
       }, []);
       
       console.log('✅ Estudiantes únicos:', uniqueStudents);
+      console.log('✅ Cantidad de estudiantes únicos:', uniqueStudents.length);
       setStudents(uniqueStudents);
     } catch (error) {
-      console.error('Error loading students:', error);
+      console.error('❌ Error loading students:', error);
       setStudents([]);
     } finally {
       setLoading(false);

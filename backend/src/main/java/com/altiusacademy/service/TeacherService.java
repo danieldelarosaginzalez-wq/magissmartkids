@@ -2,6 +2,7 @@ package com.altiusacademy.service;
 
 import com.altiusacademy.dto.*;
 import com.altiusacademy.model.entity.*;
+import com.altiusacademy.model.enums.UserRole;
 import com.altiusacademy.repository.mysql.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,12 +70,45 @@ public class TeacherService {
                 teacherId, LocalDate.now()
             ).stream().limit(5).collect(Collectors.toList());
             
-            // Actividades recientes (últimas tareas creadas)
-            List<TaskTemplate> actividadesRecientes = taskTemplateRepository.findByTeacherId(teacherId)
+            // Actividades recientes (últimas tareas creadas - incluir tanto templates como tasks individuales)
+            List<TaskTemplate> templatesRecientes = taskTemplateRepository.findByTeacherId(teacherId)
                 .stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .limit(5)
                 .collect(Collectors.toList());
+            
+            // Si no hay templates, buscar en tasks individuales
+            List<TaskTemplate> actividadesRecientes = templatesRecientes;
+            if (templatesRecientes.isEmpty()) {
+                // Buscar tareas individuales y convertirlas a formato de template
+                List<Task> tasksRecientes = taskRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId)
+                    .stream()
+                    .limit(5)
+                    .collect(Collectors.toList());
+                
+                // Convertir Tasks a TaskTemplates para mantener compatibilidad
+                actividadesRecientes = tasksRecientes.stream()
+                    .map(task -> {
+                        TaskTemplate template = new TaskTemplate();
+                        template.setId(task.getId());
+                        template.setTitle(task.getTitle());
+                        template.setDescription(task.getDescription());
+                        template.setTeacherId(teacherId);
+                        template.setSubjectId(task.getSubject() != null ? task.getSubject().getId() : null);
+                        template.setDueDate(task.getDueDate());
+                        template.setCreatedAt(task.getCreatedAt());
+                        template.setType(task.getTaskType() == Task.TaskType.MULTIMEDIA ? 
+                            TaskTemplate.TaskType.TRADITIONAL : TaskTemplate.TaskType.INTERACTIVE);
+                        // Crear JSON de grados
+                        try {
+                            template.setGrades(objectMapper.writeValueAsString(List.of(task.getGrade())));
+                        } catch (Exception e) {
+                            template.setGrades("[]");
+                        }
+                        return template;
+                    })
+                    .collect(Collectors.toList());
+            }
             
             TeacherDashboardStatsDto stats = new TeacherDashboardStatsDto();
             stats.setTotalMaterias(totalMaterias);
@@ -266,14 +300,46 @@ public class TeacherService {
     
     public List<StudentDto> getStudentsByGrade(String grade) {
         try {
+            log.info("🔍 Buscando estudiantes para el grado: '{}'", grade);
+            
+            // Intentar buscar estudiantes
             List<User> students = userRepository.findStudentsByGrade(grade);
+            log.info("📊 Estudiantes encontrados con búsqueda exacta: {}", students.size());
+            
+            // Si no se encuentran estudiantes, intentar búsqueda alternativa
+            if (students.isEmpty()) {
+                log.warn("⚠️ No se encontraron estudiantes con búsqueda exacta para el grado: '{}'", grade);
+                log.info("🔄 Intentando búsqueda alternativa...");
+                
+                // Buscar todos los estudiantes activos y filtrar por grado
+                List<User> allStudents = userRepository.findByRole(UserRole.STUDENT);
+                students = allStudents.stream()
+                    .filter(u -> u.getIsActive() && 
+                                u.getSchoolGrade() != null && 
+                                u.getSchoolGrade().getGradeName() != null &&
+                                u.getSchoolGrade().getGradeName().equalsIgnoreCase(grade))
+                    .collect(Collectors.toList());
+                
+                log.info("📊 Estudiantes encontrados con búsqueda alternativa: {}", students.size());
+                
+                if (students.isEmpty()) {
+                    // Log de debug: mostrar algunos grados disponibles
+                    List<String> availableGrades = allStudents.stream()
+                        .filter(u -> u.getSchoolGrade() != null && u.getSchoolGrade().getGradeName() != null)
+                        .map(u -> u.getSchoolGrade().getGradeName())
+                        .distinct()
+                        .limit(10)
+                        .collect(Collectors.toList());
+                    log.warn("⚠️ Grados disponibles en la BD: {}", availableGrades);
+                }
+            }
             
             return students.stream()
                 .map(student -> {
-                    // Calcular estadísticas del estudiante
-                    Double averageScore = taskRepository.getAverageScoreByStudent(student);
-                    Long completedTasks = taskRepository.countByStudentAndStatus(student, Task.TaskStatus.GRADED);
-                    Long pendingTasks = taskRepository.countByStudentAndStatus(student, Task.TaskStatus.PENDING);
+                    // Calcular estadísticas del estudiante desde task_submissions
+                    Double averageScore = taskSubmissionRepository.getAverageScoreByStudent(student.getId());
+                    Long completedTasks = taskSubmissionRepository.countCompletedTasksByStudent(student.getId());
+                    Long pendingTasks = taskSubmissionRepository.countPendingTasksByStudent(student.getId());
                     
                     StudentDto dto = new StudentDto();
                     dto.setId(student.getId());
@@ -288,12 +354,16 @@ public class TeacherService {
                     dto.setCompletedTasks(completedTasks.intValue());
                     dto.setPendingTasks(pendingTasks.intValue());
                     
+                    log.debug("✅ Estudiante: {} {} - Grado: {} - Promedio: {} - Completadas: {} - Pendientes: {}", 
+                        student.getFirstName(), student.getLastName(), dto.getGrade(), 
+                        dto.getAverageScore(), dto.getCompletedTasks(), dto.getPendingTasks());
+                    
                     return dto;
                 })
                 .collect(Collectors.toList());
                 
         } catch (Exception e) {
-            log.error("Error getting students by grade {}: {}", grade, e.getMessage());
+            log.error("❌ Error getting students by grade {}: {}", grade, e.getMessage(), e);
             return new ArrayList<>();
         }
     }
@@ -485,6 +555,74 @@ public class TeacherService {
         } catch (Exception e) {
             log.error("Error deleting task {}: {}", taskId, e.getMessage(), e);
             throw new RuntimeException("Error al eliminar la tarea: " + e.getMessage());
+        }
+    }
+    
+    public List<Map<String, Object>> getStudentGradesForGrade(String grade) {
+        try {
+            log.info("Getting student grades for grade: {}", grade);
+            
+            // Obtener todos los estudiantes del grado
+            List<User> students = userRepository.findStudentsByGrade(grade);
+            
+            List<Map<String, Object>> studentGrades = new ArrayList<>();
+            
+            for (User student : students) {
+                // Obtener todas las tareas asignadas específicamente a este estudiante
+                // (las tareas individuales tienen student_id, las generales no)
+                List<Task> assignedTasks = taskRepository.findByStudentId(student.getId());
+                
+                // Obtener todas las entregas del estudiante
+                List<TaskSubmission> submissions = taskSubmissionRepository.findByStudentId(student.getId());
+                
+                // Calcular estadísticas
+                int totalTasks = assignedTasks.size();
+                int completedTasks = (int) submissions.stream()
+                    .filter(s -> s.getScore() != null)
+                    .count();
+                int pendingTasks = totalTasks - completedTasks;
+                
+                // Calcular promedio
+                double averageGrade = submissions.stream()
+                    .filter(s -> s.getScore() != null)
+                    .mapToDouble(TaskSubmission::getScore)
+                    .average()
+                    .orElse(0.0);
+                
+                // Crear mapa con información del estudiante
+                Map<String, Object> studentData = new HashMap<>();
+                studentData.put("id", student.getId());
+                studentData.put("name", student.getFullName());
+                studentData.put("email", student.getEmail());
+                studentData.put("grade", grade);
+                studentData.put("averageGrade", Math.round(averageGrade * 10.0) / 10.0);
+                studentData.put("totalTasks", totalTasks);
+                studentData.put("completedTasks", completedTasks);
+                studentData.put("pendingTasks", pendingTasks);
+                
+                // Agregar detalles de entregas
+                List<Map<String, Object>> submissionDetails = submissions.stream()
+                    .filter(s -> s.getScore() != null)
+                    .map(s -> {
+                        Map<String, Object> detail = new HashMap<>();
+                        detail.put("taskTitle", s.getTask() != null ? s.getTask().getTitle() : "Sin título");
+                        detail.put("score", s.getScore());
+                        detail.put("submittedAt", s.getSubmittedAt());
+                        return detail;
+                    })
+                    .collect(Collectors.toList());
+                
+                studentData.put("submissions", submissionDetails);
+                
+                studentGrades.add(studentData);
+            }
+            
+            log.info("Found {} students for grade {}", studentGrades.size(), grade);
+            return studentGrades;
+            
+        } catch (Exception e) {
+            log.error("Error getting student grades for grade {}: {}", grade, e.getMessage(), e);
+            throw new RuntimeException("Error al obtener calificaciones: " + e.getMessage());
         }
     }
 }

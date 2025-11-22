@@ -1,140 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { BarChart3, User, FileText, Save, RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Award, Users, CheckCircle, Clock, TrendingUp, RefreshCw, BookOpen } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
-import EmptyState from '../../components/ui/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { teacherApi } from '../../services/api';
 
-interface GradeTask {
-  taskId: number;
-  studentId: number;
-  studentName: string;
-  taskTitle: string;
-  submissionText?: string;
-  submissionFileUrl?: string;
-  submittedAt?: string;
-  currentScore?: number;
-  maxScore: number;
-  feedback?: string;
-  status: string;
-}
-
-interface Student {
+interface StudentGrade {
   id: number;
-  firstName: string;
-  lastName: string;
-  fullName: string;
+  name: string;
   email: string;
   grade: string;
-  avatarUrl?: string;
-  isActive: boolean;
-  averageScore: number;
+  averageGrade: number;
+  totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
+  submissions: {
+    taskTitle: string;
+    score: number;
+    submittedAt: string;
+  }[];
 }
 
 const TeacherGradesPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const [gradingTasks, setGradingTasks] = useState<GradeTask[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<StudentGrade[]>([]);
   const [loading, setLoading] = useState(true);
-  const [gradingMode, setGradingMode] = useState<'tasks' | 'students'>('tasks');
-  const [selectedTask, setSelectedTask] = useState<GradeTask | null>(null);
-  const [gradeForm, setGradeForm] = useState({ score: '', feedback: '' });
-
-  const materia = searchParams.get('materia');
-  const grado = searchParams.get('grado');
+  const [selectedGrade, setSelectedGrade] = useState<string>('');
+  const [availableGrades, setAvailableGrades] = useState<string[]>([]);
+  const { token } = useAuthStore();
 
   useEffect(() => {
-    if (materia && grado) {
-      loadGradingData();
-    } else {
-      loadStudents();
-    }
-  }, [materia, grado]);
+    loadAvailableGrades();
+  }, []);
 
-  const loadGradingData = async () => {
-    if (!materia || !grado) return;
-    
+  useEffect(() => {
+    if (selectedGrade) {
+      loadStudentGrades();
+    }
+  }, [selectedGrade]);
+
+  const loadAvailableGrades = async () => {
     try {
-      setLoading(true);
-      const response = await teacherApi.getGradingTasks(parseInt(materia), grado);
-      setGradingTasks(response.data);
+      if (!token) return;
+
+      const response = await fetch('/api/teacher/tasks/grades', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const grades = Array.isArray(data) ? data : (data.grades || []);
+        setAvailableGrades(grades);
+        if (grades.length > 0) {
+          setSelectedGrade(grades[0]);
+        }
+      }
     } catch (error) {
-      console.error('Error loading grading tasks:', error);
-      setGradingTasks([]);
-    } finally {
-      setLoading(false);
+      console.error('Error loading grades:', error);
     }
   };
 
-  const loadStudents = async () => {
-    if (!grado) return;
-    
+  const loadStudentGrades = async () => {
     try {
       setLoading(true);
-      const response = await teacherApi.getStudentsByGrade(grado);
-      setStudents(response.data);
+      if (!token || !selectedGrade) return;
+
+      const response = await fetch(`/api/teacher/grades/students?grade=${encodeURIComponent(selectedGrade)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStudents(data.students || data || []);
+      } else {
+        setStudents([]);
+      }
     } catch (error) {
-      console.error('Error loading students:', error);
+      console.error('Error loading student grades:', error);
       setStudents([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGradeTask = async (taskId: number) => {
-    try {
-      await teacherApi.gradeTask(taskId, {
-        newScore: parseFloat(gradeForm.score),
-        newFeedback: gradeForm.feedback
-      });
-      
-      setSelectedTask(null);
-      setGradeForm({ score: '', feedback: '' });
-      loadGradingData();
-    } catch (error) {
-      console.error('Error grading task:', error);
-    }
+  const getGradeColor = (grade: number) => {
+    if (grade >= 4.5) return 'text-green-600 bg-green-50';
+    if (grade >= 4.0) return 'text-blue-600 bg-blue-50';
+    if (grade >= 3.0) return 'text-orange-600 bg-orange-50';
+    return 'text-red-600 bg-red-50';
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'SUBMITTED':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pendiente</Badge>;
-      case 'GRADED':
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Calificada</Badge>;
-      case 'PENDING':
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Sin Entregar</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+  const getGradeBadge = (grade: number) => {
+    if (grade >= 4.5) return { text: 'Excelente', color: 'bg-green-100 text-green-800' };
+    if (grade >= 4.0) return { text: 'Bueno', color: 'bg-blue-100 text-blue-800' };
+    if (grade >= 3.0) return { text: 'Aceptable', color: 'bg-orange-100 text-orange-800' };
+    return { text: 'Bajo', color: 'bg-red-100 text-red-800' };
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'SUBMITTED':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'GRADED':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />;
-      case 'PENDING':
-        return <AlertCircle className="h-4 w-4 text-gray-600" />;
-      default:
-        return <FileText className="h-4 w-4 text-gray-600" />;
-    }
+  const calculateClassAverage = () => {
+    if (students.length === 0) return 0;
+    const sum = students.reduce((acc, student) => acc + student.averageGrade, 0);
+    return (sum / students.length).toFixed(2);
   };
 
-  if (loading) {
+  const getCompletionRate = () => {
+    if (students.length === 0) return 0;
+    const totalTasks = students.reduce((acc, s) => acc + s.totalTasks, 0);
+    const completedTasks = students.reduce((acc, s) => acc + s.completedTasks, 0);
+    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  };
+
+  if (loading && !selectedGrade) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Calificaciones"
-          description="Revisa y califica las tareas de tus estudiantes"
-          icon={BarChart3}
+          description="Consulta las calificaciones de tus estudiantes"
+          icon={Award}
         />
         <LoadingSpinner />
       </div>
@@ -145,354 +132,207 @@ const TeacherGradesPage: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Calificaciones"
-        description={materia && grado ? `${grado} - Tareas por calificar` : "Gestión de calificaciones"}
-        icon={BarChart3}
+        description="Consulta las calificaciones y progreso de tus estudiantes"
+        icon={Award}
         action={
-          <div className="flex gap-2">
-            <Button 
-              onClick={() => setGradingMode(gradingMode === 'tasks' ? 'students' : 'tasks')}
-              variant="outline"
-              className="border-secondary-300 text-secondary hover:bg-secondary-50"
-            >
-              {gradingMode === 'tasks' ? 'Ver Estudiantes' : 'Ver Tareas'}
-            </Button>
-            <Button 
-              onClick={materia && grado ? loadGradingData : loadStudents}
-              variant="outline"
-              className="border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Actualizar
-            </Button>
-          </div>
+          <Button
+            onClick={loadStudentGrades}
+            variant="outline"
+            className="flex items-center gap-2"
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </Button>
         }
       />
 
-      {/* Modal de calificación */}
-      {selectedTask && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Calificar Tarea: {selectedTask.taskTitle}
-              </CardTitle>
-              <p className="text-sm text-secondary">
-                Estudiante: {selectedTask.studentName}
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Entrega del estudiante */}
-              <div className="space-y-2">
-                <h4 className="font-medium text-neutral-black">Entrega del Estudiante:</h4>
-                {selectedTask.submissionText ? (
-                  <div className="p-3 bg-secondary-50 rounded-lg border">
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(selectedTask.submissionText);
-                        if (parsed.totalQuestions && parsed.answers) {
-                          // Es un resultado de quiz
-                          return (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-3 gap-4 p-4 bg-blue-50 rounded-lg">
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-blue-600">{parsed.correctAnswers}/{parsed.totalQuestions}</div>
-                                  <div className="text-sm text-gray-600">Respuestas correctas</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-red-600">{parsed.incorrectAnswers}</div>
-                                  <div className="text-sm text-gray-600">Incorrectas</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-2xl font-bold text-purple-600">{parsed.timeSpent || 'N/A'}</div>
-                                  <div className="text-sm text-gray-600">Tiempo</div>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-gray-800">Detalle de respuestas:</h4>
-                                {parsed.answers.map((answer: any, index: number) => (
-                                  <div key={index} className={`p-4 rounded-lg border-2 ${answer.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                                    <div className="flex items-start gap-2">
-                                      <span className={`text-xl ${answer.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                                        {answer.isCorrect ? '✓' : '✗'}
-                                      </span>
-                                      <div className="flex-1">
-                                        <p className="font-semibold text-gray-800 mb-2">{index + 1}. {answer.question}</p>
-                                        <div className="space-y-1 text-sm">
-                                          <p className="text-gray-700">
-                                            <span className="font-medium">Respuesta del estudiante:</span> {answer.studentAnswer}
-                                          </p>
-                                          {!answer.isCorrect && (
-                                            <p className="text-green-700">
-                                              <span className="font-medium">Respuesta correcta:</span> {answer.correctAnswer}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        }
-                        // Si no es un quiz, mostrar JSON formateado
-                        return <pre className="text-sm text-neutral-black overflow-x-auto">{JSON.stringify(parsed, null, 2)}</pre>;
-                      } catch {
-                        // Si no es JSON, mostrar como texto normal
-                        return <p className="text-sm text-neutral-black whitespace-pre-wrap">{selectedTask.submissionText}</p>;
-                      }
-                    })()}
-                  </div>
-                ) : (
-                  <p className="text-sm text-secondary italic">Sin texto de entrega</p>
-                )}
-                
-                {selectedTask.submissionFileUrl && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-800">
-                      📎 Archivo adjunto: 
-                      <a 
-                        href={(() => {
-                          // Si la URL ya es completa (http/https), usarla directamente
-                          if (selectedTask.submissionFileUrl.startsWith('http')) {
-                            return selectedTask.submissionFileUrl;
-                          }
-                          // Si es una ruta relativa, construir la URL del backend
-                          return `${import.meta.env.VITE_API_BASE_URL}/files/download/${selectedTask.submissionFileUrl}`;
-                        })()}
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="ml-2 underline hover:text-blue-600"
-                      >
-                        Ver archivo PDF
-                      </a>
-                    </p>
-                  </div>
-                )}
-                
-                {selectedTask.submittedAt && (
-                  <p className="text-xs text-secondary">
-                    Entregado: {new Date(selectedTask.submittedAt).toLocaleString()}
-                  </p>
-                )}
-              </div>
-
-              {/* Formulario de calificación */}
-              <div className="space-y-4 border-t pt-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-black mb-2">
-                    Calificación (máximo: {selectedTask.maxScore})
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max={selectedTask.maxScore}
-                    step="0.1"
-                    value={gradeForm.score}
-                    onChange={(e) => setGradeForm({...gradeForm, score: e.target.value})}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    placeholder={`0 - ${selectedTask.maxScore}`}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-neutral-black mb-2">
-                    Retroalimentación
-                  </label>
-                  <textarea
-                    value={gradeForm.feedback}
-                    onChange={(e) => setGradeForm({...gradeForm, feedback: e.target.value})}
-                    className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    rows={4}
-                    placeholder="Escribe comentarios y sugerencias para el estudiante..."
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={() => handleGradeTask(selectedTask.taskId)}
-                  className="bg-primary hover:bg-primary-600 text-neutral-white border-0 flex items-center gap-2"
-                  disabled={!gradeForm.score}
+      {/* Selector de grado */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              Seleccionar Grado:
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {availableGrades.map((grade) => (
+                <Button
+                  key={grade}
+                  variant={selectedGrade === grade ? 'default' : 'outline'}
+                  onClick={() => setSelectedGrade(grade)}
+                  size="sm"
+                  className={selectedGrade === grade ? 'bg-primary text-white' : ''}
                 >
-                  <Save className="h-4 w-4" />
-                  Guardar Calificación
+                  {grade}
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedTask(null);
-                    setGradeForm({ score: '', feedback: '' });
-                  }}
-                  className="border-secondary-300 text-secondary hover:bg-secondary-50"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Contenido principal */}
-      {gradingMode === 'tasks' ? (
-        /* Vista de tareas por calificar */
-        gradingTasks.length === 0 ? (
-          <EmptyState
-            icon="file"
-            title="No hay tareas por calificar"
-            description={materia && grado ? "Todas las tareas han sido calificadas." : "Selecciona una materia y grado para ver las tareas."}
-          />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {gradingTasks.map((task) => (
-              <Card 
-                key={`${task.taskId}-${task.studentId}`} 
-                className="border-secondary-200 hover:shadow-lg transition-all duration-200"
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-bold text-neutral-black flex items-center gap-2">
-                        {getStatusIcon(task.status)}
-                        {task.taskTitle}
-                      </CardTitle>
-                      <p className="text-sm text-secondary mt-1">
-                        Estudiante: {task.studentName}
-                      </p>
-                    </div>
-                    {getStatusBadge(task.status)}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Información de la entrega */}
-                  <div className="space-y-2">
-                    {task.submittedAt && (
-                      <p className="text-sm text-secondary">
-                        📅 Entregado: {new Date(task.submittedAt).toLocaleString()}
-                      </p>
-                    )}
-                    
-                    {task.currentScore !== undefined && task.currentScore !== null ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-secondary">Calificación:</span>
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          {task.currentScore}/{task.maxScore}
-                        </Badge>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-yellow-600">⏳ Pendiente de calificación</p>
-                    )}
-                  </div>
-
-                  {/* Vista previa de la entrega */}
-                  {task.submissionText && (
-                    <div className="p-3 bg-secondary-50 rounded-lg border">
-                      <p className="text-sm text-neutral-black line-clamp-3">
-                        {task.submissionText}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Acciones */}
-                  <div className="flex gap-2 pt-2 border-t border-secondary-200">
-                    <Button 
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setGradeForm({
-                          score: task.currentScore?.toString() || '',
-                          feedback: task.feedback || ''
-                        });
-                      }}
-                      className="flex-1 bg-primary hover:bg-primary-600 text-neutral-white border-0 flex items-center gap-2"
-                      size="sm"
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      {task.currentScore ? 'Editar Calificación' : 'Calificar'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+              ))}
+            </div>
           </div>
-        )
+        </CardContent>
+      </Card>
+
+      {/* Estadísticas generales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Estudiantes</p>
+                <p className="text-2xl font-bold text-gray-900">{students.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Award className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Promedio General</p>
+                <p className="text-2xl font-bold text-gray-900">{calculateClassAverage()}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Tasa de Entrega</p>
+                <p className="text-2xl font-bold text-gray-900">{getCompletionRate()}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Aprobados</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {students.filter(s => s.averageGrade >= 3.0).length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabla de estudiantes */}
+      {loading ? (
+        <LoadingSpinner />
+      ) : students.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              No hay estudiantes
+            </h3>
+            <p className="text-gray-600">
+              No se encontraron estudiantes para el grado seleccionado.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        /* Vista de estudiantes */
-        students.length === 0 ? (
-          <EmptyState
-            icon="users"
-            title="No hay estudiantes"
-            description="No se encontraron estudiantes para este grado."
-          />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {students.map((student) => (
-              <Card 
-                key={student.id} 
-                className="border-secondary-200 hover:shadow-lg transition-all duration-200"
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      {student.avatarUrl ? (
-                        <img 
-                          src={student.avatarUrl} 
-                          alt={student.fullName}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-6 w-6 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <CardTitle className="text-lg font-bold text-neutral-black">
-                        {student.fullName}
-                      </CardTitle>
-                      <p className="text-sm text-secondary">
-                        {student.grade}
-                      </p>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  {/* Estadísticas del estudiante */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2 bg-orange-50 rounded-lg">
-                      <p className="text-lg font-bold text-orange-800">
-                        {student.averageScore.toFixed(1)}
-                      </p>
-                      <p className="text-xs text-orange-600">Promedio</p>
-                    </div>
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <p className="text-lg font-bold text-blue-800">
-                        {student.completedTasks}
-                      </p>
-                      <p className="text-xs text-blue-600">Completadas</p>
-                    </div>
-                    <div className="p-2 bg-yellow-50 rounded-lg">
-                      <p className="text-lg font-bold text-yellow-800">
-                        {student.pendingTasks}
-                      </p>
-                      <p className="text-xs text-yellow-600">Pendientes</p>
-                    </div>
-                  </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Estudiantes de {selectedGrade}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left p-4 font-semibold text-gray-700">Estudiante</th>
+                    <th className="text-center p-4 font-semibold text-gray-700">Promedio</th>
+                    <th className="text-center p-4 font-semibold text-gray-700">Desempeño</th>
+                    <th className="text-center p-4 font-semibold text-gray-700">Entregas</th>
+                    <th className="text-center p-4 font-semibold text-gray-700">Pendientes</th>
+                    <th className="text-center p-4 font-semibold text-gray-700">Progreso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => {
+                    const badge = getGradeBadge(student.averageGrade);
+                    const progressPercentage = student.totalTasks > 0
+                      ? Math.round((student.completedTasks / student.totalTasks) * 100)
+                      : 0;
 
-                  {/* Estado del estudiante */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-secondary">Estado:</span>
-                    <Badge className={student.isActive ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}>
-                      {student.isActive ? 'Activo' : 'Inactivo'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )
+                    return (
+                      <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="p-4">
+                          <div>
+                            <p className="font-semibold text-gray-900">{student.name}</p>
+                            <p className="text-sm text-gray-500">{student.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${getGradeColor(student.averageGrade)}`}>
+                            <span className="text-2xl font-bold">
+                              {student.averageGrade.toFixed(1)}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <Badge className={badge.color}>
+                            {badge.text}
+                          </Badge>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <span className="text-lg font-semibold text-gray-900">
+                              {student.completedTasks}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Clock className="h-5 w-5 text-orange-600" />
+                            <span className="text-lg font-semibold text-gray-900">
+                              {student.pendingTasks}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 bg-gray-200 rounded-full h-3">
+                              <div
+                                className="bg-primary h-3 rounded-full transition-all duration-300"
+                                style={{ width: `${progressPercentage}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-semibold text-gray-700 min-w-[3rem]">
+                              {progressPercentage}%
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -269,6 +269,26 @@ public class TeacherController {
         }
     }
     
+    @GetMapping("/grades/students")
+    public ResponseEntity<?> getStudentGrades(
+            @RequestParam String grade,
+            Authentication authentication) {
+        try {
+            User user = getUserFromAuthentication(authentication);
+            if (user == null) {
+                log.error("No authenticated user found for student grades");
+                return ResponseEntity.status(401).build();
+            }
+            
+            log.info("Getting student grades for grade {} by teacher: {} (ID: {})", grade, user.getFullName(), user.getId());
+            List<Map<String, Object>> studentGrades = teacherService.getStudentGradesForGrade(grade);
+            return ResponseEntity.ok(Map.of("students", studentGrades));
+        } catch (Exception e) {
+            log.error("Error getting student grades: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     /**
      * Endpoint temporal para inicializar materias de prueba para el profesor autenticado
      * SOLO PARA DESARROLLO - Eliminar en producción
