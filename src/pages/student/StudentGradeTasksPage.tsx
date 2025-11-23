@@ -55,7 +55,7 @@ export default function StudentGradeTasksPage() {
       const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
       const token = authState?.state?.token;
       
-      console.log('🔍 Cargando tareas desde:', `${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks`);
+      console.log('🔍 Cargando tareas desde: /api/student/grade-tasks');
       console.log('🔑 Token:', token ? 'Presente' : 'Ausente');
       
       if (!token) {
@@ -64,7 +64,7 @@ export default function StudentGradeTasksPage() {
         return;
       }
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks`, {
+      const response = await fetch('/api/student/grade-tasks', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -97,7 +97,7 @@ export default function StudentGradeTasksPage() {
       
       if (!token) return;
       
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks/stats`, {
+      const response = await fetch('/api/student/grade-tasks/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

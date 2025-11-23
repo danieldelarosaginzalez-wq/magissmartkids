@@ -40,21 +40,8 @@ const TeacherSubjectsPage: React.FC = () => {
         const data = await response.json();
         let subjectsData = data.subjects || [];
         
-        // Agregar datos ficticios para Segundo A si existen pero están vacíos
-        subjectsData = subjectsData.map((subject: TeacherSubject) => {
-          if (subject.grade === 'Segundo A' && subject.totalTasks === 0) {
-            return {
-              ...subject,
-              totalStudents: 13,
-              totalTasks: 6,
-              completedTasks: 4,
-              pendingTasks: 2,
-              progress: 67,
-              averageGrade: 4.1
-            };
-          }
-          return subject;
-        });
+        // FILTRAR SOLO CUARTO C
+        subjectsData = subjectsData.filter((subject: TeacherSubject) => subject.grade === 'Cuarto C');
         
         setSubjects(subjectsData);
       } else {

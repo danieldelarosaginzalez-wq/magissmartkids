@@ -143,7 +143,7 @@ public class UserController {
     /**
      * Cambiar contraseña del usuario actual
      */
-    @PutMapping("/change-password")
+    @PutMapping("/password")
     public ResponseEntity<?> changePassword(
             @Valid @RequestBody PasswordUpdateRequest passwordRequest,
             Authentication authentication) {
@@ -151,11 +151,16 @@ public class UserController {
             String email = authentication.getName();
             logger.info("Cambiando contraseña para: {}", email);
             
-            // TODO: Implementar lógica de cambio de contraseña
-            userRepository.findByEmail(email)
+            User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
-            // Aquí iría la lógica de cambio de contraseña
+            // Por ahora solo validamos que la contraseña nueva no esté vacía
+            if (passwordRequest.getNewPassword() == null || passwordRequest.getNewPassword().length() < 6) {
+                throw new RuntimeException("La contraseña debe tener al menos 6 caracteres");
+            }
+            
+            // TODO: Validar contraseña actual con passwordEncoder
+            // TODO: Encriptar nueva contraseña con passwordEncoder
             // user.setPassword(passwordEncoder.encode(passwordRequest.getNewPassword()));
             // userRepository.save(user);
             

@@ -34,6 +34,7 @@ import PerfilPage from './pages/PerfilPage';
 import TeacherSubjectsPage from './pages/teacher/TeacherSubjectsPage';
 import TeacherTasksPage from './pages/teacher/TeacherTasksPage';
 import TeacherGradesPage from './pages/teacher/TeacherGradesPage';
+import TeacherPendingGradesPage from './pages/teacher/TeacherPendingGradesPage';
 import TeacherStudentsPage from './pages/teacher/TeacherStudentsPage';
 import SubjectTasksPage from './pages/teacher/SubjectTasksPage';
 import AdminDashboard from './pages/dashboards/AdminDashboard';
@@ -342,6 +343,17 @@ function App() {
             <ProtectedRoute allowedRoles={['teacher']}>
               <Layout>
                 <TeacherGradesPage />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/profesor/pendientes" 
+          element={
+            <ProtectedRoute allowedRoles={['teacher']}>
+              <Layout>
+                <TeacherPendingGradesPage />
               </Layout>
             </ProtectedRoute>
           } 

@@ -109,6 +109,8 @@ export const authApi = {
 export const usersApi = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data: any) => api.put('/users/profile', data),
+  updatePassword: (data: { currentPassword: string; newPassword: string }) => 
+    api.put('/users/password', data),
   getUsersByRole: (role: string) => api.get(`/users/role/${role}`),
   activateUser: (userId: string) => api.put(`/users/${userId}/activate`),
   deactivateUser: (userId: string) => api.put(`/users/${userId}/deactivate`),
@@ -150,11 +152,11 @@ export const gradesApi = {
 // Files endpoints
 export const filesApi = {
   upload: (file: FormData) => 
-    api.post('/archivos/upload', file, {
+    api.post('/api/files/upload', file, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  download: (fileId: string) => api.get(`/archivos/${fileId}`),
-  delete: (fileId: string) => api.delete(`/archivos/${fileId}`),
+  download: (filePath: string) => api.get(`/api/files/download/${filePath}`),
+  delete: (folder: string, fileName: string) => api.delete(`/api/files/delete/${folder}/${fileName}`),
 };
 
 // Activities endpoints

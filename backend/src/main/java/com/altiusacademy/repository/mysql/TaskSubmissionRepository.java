@@ -50,4 +50,12 @@ public interface TaskSubmissionRepository extends JpaRepository<TaskSubmission, 
     // Contar tareas pendientes de un estudiante  
     @Query(value = "SELECT COUNT(*) FROM task_submissions WHERE student_id = :studentId AND status = 'SUBMITTED'", nativeQuery = true)
     Long countPendingTasksByStudent(@Param("studentId") Long studentId);
+    
+    // Contar entregas pendientes de calificación por profesor
+    @Query(value = "SELECT COUNT(*) FROM task_submissions ts JOIN tasks t ON ts.task_id = t.id WHERE t.teacher_id = :teacherId AND ts.status = 'SUBMITTED'", nativeQuery = true)
+    Long countPendingGradingByTeacher(@Param("teacherId") Long teacherId);
+    
+    // Calcular promedio general del profesor
+    @Query(value = "SELECT AVG(ts.score) FROM task_submissions ts JOIN tasks t ON ts.task_id = t.id WHERE t.teacher_id = :teacherId AND ts.score IS NOT NULL", nativeQuery = true)
+    Double getAverageScoreByTeacher(@Param("teacherId") Long teacherId);
 }

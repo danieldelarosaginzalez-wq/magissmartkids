@@ -289,6 +289,24 @@ public class TeacherController {
         }
     }
     
+    @GetMapping("/submissions/pending")
+    public ResponseEntity<?> getPendingSubmissions(Authentication authentication) {
+        try {
+            User user = getUserFromAuthentication(authentication);
+            if (user == null) {
+                log.error("No authenticated user found for pending submissions");
+                return ResponseEntity.status(401).build();
+            }
+            
+            log.info("Getting pending submissions for teacher: {} (ID: {})", user.getFullName(), user.getId());
+            List<Map<String, Object>> pendingSubmissions = teacherService.getPendingSubmissions(user.getId());
+            return ResponseEntity.ok(Map.of("submissions", pendingSubmissions));
+        } catch (Exception e) {
+            log.error("Error getting pending submissions: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     /**
      * Endpoint temporal para inicializar materias de prueba para el profesor autenticado
      * SOLO PARA DESARROLLO - Eliminar en producción

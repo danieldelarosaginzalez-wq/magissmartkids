@@ -52,7 +52,17 @@ const TeacherDashboard: React.FC = () => {
     try {
       setLoading(true);
       const response = await teacherApi.getDashboardStats();
-      setStats(response.data);
+      
+      // Ajustar stats para contar solo materias de Cuarto C
+      const statsData = response.data;
+      const subjectsResponse = await teacherApi.getSubjects();
+      const allSubjects = subjectsResponse.data.subjects || [];
+      const cuartoCSubjects = allSubjects.filter((s: { grade: string }) => s.grade === 'Cuarto C');
+      
+      setStats({
+        ...statsData,
+        totalMaterias: cuartoCSubjects.length
+      });
     } catch (error) {
       console.error('Error loading teacher dashboard stats:', error);
       setStats({
@@ -73,14 +83,28 @@ const TeacherDashboard: React.FC = () => {
       setLoadingSubjects(true);
       const response = await teacherApi.getSubjects();
       
-      const mappedSubjects = (response.data.subjects || []).map((subject: any) => ({
-        id: subject.id?.toString() || '',
-        nombre: subject.name || subject.subjectName || 'Sin nombre',
-        grado: subject.grade || 'Sin grado',
-        estudiantes: subject.totalStudents || subject.studentCount || 0,
-        progresoPromedio: subject.progress || subject.averageProgress || 0,
-        color: subject.color || '#3B82F6'
-      }));
+      interface SubjectData {
+        id?: number;
+        name?: string;
+        subjectName?: string;
+        grade?: string;
+        totalStudents?: number;
+        studentCount?: number;
+        progress?: number;
+        averageProgress?: number;
+        color?: string;
+      }
+      
+      const mappedSubjects = (response.data.subjects || [])
+        .filter((subject: SubjectData) => subject.grade === 'Cuarto C') // FILTRAR SOLO CUARTO C
+        .map((subject: SubjectData) => ({
+          id: subject.id?.toString() || '',
+          nombre: subject.name || subject.subjectName || 'Sin nombre',
+          grado: subject.grade || 'Sin grado',
+          estudiantes: subject.totalStudents || subject.studentCount || 0,
+          progresoPromedio: subject.progress || subject.averageProgress || 0,
+          color: subject.color || '#3B82F6'
+        }));
       
       setSubjects(mappedSubjects);
     } catch (error) {
@@ -243,7 +267,7 @@ const TeacherDashboard: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-[#00368F]" />
               Acciones Rápidas
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
               <Link to="/profesor/materias">
                 <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center justify-center gap-2">
                   <BookOpen className="h-4 w-4" />
@@ -260,6 +284,17 @@ const TeacherDashboard: React.FC = () => {
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <BarChart3 className="h-4 w-4" />
                   Calificaciones
+                </Button>
+              </Link>
+              <Link to="/profesor/pendientes">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Por Calificar
+                  {stats && stats.tareasPendientesCorreccion > 0 && (
+                    <Badge className="bg-orange-100 text-orange-800 ml-1">
+                      {stats.tareasPendientesCorreccion}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
               <Link to="/profesor/predicciones">

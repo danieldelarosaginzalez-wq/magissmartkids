@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { User, Mail, Phone, Shield, Save, X } from 'lucide-react';
-import { usersApi } from '../services/api';
-import { translateRole, getRoleIcon, getRoleColor } from '../utils/roleTranslations';
+import { User, Mail, Shield, Save, X, Camera, Lock, School, BookOpen, Calendar } from 'lucide-react';
+import { usersApi, teacherApi } from '../services/api';
+import { translateRole, getRoleIcon } from '../utils/roleTranslations';
 
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuthStore();
@@ -13,18 +13,77 @@ const Profile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [subjects, setSubjects] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    phone: user?.phone || ''
+    lastName: user?.lastName || ''
   });
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  useEffect(() => {
+    if (user && user.role.toString() === 'TEACHER') {
+      loadTeacherSubjects();
+    }
+  }, [user]);
+
+  const loadTeacherSubjects = async () => {
+    try {
+      const response = await teacherApi.getSubjects();
+      const cuartoCSubjects = (response.data.subjects || []).filter((s: any) => s.grade === 'Cuarto C');
+      setSubjects(cuartoCSubjects);
+    } catch (error) {
+      console.error('Error loading subjects:', error);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setError('');
     setSuccess('');
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await usersApi.updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+
+      setSuccess('Contraseña actualizada correctamente');
+      setShowPasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Error al cambiar la contraseña');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -47,8 +106,7 @@ const Profile: React.FC = () => {
         // Actualizar el store local
         updateUser({
           firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone
+          lastName: formData.lastName
         });
 
         setSuccess('Perfil actualizado correctamente');
@@ -77,8 +135,7 @@ const Profile: React.FC = () => {
     // Restaurar datos originales
     setFormData({
       firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      phone: user?.phone || ''
+      lastName: user?.lastName || ''
     });
     setIsEditing(false);
     setError('');
@@ -101,12 +158,12 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
           <p className="text-gray-600 mt-2">
-            Gestiona tu información personal
+            Información personal y académica
           </p>
         </div>
 
@@ -142,18 +199,36 @@ const Profile: React.FC = () => {
 
             <div className="space-y-6">
               {/* Avatar Section */}
-              <div className="flex items-center space-x-4">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                  <User className="w-10 h-10 text-blue-600" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="w-12 h-12 text-blue-600" />
+                    </div>
+                    <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full shadow-lg border-2 border-gray-200 hover:bg-gray-50 transition-colors">
+                      <Camera className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {user.firstName} {user.lastName}
+                    </h3>
+                    <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                      {getRoleIcon(user.role)} {translateRole(user.role)}
+                    </p>
+                    <span className="inline-block mt-2 px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                      {user.isActive ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {user.firstName} {user.lastName}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {getRoleIcon(user.role)} {translateRole(user.role)}
-                  </p>
-                </div>
+                {!isEditing && (
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    variant="outline"
+                  >
+                    Editar Perfil
+                  </Button>
+                )}
               </div>
 
               {/* Form Fields */}
@@ -212,25 +287,7 @@ const Profile: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  {isEditing ? (
-                    <Input
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Número de teléfono"
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-900">{user.phone || 'No especificado'}</span>
-                    </div>
-                  )}
-                </div>
+
 
                 {/* Role (Read Only) */}
                 <div className="md:col-span-2">
@@ -282,40 +339,195 @@ const Profile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Account Info */}
+        {/* Información Académica - Solo para profesores */}
+        {user.role.toString() === 'TEACHER' && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
+                Información Académica
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Institución
+                  </label>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                    <School className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">{user.institution?.name || 'No asignada'}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Grados Asignados
+                  </label>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                    <BookOpen className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">Cuarto C</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Ingreso
+                  </label>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">
+                      {new Date(user.createdAt).toLocaleDateString('es-ES')}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Materias Asignadas
+                  </label>
+                  <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-md">
+                    <BookOpen className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-900">{subjects.length} materias</span>
+                  </div>
+                </div>
+              </div>
+
+              {subjects.length > 0 && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Mis Materias
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {subjects.map((subject: unknown, index: number) => (
+                      <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="font-medium text-gray-900">{subject.name || subject.subjectName}</p>
+                        <p className="text-sm text-gray-600">{subject.totalStudents || 0} estudiantes</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Acciones Rápidas */}
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>Información de la Cuenta</CardTitle>
+            <CardTitle>Acciones Rápidas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-700">ID de Usuario:</span>
-                <span className="ml-2 text-gray-600">{user.id}</span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Estado:</span>
-                <span className="ml-2">
-                  {user.isActive ? (
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                      Activo
-                    </span>
-                  ) : (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                      Inactivo
-                    </span>
-                  )}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-gray-700">Fecha de Registro:</span>
-                <span className="ml-2 text-gray-600">
-                  {new Date(user.createdAt).toLocaleDateString('es-ES')}
-                </span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button
+                onClick={() => setIsEditing(true)}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                Actualizar Información
+              </Button>
+              <Button
+                onClick={() => alert('Funcionalidad de cambio de foto próximamente')}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <Camera className="w-4 h-4" />
+                Cambiar Foto
+              </Button>
+              <Button
+                onClick={() => setShowPasswordModal(true)}
+                variant="outline"
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <Lock className="w-4 h-4" />
+                Cambiar Contraseña
+              </Button>
             </div>
           </CardContent>
         </Card>
+
+        {/* Modal de Cambio de Contraseña */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  Cambiar Contraseña
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {error && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Contraseña Actual
+                    </label>
+                    <Input
+                      type="password"
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Ingresa tu contraseña actual"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nueva Contraseña
+                    </label>
+                    <Input
+                      type="password"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirmar Nueva Contraseña
+                    </label>
+                    <Input
+                      type="password"
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Repite la nueva contraseña"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 mt-6">
+                  <Button
+                    onClick={() => {
+                      setShowPasswordModal(false);
+                      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                      setError('');
+                    }}
+                    variant="outline"
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

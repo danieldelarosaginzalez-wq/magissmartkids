@@ -109,7 +109,7 @@ function InteractiveTaskView({ task, onComplete }: { task: TaskDetail; onComplet
 
         try {
           await fetch(
-            `${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks/${task.id}/submit`,
+            `/api/student/grade-tasks/${task.id}/submit`,
             {
               method: 'POST',
               headers: {
@@ -252,7 +252,7 @@ export default function StudentTaskDetailPage() {
       }
       
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks/${taskId}`,
+        `/api/student/grade-tasks/${taskId}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -306,7 +306,7 @@ export default function StudentTaskDetailPage() {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/files/upload`, {
+    const response = await fetch('/api/files/upload', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -358,7 +358,7 @@ export default function StudentTaskDetailPage() {
       }
       
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/student/grade-tasks/${taskId}/submit`,
+        `/api/student/grade-tasks/${taskId}/submit`,
         {
           method: 'POST',
           headers: {
@@ -547,12 +547,11 @@ export default function StudentTaskDetailPage() {
                   <h3 className="font-semibold mb-2">Archivo adjunto:</h3>
                   <a
                     href={(() => {
-                      // Si la URL ya es completa (http/https), usarla directamente
                       if (task.submission.submissionFileUrl.startsWith('http')) {
                         return task.submission.submissionFileUrl;
                       }
-                      // Si es una ruta relativa, construir la URL del backend
-                      return `${import.meta.env.VITE_API_BASE_URL}/files/download/${task.submission.submissionFileUrl}`;
+                      const cleanPath = task.submission.submissionFileUrl.replace(/^\/api\/files\/download\//, '');
+                      return `/api/files/download/${cleanPath}`;
                     })()}
                     target="_blank"
                     rel="noopener noreferrer"

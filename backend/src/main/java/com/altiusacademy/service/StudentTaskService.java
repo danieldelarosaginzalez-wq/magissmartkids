@@ -142,7 +142,15 @@ public class StudentTaskService {
         submission.setTask(task);
         submission.setStudent(student);
         submission.setSubmissionText(request.getSubmissionText());
-        submission.setSubmissionFileUrl(request.getSubmissionFileUrl());
+        
+        // Limpiar URL de archivo para evitar duplicación de prefijos
+        String fileUrl = request.getSubmissionFileUrl();
+        if (fileUrl != null) {
+            // Remover cualquier prefijo /api/files/download/ para guardar solo la ruta relativa
+            fileUrl = fileUrl.replaceAll("^/api/files/download/", "");
+        }
+        submission.setSubmissionFileUrl(fileUrl);
+        
         submission.setSubmittedAt(LocalDateTime.now());
         submission.setStatus(TaskSubmission.SubmissionStatus.SUBMITTED);
         
@@ -193,7 +201,14 @@ public class StudentTaskService {
         }
         
         task.setSubmissionText(request.getSubmissionText());
-        task.setSubmissionFileUrl(request.getSubmissionFileUrl());
+        
+        // Limpiar URL de archivo para evitar duplicación de prefijos
+        String fileUrl = request.getSubmissionFileUrl();
+        if (fileUrl != null) {
+            fileUrl = fileUrl.replaceAll("^/api/files/download/", "");
+        }
+        task.setSubmissionFileUrl(fileUrl);
+        
         task.setSubmittedAt(LocalDateTime.now());
         
         return convertToResponse(taskRepository.save(task));
@@ -226,7 +241,14 @@ public class StudentTaskService {
         
         response.setGrade(task.getGrade());
         response.setSubmissionText(task.getSubmissionText());
-        response.setSubmissionFileUrl(task.getSubmissionFileUrl());
+        
+        // Construir URL completa si solo está la ruta relativa
+        String fileUrl = task.getSubmissionFileUrl();
+        if (fileUrl != null && !fileUrl.startsWith("/api/files/download/") && !fileUrl.startsWith("http")) {
+            fileUrl = "/api/files/download/" + fileUrl;
+        }
+        response.setSubmissionFileUrl(fileUrl);
+        
         response.setSubmittedAt(task.getSubmittedAt());
         response.setScore(task.getScore());
         response.setMaxGrade(task.getMaxGrade());

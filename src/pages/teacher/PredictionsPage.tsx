@@ -9,10 +9,11 @@ import api from '../../services/api';
 
 interface Prediction {
   nombre: string;
-  promedioGeneral: number;
-  tareasCompletadas: number;
-  promedioMatematicas: number;
-  promedioCiencias: number;
+  promedioNotas: number;
+  tareasCalificadas: number;
+  tareasSinCalificar: number;
+  tareasSinEntregar: number;
+  porcentajeEntrega: number;
   resultado: string;
   riesgo: string;
   recomendacion: string;
@@ -33,11 +34,12 @@ interface PredictionResponse {
 export default function PredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedGrade, setSelectedGrade] = useState('Cuarto C');
+  const [selectedGrade] = useState('Cuarto C');
   const [showModel, setShowModel] = useState(false);
 
   useEffect(() => {
     loadPredictions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGrade]);
 
   const loadPredictions = async () => {
@@ -196,7 +198,7 @@ export default function PredictionsPage() {
                           {pred.nombre}
                         </CardTitle>
                         <p className="text-sm text-secondary mt-1">
-                          {pred.tareasCompletadas} tareas completadas
+                          {pred.tareasCalificadas} tareas calificadas • {pred.tareasSinEntregar} sin entregar
                         </p>
                       </div>
                     </div>
@@ -205,25 +207,49 @@ export default function PredictionsPage() {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Promedios */}
-                  <div className="grid grid-cols-3 gap-4">
+                  {/* Métricas */}
+                  <div className="grid grid-cols-4 gap-3">
                     <div className="text-center p-3 bg-blue-50 rounded-lg">
                       <p className="text-2xl font-bold text-blue-800">
-                        {pred.promedioGeneral.toFixed(2)}
+                        {pred.promedioNotas?.toFixed(2) || '0.00'}
                       </p>
-                      <p className="text-xs text-blue-600">Promedio General</p>
-                    </div>
-                    <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <p className="text-2xl font-bold text-purple-800">
-                        {pred.promedioMatematicas.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-purple-600">Matemáticas</p>
+                      <p className="text-xs text-blue-600">Promedio</p>
                     </div>
                     <div className="text-center p-3 bg-green-50 rounded-lg">
                       <p className="text-2xl font-bold text-green-800">
-                        {pred.promedioCiencias.toFixed(2)}
+                        {pred.tareasCalificadas || 0}
                       </p>
-                      <p className="text-xs text-green-600">Ciencias</p>
+                      <p className="text-xs text-green-600">Calificadas</p>
+                    </div>
+                    <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                      <p className="text-2xl font-bold text-yellow-800">
+                        {pred.tareasSinCalificar || 0}
+                      </p>
+                      <p className="text-xs text-yellow-600">Sin Calificar</p>
+                    </div>
+                    <div className="text-center p-3 bg-red-50 rounded-lg">
+                      <p className="text-2xl font-bold text-red-800">
+                        {pred.tareasSinEntregar || 0}
+                      </p>
+                      <p className="text-xs text-red-600">Sin Entregar</p>
+                    </div>
+                  </div>
+                  
+                  {/* Porcentaje de entrega */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Porcentaje de Entrega</span>
+                      <span className="text-sm font-bold text-gray-900">{pred.porcentajeEntrega?.toFixed(1) || '0.0'}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all ${
+                          (pred.porcentajeEntrega || 0) >= 70 ? 'bg-green-500' :
+                          (pred.porcentajeEntrega || 0) >= 50 ? 'bg-yellow-500' :
+                          'bg-red-500'
+                        }`}
+                        style={{ width: `${Math.min(pred.porcentajeEntrega || 0, 100)}%` }}
+                      />
                     </div>
                   </div>
 

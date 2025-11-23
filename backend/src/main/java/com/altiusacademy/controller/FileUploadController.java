@@ -1,6 +1,7 @@
 package com.altiusacademy.controller;
 
 import com.altiusacademy.service.FileStorageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class FileUploadController {
             response.put("success", true);
             response.put("fileName", file.getOriginalFilename());
             response.put("filePath", filePath);
-            response.put("fileUrl", "/api/files/download/" + filePath);
+            response.put("fileUrl", filePath);
             response.put("fileSize", file.getSize());
             
             return ResponseEntity.ok(response);
@@ -54,27 +55,41 @@ public class FileUploadController {
         }
     }
     
-    @GetMapping("/download/{folder}/{fileName:.+}")
-    public ResponseEntity<Resource> downloadFile(
-            @PathVariable String folder,
-            @PathVariable String fileName) {
+    @GetMapping(value = "/download/**", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
         try {
-            Path filePath = Paths.get("uploads").resolve(folder).resolve(fileName).normalize();
+            String uri = request.getRequestURI();
+            String fullPath = uri.replace("/api/files/download/", "");
+            
+            // Limpiar cualquier prefijo duplicado
+            fullPath = fullPath.replaceAll("^/api/files/download/", "");
+            
+            log.info("URI original: {}", uri);
+            log.info("Ruta limpia: {}", fullPath);
+            
+            Path filePath = Paths.get("uploads", fullPath).normalize();
+            log.info("Ruta absoluta: {}", filePath.toAbsolutePath());
+            
             Resource resource = new UrlResource(filePath.toUri());
             
-            if (resource.exists()) {
+            if (resource.exists() && resource.isReadable()) {
+                String fileName = filePath.getFileName().toString();
                 String contentType = determineContentType(fileName);
+                log.info("Archivo encontrado, tipo: {}", contentType);
                 
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                        .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                         .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
             }
-        } catch (Exception e) {
-            log.error("Error descargando archivo: {}", e.getMessage());
+            
+            log.error("Archivo no existe o no es legible: {}", filePath.toAbsolutePath());
             return ResponseEntity.notFound().build();
+            
+        } catch (Exception e) {
+            log.error("Error descargando archivo", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
     

@@ -45,25 +45,53 @@ public class TeacherService {
     
     public TeacherDashboardStatsDto getDashboardStats(Long teacherId) {
         try {
-            // Obtener materias del profesor
-            List<TeacherSubject> teacherSubjects = teacherSubjectRepository.findByTeacherIdWithSubject(teacherId);
+            // FILTRAR SOLO CUARTO C
+            String targetGrade = "Cuarto C";
+            
+            // Obtener materias del profesor SOLO DE CUARTO C
+            List<TeacherSubject> teacherSubjects = teacherSubjectRepository.findByTeacherIdWithSubject(teacherId)
+                .stream()
+                .filter(ts -> targetGrade.equals(ts.getGrade()))
+                .collect(Collectors.toList());
             int totalMaterias = teacherSubjects.size();
             
-            // Contar estudiantes únicos en todos los grados
-            Set<String> uniqueGrades = teacherSubjects.stream()
-                .map(TeacherSubject::getGrade)
-                .collect(Collectors.toSet());
+            // Contar estudiantes SOLO DE CUARTO C
+            long totalEstudiantes = teacherSubjectRepository.countStudentsByGrade(targetGrade);
             
-            long totalEstudiantes = uniqueGrades.stream()
-                .mapToLong(grade -> teacherSubjectRepository.countStudentsByGrade(grade))
-                .sum();
+            // Tareas pendientes de corrección - contar desde task_submissions
+            Long tareasPendientes = taskSubmissionRepository.countPendingGradingByTeacher(teacherId);
+            long tareasPendientesCorreccion = tareasPendientes != null ? tareasPendientes : 0L;
             
-            // Tareas pendientes de corrección
-            long tareasPendientesCorreccion = taskRepository.countPendingGradingByTeacher(teacherId);
+            // Promedio general - calcular SOLO DE CUARTO C
+            // Obtener estudiantes de Cuarto C
+            List<User> cuartoCStudents = userRepository.findStudentsByGrade(targetGrade);
             
-            // Promedio general (simplificado)
-            Double promedioGeneral = taskRepository.getAverageScoreByTeacher(teacherId);
-            if (promedioGeneral == null) promedioGeneral = 0.0;
+            // Calcular promedio real como en la vista de calificaciones
+            double totalScore = 0.0;
+            int totalTasks = 0;
+            
+            for (User student : cuartoCStudents) {
+                List<TaskSubmission> submissions = taskSubmissionRepository.findByStudentId(student.getId());
+                
+                // Obtener tareas disponibles
+                List<Task> specificTasks = taskRepository.findByStudentId(student.getId());
+                List<Task> gradeTasks = taskRepository.findByGradeOrderByCreatedAtDesc(targetGrade).stream()
+                    .filter(t -> t.getStudent() == null)
+                    .collect(Collectors.toList());
+                
+                int studentTotalTasks = specificTasks.size() + gradeTasks.size();
+                
+                // Sumar notas calificadas
+                double studentScore = submissions.stream()
+                    .filter(s -> s.getScore() != null)
+                    .mapToDouble(TaskSubmission::getScore)
+                    .sum();
+                
+                totalScore += studentScore;
+                totalTasks += studentTotalTasks;
+            }
+            
+            Double promedioGeneral = totalTasks > 0 ? totalScore / totalTasks : 0.0;
             
             // Próximas entregas
             List<TaskTemplate> proximasEntregas = taskTemplateRepository.findUpcomingTasksByTeacher(
@@ -568,26 +596,38 @@ public class TeacherService {
             List<Map<String, Object>> studentGrades = new ArrayList<>();
             
             for (User student : students) {
-                // Obtener todas las tareas asignadas específicamente a este estudiante
-                // (las tareas individuales tienen student_id, las generales no)
-                List<Task> assignedTasks = taskRepository.findByStudentId(student.getId());
-                
                 // Obtener todas las entregas del estudiante
                 List<TaskSubmission> submissions = taskSubmissionRepository.findByStudentId(student.getId());
                 
-                // Calcular estadísticas
-                int totalTasks = assignedTasks.size();
+                // Obtener tareas disponibles para el estudiante:
+                // 1. Tareas específicas (student_id = este estudiante)
+                List<Task> specificTasks = taskRepository.findByStudentId(student.getId());
+                
+                // 2. Tareas generales del grado (student_id = NULL)
+                // Estas son tareas "para todos" del grado
+                List<Task> gradeTasks = taskRepository.findByGradeOrderByCreatedAtDesc(grade).stream()
+                    .filter(t -> t.getStudent() == null)
+                    .collect(Collectors.toList());
+                
+                // Total de tareas disponibles = específicas + generales del grado
+                int totalTasks = specificTasks.size() + gradeTasks.size();
+                
+                // Calcular estadísticas de entregas
                 int completedTasks = (int) submissions.stream()
                     .filter(s -> s.getScore() != null)
                     .count();
-                int pendingTasks = totalTasks - completedTasks;
+                int pendingTasks = Math.max(0, totalTasks - submissions.size());
                 
-                // Calcular promedio
-                double averageGrade = submissions.stream()
+                // Calcular promedio considerando tareas no entregadas como 0
+                // Suma de todas las notas de entregas calificadas
+                double totalScore = submissions.stream()
                     .filter(s -> s.getScore() != null)
                     .mapToDouble(TaskSubmission::getScore)
-                    .average()
-                    .orElse(0.0);
+                    .sum();
+                
+                // Promedio = suma de notas / total de tareas asignadas
+                // Las tareas no entregadas cuentan como 0
+                double averageGrade = totalTasks > 0 ? totalScore / totalTasks : 0.0;
                 
                 // Crear mapa con información del estudiante
                 Map<String, Object> studentData = new HashMap<>();
@@ -600,14 +640,15 @@ public class TeacherService {
                 studentData.put("completedTasks", completedTasks);
                 studentData.put("pendingTasks", pendingTasks);
                 
-                // Agregar detalles de entregas
+                // Agregar detalles de entregas (incluir todas, calificadas y pendientes)
                 List<Map<String, Object>> submissionDetails = submissions.stream()
-                    .filter(s -> s.getScore() != null)
                     .map(s -> {
                         Map<String, Object> detail = new HashMap<>();
+                        detail.put("id", s.getId());
                         detail.put("taskTitle", s.getTask() != null ? s.getTask().getTitle() : "Sin título");
-                        detail.put("score", s.getScore());
+                        detail.put("score", s.getScore() != null ? s.getScore() : 0.0);
                         detail.put("submittedAt", s.getSubmittedAt());
+                        detail.put("status", s.getStatus().name());
                         return detail;
                     })
                     .collect(Collectors.toList());
@@ -623,6 +664,34 @@ public class TeacherService {
         } catch (Exception e) {
             log.error("Error getting student grades for grade {}: {}", grade, e.getMessage(), e);
             throw new RuntimeException("Error al obtener calificaciones: " + e.getMessage());
+        }
+    }
+    
+    public List<Map<String, Object>> getPendingSubmissions(Long teacherId) {
+        try {
+            log.info("Getting pending submissions for teacher: {}", teacherId);
+            
+            // Obtener todas las entregas pendientes del profesor
+            List<TaskSubmission> pendingSubmissions = taskSubmissionRepository.findPendingSubmissionsByTeacher(teacherId);
+            
+            return pendingSubmissions.stream()
+                .map(submission -> {
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("id", submission.getId());
+                    data.put("taskTitle", submission.getTask() != null ? submission.getTask().getTitle() : "Sin título");
+                    data.put("studentName", submission.getStudent() != null ? submission.getStudent().getFullName() : "Desconocido");
+                    data.put("studentEmail", submission.getStudent() != null ? submission.getStudent().getEmail() : "");
+                    data.put("grade", submission.getTask() != null ? submission.getTask().getGrade() : "");
+                    data.put("submittedAt", submission.getSubmittedAt());
+                    data.put("submissionText", submission.getSubmissionText());
+                    data.put("submissionFileUrl", submission.getSubmissionFileUrl());
+                    return data;
+                })
+                .collect(Collectors.toList());
+                
+        } catch (Exception e) {
+            log.error("Error getting pending submissions for teacher {}: {}", teacherId, e.getMessage(), e);
+            throw new RuntimeException("Error al obtener entregas pendientes: " + e.getMessage());
         }
     }
 }
