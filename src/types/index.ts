@@ -1,6 +1,6 @@
 // Tipos para el frontend de MagicSmartKids
 
-export type UserRole = 'student' | 'teacher' | 'coordinator' | 'super_admin';
+export type UserRole = 'student' | 'teacher' | 'coordinator' | 'admin' | 'super_admin';
 
 export interface Institution {
   id: string;

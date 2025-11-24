@@ -13,16 +13,11 @@ interface Task {
   maxGrade: number;
   grade: string;
   createdAt: string;
-  teacher: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  submitted: boolean;
-  submissionId?: number;
+  teacherId: number;
+  teacherName: string;
+  submissionText?: string;
+  submissionFileUrl?: string;
   submittedAt?: string;
-  submissionStatus?: string;
   score?: number;
   feedback?: string;
   gradedAt?: string;
@@ -37,17 +32,40 @@ interface Stats {
   gradeName: string;
 }
 
+type SortOption = 'a-z' | 'z-a' | 'newest' | 'oldest';
+
 export default function StudentGradeTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'graded'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
   const navigate = useNavigate();
 
   useEffect(() => {
     loadTasks();
-    loadStats();
   }, []);
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
+      const submittedCount = tasks.filter(t => t.status === 'SUBMITTED').length;
+      const gradedCount = tasks.filter(t => t.status === 'GRADED').length;
+      const gradedTasks = tasks.filter(t => t.score !== undefined && t.score !== null);
+      const avgScore = gradedTasks.length > 0 
+        ? gradedTasks.reduce((sum, t) => sum + (t.score || 0), 0) / gradedTasks.length 
+        : 0;
+      
+      setStats({
+        totalTasks: tasks.length,
+        pendingTasks: pendingCount,
+        submittedTasks: submittedCount,
+        gradedTasks: gradedCount,
+        averageScore: avgScore,
+        gradeName: tasks[0]?.grade || 'Sin grado'
+      });
+    }
+  }, [tasks]);
 
   const loadTasks = async () => {
     try {
@@ -55,7 +73,7 @@ export default function StudentGradeTasksPage() {
       const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
       const token = authState?.state?.token;
       
-      console.log('🔍 Cargando tareas desde: /api/student/grade-tasks');
+      console.log('🔍 Cargando tareas desde: /api/student/tasks');
       console.log('🔑 Token:', token ? 'Presente' : 'Ausente');
       
       if (!token) {
@@ -64,7 +82,7 @@ export default function StudentGradeTasksPage() {
         return;
       }
       
-      const response = await fetch('/api/student/grade-tasks', {
+      const response = await fetch('/api/student/tasks', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -75,7 +93,7 @@ export default function StudentGradeTasksPage() {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Datos recibidos:', data);
-        setTasks(data.tasks || []);
+        setTasks(Array.isArray(data) ? data : []);
       } else {
         const errorText = await response.text();
         console.error('❌ Error del servidor:', response.status, errorText);
@@ -89,37 +107,30 @@ export default function StudentGradeTasksPage() {
     }
   };
 
-  const loadStats = async () => {
-    try {
-      // Obtener token del authStore
-      const authState = JSON.parse(localStorage.getItem('auth-storage') || '{}');
-      const token = authState?.state?.token;
-      
-      if (!token) return;
-      
-      const response = await fetch('/api/student/grade-tasks/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📊 Estadísticas recibidas:', data);
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Error al cargar estadísticas:', error);
+  const sortTasks = (tasksToSort: Task[]) => {
+    const sorted = [...tasksToSort];
+    
+    switch (sortBy) {
+      case 'a-z':
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case 'z-a':
+        return sorted.sort((a, b) => b.title.localeCompare(a.title));
+      case 'newest':
+        return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case 'oldest':
+        return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      default:
+        return sorted;
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = sortTasks(tasks.filter(task => {
     if (filter === 'all') return true;
-    if (filter === 'pending') return !task.submitted;
-    if (filter === 'submitted') return task.submitted && task.submissionStatus === 'SUBMITTED';
-    if (filter === 'graded') return task.submissionStatus === 'GRADED';
+    if (filter === 'pending') return task.status === 'PENDING';
+    if (filter === 'submitted') return task.status === 'SUBMITTED';
+    if (filter === 'graded') return task.status === 'GRADED';
     return true;
-  });
+  }));
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -182,32 +193,48 @@ export default function StudentGradeTasksPage() {
         </div>
       )}
 
-      {/* Filtros */}
-      <div className="mb-6 flex gap-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-        >
-          Todas ({tasks.length})
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={`px-4 py-2 rounded-lg ${filter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-200'}`}
-        >
-          Pendientes ({tasks.filter(t => !t.submitted).length})
-        </button>
-        <button
-          onClick={() => setFilter('submitted')}
-          className={`px-4 py-2 rounded-lg ${filter === 'submitted' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
-        >
-          Entregadas ({tasks.filter(t => t.submitted && t.submissionStatus === 'SUBMITTED').length})
-        </button>
-        <button
-          onClick={() => setFilter('graded')}
-          className={`px-4 py-2 rounded-lg ${filter === 'graded' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
-        >
-          Calificadas ({tasks.filter(t => t.submissionStatus === 'GRADED').length})
-        </button>
+      {/* Filtros y Ordenamiento */}
+      <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-4 py-2 rounded-lg ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          >
+            Todas ({tasks.length})
+          </button>
+          <button
+            onClick={() => setFilter('pending')}
+            className={`px-4 py-2 rounded-lg ${filter === 'pending' ? 'bg-yellow-600 text-white' : 'bg-gray-200'}`}
+          >
+            Pendientes ({tasks.filter(t => t.status === 'PENDING').length})
+          </button>
+          <button
+            onClick={() => setFilter('submitted')}
+            className={`px-4 py-2 rounded-lg ${filter === 'submitted' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}
+          >
+            Entregadas ({tasks.filter(t => t.status === 'SUBMITTED').length})
+          </button>
+          <button
+            onClick={() => setFilter('graded')}
+            className={`px-4 py-2 rounded-lg ${filter === 'graded' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+          >
+            Calificadas ({tasks.filter(t => t.status === 'GRADED').length})
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Ordenar por:</label>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="a-z">🔤 A → Z</option>
+            <option value="z-a">🔤 Z → A</option>
+            <option value="newest">🆕 Más recientes</option>
+            <option value="oldest">📜 Más antiguas</option>
+          </select>
+        </div>
       </div>
 
       {/* Lista de tareas */}
@@ -228,7 +255,7 @@ export default function StudentGradeTasksPage() {
                   <h3 className="text-xl font-semibold mb-1">{task.title}</h3>
                   <p className="text-gray-600 text-sm mb-2">{task.description}</p>
                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <span>Profesor: {task.teacher.firstName} {task.teacher.lastName}</span>
+                    <span>Profesor: {task.teacherName}</span>
                     <span>•</span>
                     <span>Vence: {new Date(task.dueDate).toLocaleDateString()}</span>
                   </div>
@@ -253,7 +280,7 @@ export default function StudentGradeTasksPage() {
                   </span>
                 </div>
 
-                {task.submitted ? (
+                {task.status === 'GRADED' ? (
                   <div className="flex items-center gap-3">
                     {task.score !== undefined && task.score !== null ? (
                       <div className="text-right">
@@ -263,11 +290,15 @@ export default function StudentGradeTasksPage() {
                         <div className="text-xs text-gray-500">Calificación</div>
                       </div>
                     ) : (
-                      <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-                        Pendiente de calificar
+                      <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+                        Calificada
                       </span>
                     )}
                   </div>
+                ) : task.status === 'SUBMITTED' ? (
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                    Pendiente de calificar
+                  </span>
                 ) : (
                   <button
                     onClick={(e) => {

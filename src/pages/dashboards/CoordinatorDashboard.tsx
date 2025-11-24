@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Users, School, Settings, UserCheck, GraduationCap, TrendingUp, Calendar, UserPlus, BookOpen, ClipboardList } from 'lucide-react';
+import { Users, School, Settings, UserCheck, GraduationCap, TrendingUp, Calendar, UserPlus, BookOpen, ClipboardList, BarChart3 } from 'lucide-react';
+import { Badge } from '../../components/ui/Badge';
+import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { coordinatorApi } from '../../services/api';
 import QuickActions from '../../components/coordinator/QuickActions';
 import SubjectsSection from '../../components/coordinator/SubjectsSection';
+import CreateSubjectModal from '../../components/coordinator/CreateSubjectModal';
+import AcademicAnalytics from '../../components/coordinator/AcademicAnalytics';
 
 interface Teacher {
   id: number;
@@ -39,6 +43,7 @@ const CoordinatorDashboard: React.FC = () => {
     activeTasks: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showCreateSubject, setShowCreateSubject] = useState(false);
 
   useEffect(() => {
     loadUsersData();
@@ -48,138 +53,47 @@ const CoordinatorDashboard: React.FC = () => {
   const loadUsersData = async () => {
     try {
       setLoading(true);
-      console.log('📊 Cargando datos del dashboard...');
-      
+      console.log('📊 Cargando datos del dashboard del coordinador...');
+
       const institutionId = user?.institution?.id ? parseInt(user.institution.id) : 1;
-      
-      // Intentar cargar datos reales del backend con manejo de errores robusto
+
+      // Cargar datos reales del backend
       let teachersData: any[] = [];
       let studentsData: any[] = [];
-      
+      let subjectsData: any = { subjects: [], total: 0 };
+
       try {
-        const teachersRes = await coordinatorApi.getTeachers(institutionId, 10);
-        teachersData = Array.isArray(teachersRes.data) ? teachersRes.data : (teachersRes.data?.content || []);
-        console.log('✅ Profesores cargados:', teachersData.length);
-      } catch (error) {
-        console.warn('⚠️ No se pudieron cargar profesores, usando datos de demostración');
-        teachersData = [];
-      }
-      
-      try {
-        const studentsRes = await coordinatorApi.getStudents(institutionId, 10);
-        studentsData = Array.isArray(studentsRes.data) ? studentsRes.data : (studentsRes.data?.content || []);
-        console.log('✅ Estudiantes cargados:', studentsData.length);
-      } catch (error) {
-        console.warn('⚠️ No se pudieron cargar estudiantes, usando datos de demostración');
-        studentsData = [];
-      }
+        const [teachersRes, studentsRes, subjectsRes] = await Promise.all([
+          coordinatorApi.getTeachers(institutionId, 100),
+          coordinatorApi.getStudents(institutionId, 100),
+          coordinatorApi.getSubjects(institutionId)
+        ]);
 
-      // Si no hay datos reales, usar datos de demostración
-      if (teachersData.length === 0 && studentsData.length === 0) {
-        console.log('📝 Usando datos de demostración');
-        await new Promise(resolve => setTimeout(resolve, 300));
+        teachersData = teachersRes.data || [];
+        studentsData = studentsRes.data || [];
+        subjectsData = subjectsRes || { subjects: [], total: 0 };
 
-      // ✅ PROFESORES FICTICIOS REALISTAS
-      const mockTeachers = [
-        {
-          id: 1,
-          firstName: 'María',
-          lastName: 'González',
-          email: 'maria.gonzalez@colegio.edu.co',
-          subjects: ['Matemáticas', 'Geometría'],
-          students: 45,
-          status: 'active'
-        },
-        {
-          id: 2,
-          firstName: 'Carlos',
-          lastName: 'Rodríguez',
-          email: 'carlos.rodriguez@colegio.edu.co',
-          subjects: ['Español', 'Literatura'],
-          students: 38,
-          status: 'active'
-        },
-        {
-          id: 3,
-          firstName: 'Ana',
-          lastName: 'Martínez',
-          email: 'ana.martinez@colegio.edu.co',
-          subjects: ['Ciencias Naturales'],
-          students: 42,
-          status: 'active'
-        },
-        {
-          id: 4,
-          firstName: 'Luis',
-          lastName: 'Pérez',
-          email: 'luis.perez@colegio.edu.co',
-          subjects: ['Sociales', 'Historia'],
-          students: 35,
-          status: 'active'
-        }
-      ];
-
-      // ✅ ESTUDIANTES FICTICIOS REALISTAS
-      const mockStudents = [
-        {
-          id: 1,
-          firstName: 'Sofia',
-          lastName: 'Ramírez',
-          email: 'sofia.ramirez@estudiante.edu.co',
-          grade: '3° A',
-          average: 4.5,
-          status: 'active'
-        },
-        {
-          id: 2,
-          firstName: 'Diego',
-          lastName: 'Torres',
-          email: 'diego.torres@estudiante.edu.co',
-          grade: '3° B',
-          average: 4.2,
-          status: 'active'
-        },
-        {
-          id: 3,
-          firstName: 'Valentina',
-          lastName: 'López',
-          email: 'valentina.lopez@estudiante.edu.co',
-          grade: '2° A',
-          average: 4.7,
-          status: 'active'
-        },
-        {
-          id: 4,
-          firstName: 'Sebastián',
-          lastName: 'García',
-          email: 'sebastian.garcia@estudiante.edu.co',
-          grade: '2° B',
-          average: 4.0,
-          status: 'active'
-        }
-      ];
-
-        setTeachers(mockTeachers);
-        setStudents(mockStudents);
-        setStats({
-          totalTeachers: mockTeachers.length,
-          totalStudents: mockStudents.length,
-          totalSubjects: 12,
-          activeTasks: 24
+        console.log('✅ Datos cargados:', {
+          profesores: teachersData.length,
+          estudiantes: studentsData.length,
+          materias: subjectsData.total || subjectsData.subjects?.length || 0
         });
-      } else {
-        setTeachers(teachersData);
-        setStudents(studentsData);
-        setStats({
-          totalTeachers: teachersData.length,
-          totalStudents: studentsData.length,
-          totalSubjects: 12,
-          activeTasks: 24
-        });
+      } catch (error) {
+        console.error('❌ Error cargando datos:', error);
       }
+
+      // Actualizar estado con datos reales
+      setTeachers(teachersData);
+      setStudents(studentsData);
+      setStats({
+        totalTeachers: teachersData.length,
+        totalStudents: studentsData.length,
+        totalSubjects: subjectsData.total || subjectsData.subjects?.length || 0,
+        activeTasks: 0 // TODO: Implementar endpoint para tareas activas
+      });
 
     } catch (error) {
-      console.error('❌ Error loading users:', error);
+      console.error('❌ Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -415,14 +329,89 @@ const CoordinatorDashboard: React.FC = () => {
                 </div>
                 Materias de la Institución
               </h2>
+              <Button
+                onClick={() => setShowCreateSubject(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm"
+              >
+                + Nueva Materia
+              </Button>
             </div>
             <SubjectsSection limit={15} />
           </div>
         </div>
 
+
+
+        {/* Modal Crear Materia */}
+        {showCreateSubject && (
+          <CreateSubjectModal
+            onClose={() => setShowCreateSubject(false)}
+            onSuccess={() => {
+              setShowCreateSubject(false);
+              loadUsersData(); // Recargar datos
+            }}
+          />
+        )}
+
         {/* Acciones Rápidas */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <QuickActions columns={3} maxItems={3} />
+        </div>
+
+        {/* Acceso Rápido a Funciones */}
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <svg className="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              Acceso Rápido
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => navigate('/users')}
+              className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg hover:shadow-md transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-600 rounded-lg">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-semibold text-gray-900">Gestión de Usuarios</span>
+              </div>
+              <p className="text-sm text-gray-600">Administrar profesores y estudiantes</p>
+            </button>
+
+            <button
+              onClick={() => navigate('/gestion-grados')}
+              className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-600 rounded-lg">
+                  <School className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-semibold text-gray-900">Gestión de Grados</span>
+              </div>
+              <p className="text-sm text-gray-600">Asignar profesores a grados</p>
+            </button>
+
+            <button
+              onClick={() => alert('Función de reportes próximamente disponible')}
+              className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-all text-left"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-purple-600 rounded-lg">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <span className="font-semibold text-gray-900">Reportes</span>
+              </div>
+              <p className="text-sm text-gray-600">Generar reportes institucionales</p>
+            </button>
+          </div>
         </div>
 
       </div>

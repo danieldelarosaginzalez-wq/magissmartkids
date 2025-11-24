@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { BookOpen, TrendingUp, Calendar, Award, RefreshCw } from 'lucide-react';
-import { teacherApi } from '../services/api';
+import api, { teacherApi } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 
 interface Subject {
@@ -17,6 +17,7 @@ interface Subject {
   color: string;
   totalTasks: number;
   completedTasks: number;
+  teacherEmail?: string;
   nextTask?: string;
   nextTaskDate?: string;
 }
@@ -33,31 +34,46 @@ const MateriasPage: React.FC = () => {
     try {
       setLoading(true);
       const { user } = useAuthStore.getState();
-      const response = await teacherApi.getSubjects();
-      
+
+      // 🆕 Usar el NUEVO endpoint según el rol
+      const response = user?.role === 'TEACHER'
+        ? await teacherApi.getSubjects()
+        : await api.get('/students/me/subjects'); // 🆕 NUEVO ENDPOINT
+
       console.log('📊 Materias recibidas del backend:', response.data);
-      
+
+      const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4'];
+
       // Mapear la respuesta del backend al formato esperado
-      const mappedSubjects: Subject[] = (response.data.subjects || []).map((subject: any) => {
-        console.log('📚 Mapeando materia:', subject);
-        return {
-          id: subject.id?.toString() || '',
-          name: subject.name || subject.subjectName || 'Sin nombre',
-          teacher: user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Profesor',
-          progress: subject.progress || subject.averageProgress || 0,
-          grade: subject.averageGrade || 0,
-          color: subject.color || '#3B82F6',
-          totalTasks: subject.totalTasks || 0,
-          completedTasks: subject.completedTasks || 0,
-          nextTask: subject.nextTask?.title,
-          nextTaskDate: subject.nextTask?.dueDate
-        };
-      });
-      
-      console.log('✅ Materias mapeadas:', mappedSubjects);
+      let mappedSubjects: Subject[] = [];
+
+      // 🆕 El nuevo endpoint retorna { success: true, subjects: [...], total: X, grade: "..." }
+      const dataArray = response.data.subjects || [];
+      console.log('📊 Materias encontradas:', dataArray.length);
+
+      if (dataArray && Array.isArray(dataArray) && dataArray.length > 0) {
+        mappedSubjects = dataArray.map((subject: any, index: number) => {
+          console.log('📚 Mapeando materia:', subject.name);
+          return {
+            id: subject.id?.toString() || index.toString(),
+            name: subject.name || 'Sin nombre',
+            teacher: subject.teacher ? `${subject.teacher.name}` : 'Sin profesor',
+            progress: 0, // TODO: Calcular progreso real
+            grade: 0, // TODO: Calcular promedio real
+            color: subject.color || colors[index % colors.length],
+            totalTasks: 0, // TODO: Contar tareas reales
+            completedTasks: 0,
+            teacherEmail: subject.teacher?.email || '',
+            nextTask: undefined,
+            nextTaskDate: undefined
+          };
+        });
+      }
+
+      console.log('✅ Materias mapeadas:', mappedSubjects.length);
       setSubjects(mappedSubjects);
     } catch (error) {
-      console.error('Error loading subjects:', error);
+      console.error('❌ Error loading subjects:', error);
       setSubjects([]);
     } finally {
       setLoading(false);
@@ -98,7 +114,7 @@ const MateriasPage: React.FC = () => {
         description="Revisa tu progreso en cada materia"
         icon={BookOpen}
         action={
-          <Button 
+          <Button
             onClick={loadSubjects}
             variant="outline"
             className="border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2"
@@ -161,15 +177,15 @@ const MateriasPage: React.FC = () => {
       {/* Lista de materias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {subjects.map((subject) => (
-          <Card 
-            key={subject.id} 
+          <Card
+            key={subject.id}
             className="border-secondary-200 hover:shadow-lg transition-all duration-200"
           >
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <CardTitle className="text-lg font-bold text-neutral-black flex items-center gap-2">
-                    <div 
+                    <div
                       className="w-4 h-4 rounded-full"
                       style={{ backgroundColor: subject.color }}
                     ></div>
@@ -184,7 +200,7 @@ const MateriasPage: React.FC = () => {
                 </Badge>
               </div>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               {/* Progreso */}
               <div className="space-y-2">
@@ -219,44 +235,37 @@ const MateriasPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Próxima tarea o estado completado */}
-              {subject.nextTask ? (
-                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">Próxima tarea</span>
+              {/* Información del profesor y promedio */}
+              <div className="space-y-3">
+                {/* Promedio */}
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">Promedio</span>
+                    <Badge className={getGradeColor(subject.grade)}>
+                      {subject.grade.toFixed(2)}
+                    </Badge>
                   </div>
-                  <p className="text-sm text-blue-700">{subject.nextTask}</p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Vence: {new Date(subject.nextTaskDate!).toLocaleDateString()}
-                  </p>
                 </div>
-              ) : (
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Award className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">¡Al día!</span>
-                  </div>
-                  <p className="text-sm text-green-700">Todas las tareas completadas</p>
-                </div>
-              )}
 
-              {/* Acciones */}
-              <div className="flex gap-2 pt-2 border-t border-secondary-200">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-secondary-300 text-secondary hover:bg-secondary-50"
-                >
-                  Ver Tareas
-                </Button>
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 border-secondary-300 text-secondary hover:bg-secondary-50"
-                >
-                  Ver Notas
-                </Button>
+                {/* Información del profesor */}
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-800">Información del Profesor</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-blue-700">{subject.teacher}</p>
+                    {subject.teacherEmail && (
+                      <a
+                        href={`mailto:${subject.teacherEmail}`}
+                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        <span>📧</span>
+                        <span className="truncate">{subject.teacherEmail}</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

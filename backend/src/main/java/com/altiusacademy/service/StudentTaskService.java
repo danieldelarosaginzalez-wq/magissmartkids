@@ -57,8 +57,9 @@ public class StudentTaskService {
             allTasks.forEach(t -> System.out.println("   - Tarea: " + t.getTitle() + " | Grado: '" + t.getGrade() + "'"));
         }
         
+        // Convertir tareas a respuestas, incluyendo información de entregas del estudiante
         return tasks.stream()
-                .map(this::convertToResponse)
+                .map(task -> convertToResponseWithSubmission(task, studentId))
                 .collect(Collectors.toList());
     }
     
@@ -212,6 +213,66 @@ public class StudentTaskService {
         task.setSubmittedAt(LocalDateTime.now());
         
         return convertToResponse(taskRepository.save(task));
+    }
+    
+    private TaskResponse convertToResponseWithSubmission(Task task, Long studentId) {
+        TaskResponse response = new TaskResponse();
+        response.setId(task.getId());
+        response.setTitle(task.getTitle());
+        response.setDescription(task.getDescription());
+        response.setDueDate(task.getDueDate());
+        response.setPriority(task.getPriority().name());
+        response.setTaskType(task.getTaskType().name());
+        
+        if (task.getSubject() != null) {
+            response.setSubjectId(task.getSubject().getId());
+            response.setSubjectName(task.getSubject().getName());
+        }
+        
+        if (task.getTeacher() != null) {
+            response.setTeacherId(task.getTeacher().getId());
+            response.setTeacherName(task.getTeacher().getFullName());
+        }
+        
+        response.setGrade(task.getGrade());
+        response.setMaxGrade(task.getMaxGrade());
+        response.setCreatedAt(task.getCreatedAt());
+        response.setUpdatedAt(task.getUpdatedAt());
+        
+        response.setAllowedFormats(task.getAllowedFormats());
+        response.setMaxFiles(task.getMaxFiles());
+        response.setMaxSizeMb(task.getMaxSizeMb());
+        response.setActivityConfig(task.getActivityConfig());
+        response.setMaxScore(task.getMaxScore());
+        
+        // Buscar la entrega del estudiante para esta tarea
+        TaskSubmission submission = taskSubmissionRepository.findByTaskIdAndStudentId(task.getId(), studentId)
+                .orElse(null);
+        
+        if (submission != null) {
+            // Si hay entrega, usar el estado y datos de la entrega
+            response.setStatus(submission.getStatus().name());
+            response.setSubmissionText(submission.getSubmissionText());
+            
+            String fileUrl = submission.getSubmissionFileUrl();
+            if (fileUrl != null && !fileUrl.startsWith("/api/files/download/") && !fileUrl.startsWith("http")) {
+                fileUrl = "/api/files/download/" + fileUrl;
+            }
+            response.setSubmissionFileUrl(fileUrl);
+            
+            response.setSubmittedAt(submission.getSubmittedAt());
+            response.setScore(submission.getScore());
+            response.setFeedback(submission.getFeedback());
+            response.setGradedAt(submission.getGradedAt());
+            
+            System.out.println("   ✅ Tarea " + task.getId() + " - " + task.getTitle() + " | Estado: " + submission.getStatus() + " | Score: " + submission.getScore());
+        } else {
+            // Si no hay entrega, la tarea está pendiente
+            response.setStatus("PENDING");
+            System.out.println("   ⏳ Tarea " + task.getId() + " - " + task.getTitle() + " | Estado: PENDING (sin entrega)");
+        }
+        
+        return response;
     }
     
     private TaskResponse convertToResponse(Task task) {

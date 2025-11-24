@@ -25,6 +25,10 @@ export default function TeacherGradeManagement() {
   const [showForm, setShowForm] = useState(false);
   const [showWorkloadStats, setShowWorkloadStats] = useState(false);
   const [workloadStats, setWorkloadStats] = useState<TeacherWorkload[]>([]);
+  const [showStudentAssignment, setShowStudentAssignment] = useState(false);
+  const [studentsWithoutGrade, setStudentsWithoutGrade] = useState<any[]>([]);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
+  const [selectedGradeForStudents, setSelectedGradeForStudents] = useState<number>(0);
   const [formData, setFormData] = useState<AssignTeacherGradeRequest>({
     teacherId: 0,
     gradeLevel: 0, // Preescolar por defecto
@@ -37,9 +41,15 @@ export default function TeacherGradeManagement() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (showStudentAssignment) {
+      loadStudentsWithoutGrade();
+    }
+  }, [showStudentAssignment]);
+
   const loadData = async () => {
     if (!user?.institution?.id) return;
-    
+
     setLoading(true);
     try {
       const institutionId = parseInt(user.institution.id);
@@ -47,7 +57,7 @@ export default function TeacherGradeManagement() {
         teacherGradesApi.getGradesByInstitution(institutionId),
         coordinatorApi.getTeachers(institutionId, 100)
       ]);
-      
+
       setTeacherGrades(gradesRes.data);
       setTeachers(teachersRes.data);
     } catch (error) {
@@ -60,7 +70,7 @@ export default function TeacherGradeManagement() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       await teacherGradesApi.assignTeacherToGrade(formData);
       await loadData();
@@ -75,7 +85,7 @@ export default function TeacherGradeManagement() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('¿Está seguro de eliminar esta asignación?')) return;
-    
+
     setLoading(true);
     try {
       await teacherGradesApi.removeTeacherFromGrade(id);
@@ -95,6 +105,60 @@ export default function TeacherGradeManagement() {
       institutionId: user?.institution?.id ? parseInt(user.institution.id) : 0,
       academicYear: new Date().getFullYear().toString()
     });
+  };
+
+  const loadStudentsWithoutGrade = async () => {
+    if (!user?.institution?.id) return;
+
+    try {
+      const institutionId = parseInt(user.institution.id);
+      const response = await coordinatorApi.getStudentsWithoutGrade(institutionId);
+      if (response.success) {
+        setStudentsWithoutGrade(response.students || []);
+      }
+    } catch (error) {
+      console.error('Error loading students without grade:', error);
+    }
+  };
+
+  const handleAssignStudentsToGrade = async () => {
+    if (selectedStudents.length === 0) {
+      alert('Selecciona al menos un estudiante');
+      return;
+    }
+    if (selectedGradeForStudents === 0) {
+      alert('Selecciona un grado');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await coordinatorApi.assignStudentsToGrade(selectedStudents, selectedGradeForStudents);
+      alert(`✅ ${selectedStudents.length} estudiantes asignados exitosamente`);
+      setSelectedStudents([]);
+      setSelectedGradeForStudents(0);
+      await loadStudentsWithoutGrade();
+    } catch (error) {
+      alert('Error al asignar estudiantes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleStudentSelection = (studentId: number) => {
+    setSelectedStudents(prev =>
+      prev.includes(studentId)
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const selectAllStudents = () => {
+    if (selectedStudents.length === studentsWithoutGrade.length) {
+      setSelectedStudents([]);
+    } else {
+      setSelectedStudents(studentsWithoutGrade.map(s => s.id));
+    }
   };
 
   const sections = ['A', 'B', 'C', 'D'] as const;
@@ -126,18 +190,18 @@ export default function TeacherGradeManagement() {
     try {
       const institutionId = parseInt(user?.institution?.id || '0');
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api';
-      
+
       const [subjectsRes, teachersRes] = await Promise.all([
         fetch(`${API_BASE_URL}/subjects/institution/${institutionId}`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-storage') ? JSON.parse(localStorage.getItem('auth-storage')!).state?.token : ''}` }
         }),
         coordinatorApi.getTeachers(institutionId, 100)
       ]);
-      
+
       const subjectsData = await subjectsRes.json();
       const subjects = subjectsData.subjects || [];
       const teachers = teachersRes.data;
-      
+
       const teacherSubjects = new Map<number, any[]>();
       subjects.forEach((subject: any) => {
         if (subject.teacher && subject.schoolGrade) {
@@ -148,13 +212,13 @@ export default function TeacherGradeManagement() {
           teacherSubjects.get(key)!.push(subject);
         }
       });
-      
+
       const stats = teachers.map((teacher: Teacher) => ({
         teacher,
         subjectCount: (teacherSubjects.get(teacher.id) || []).length,
         subjects: teacherSubjects.get(teacher.id) || []
       })).sort((a: any, b: any) => b.subjectCount - a.subjectCount);
-      
+
       setWorkloadStats(stats);
       setShowWorkloadStats(true);
     } catch (error) {
@@ -174,13 +238,13 @@ export default function TeacherGradeManagement() {
                 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api';
                 const authStorage = localStorage.getItem('auth-storage');
                 const token = authStorage ? JSON.parse(authStorage).state?.token : '';
-                
+
                 // Obtener todas las materias
                 const response = await fetch(`${API_BASE_URL}/subjects/institution/${institutionId}`, {
                   headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
-                
+
                 if (data.success) {
                   // Extraer nombres de grado únicos
                   const gradeNames = [...new Set(
@@ -188,10 +252,10 @@ export default function TeacherGradeManagement() {
                       .filter((s: any) => s.schoolGrade)
                       .map((s: any) => `${s.schoolGrade.gradeName} (nivel ${s.schoolGrade.gradeLevel})`)
                   )].sort();
-                  
+
                   console.log('🔍 NOMBRES DE GRADO EN BD:', gradeNames);
                   console.log('📊 Total materias:', data.subjects.length);
-                  
+
                   let message = '📚 Nombres de Grado en la Base de Datos:\n\n';
                   message += gradeNames.join('\n');
                   message += '\n\n📊 Total de materias: ' + data.subjects.length;
@@ -221,10 +285,10 @@ export default function TeacherGradeManagement() {
               try {
                 const institutionId = parseInt(user?.institution?.id || '0');
                 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api';
-                
+
                 const authStorage = localStorage.getItem('auth-storage');
                 const token = authStorage ? JSON.parse(authStorage).state?.token : '';
-                
+
                 const response = await fetch(`${API_BASE_URL}/subjects/auto-distribute/${institutionId}`, {
                   method: 'POST',
                   headers: {
@@ -232,14 +296,14 @@ export default function TeacherGradeManagement() {
                     'Authorization': `Bearer ${token}`
                   }
                 });
-                
+
                 if (!response.ok) {
                   const errorText = await response.text();
                   throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                   let message = '✅ Distribución Completada!\n\n';
                   message += `📊 Grados Procesados: ${data.totalGrades}\n`;
@@ -250,7 +314,7 @@ export default function TeacherGradeManagement() {
                   if (data.teachersWithOther > 0) {
                     message += `⚠️ Profesores con otra cantidad: ${data.teachersWithOther}\n`;
                   }
-                  
+
                   alert(message);
                   await loadData();
                   if (showWorkloadStats) {
@@ -277,8 +341,8 @@ export default function TeacherGradeManagement() {
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 3v18h18"/>
-              <path d="m19 9-5 5-4-4-3 3"/>
+              <path d="M3 3v18h18" />
+              <path d="m19 9-5 5-4-4-3 3" />
             </svg>
             Ver Estadísticas
           </button>
@@ -287,7 +351,14 @@ export default function TeacherGradeManagement() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             {showForm ? <X size={20} /> : <Plus size={20} />}
-            {showForm ? 'Cancelar' : 'Asignar Grado'}
+            {showForm ? 'Cancelar' : 'Asignar Profesor a Grado'}
+          </button>
+          <button
+            onClick={() => setShowStudentAssignment(!showStudentAssignment)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            {showStudentAssignment ? <X size={20} /> : <Plus size={20} />}
+            {showStudentAssignment ? 'Cancelar' : 'Asignar Estudiantes a Grado'}
           </button>
         </div>
       </div>
@@ -303,7 +374,7 @@ export default function TeacherGradeManagement() {
               <X size={20} />
             </button>
           </div>
-          
+
           {/* Resumen de estadísticas */}
           <div className="grid grid-cols-5 gap-3 mb-6">
             <div className="bg-blue-50 rounded-lg p-3 text-center">
@@ -335,31 +406,30 @@ export default function TeacherGradeManagement() {
               <p className="text-xs text-purple-600">Promedio</p>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             {workloadStats.map((stat) => {
               const maxSubjects = Math.max(...workloadStats.map(s => s.subjectCount));
               const percentage = maxSubjects > 0 ? (stat.subjectCount / maxSubjects) * 100 : 0;
-              
+
               // Colores según cantidad de materias
-              const color = stat.subjectCount === 0 ? 'bg-red-500' : 
-                           stat.subjectCount === 3 ? 'bg-teal-500' : 
-                           stat.subjectCount === 4 ? 'bg-green-500' : 
-                           stat.subjectCount < 3 ? 'bg-yellow-500' : 'bg-orange-500';
-              
+              const color = stat.subjectCount === 0 ? 'bg-red-500' :
+                stat.subjectCount === 3 ? 'bg-teal-500' :
+                  stat.subjectCount === 4 ? 'bg-green-500' :
+                    stat.subjectCount < 3 ? 'bg-yellow-500' : 'bg-orange-500';
+
               const isWithoutSubjects = stat.subjectCount === 0;
               const isPerfect = stat.subjectCount === 3 || stat.subjectCount === 4;
               const isOverloaded = stat.subjectCount > 4;
-              
+
               return (
-                <div 
-                  key={stat.teacher.id} 
-                  className={`space-y-1 p-3 rounded-lg transition-all ${
-                    isWithoutSubjects ? 'bg-red-50 border-2 border-red-300' : 
+                <div
+                  key={stat.teacher.id}
+                  className={`space-y-1 p-3 rounded-lg transition-all ${isWithoutSubjects ? 'bg-red-50 border-2 border-red-300' :
                     isPerfect ? 'bg-green-50 border-2 border-green-300' :
-                    isOverloaded ? 'bg-orange-50 border-2 border-orange-300' : 
-                    'bg-yellow-50 border-2 border-yellow-300'
-                  }`}
+                      isOverloaded ? 'bg-orange-50 border-2 border-orange-300' :
+                        'bg-yellow-50 border-2 border-yellow-300'
+                    }`}
                 >
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-medium flex items-center gap-2">
@@ -385,12 +455,11 @@ export default function TeacherGradeManagement() {
                         </span>
                       )}
                     </span>
-                    <span className={`font-bold ${
-                      isWithoutSubjects ? 'text-red-600' : 
+                    <span className={`font-bold ${isWithoutSubjects ? 'text-red-600' :
                       isPerfect ? 'text-green-600' :
-                      isOverloaded ? 'text-orange-600' : 
-                      'text-yellow-600'
-                    }`}>
+                        isOverloaded ? 'text-orange-600' :
+                          'text-yellow-600'
+                      }`}>
                       {stat.subjectCount} {stat.subjectCount === 1 ? 'materia' : 'materias'}
                     </span>
                   </div>
@@ -406,7 +475,7 @@ export default function TeacherGradeManagement() {
                         <span
                           key={subject.id}
                           className="text-xs px-2 py-0.5 rounded"
-                          style={{ 
+                          style={{
                             backgroundColor: `${subject.color}20`,
                             color: subject.color,
                             border: `1px solid ${subject.color}40`
@@ -537,7 +606,97 @@ export default function TeacherGradeManagement() {
         </div>
       )}
 
-      {loading && !showForm ? (
+      {showStudentAssignment && (
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Asignar Estudiantes a Grado</h3>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Seleccionar Grado
+            </label>
+            <select
+              value={selectedGradeForStudents}
+              onChange={(e) => setSelectedGradeForStudents(parseInt(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={0}>Seleccione un grado</option>
+              {Object.entries(groupedGrades).map(([level, grades]) => (
+                grades.map((grade) => (
+                  <option key={grade.id} value={grade.id}>
+                    {getGradeName(parseInt(level))} {grade.section}
+                  </option>
+                ))
+              ))}
+            </select>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Estudiantes sin Grado ({studentsWithoutGrade.length})
+              </label>
+              <button
+                onClick={selectAllStudents}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                {selectedStudents.length === studentsWithoutGrade.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+              </button>
+            </div>
+
+            <div className="border border-gray-300 rounded-lg max-h-96 overflow-y-auto">
+              {studentsWithoutGrade.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No hay estudiantes sin grado asignado
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {studentsWithoutGrade.map((student) => (
+                    <label
+                      key={student.id}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedStudents.includes(student.id)}
+                        onChange={() => toggleStudentSelection(student.id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-3 text-sm text-gray-900">
+                        {student.firstName} {student.lastName}
+                      </span>
+                      <span className="ml-auto text-xs text-gray-500">
+                        {student.email}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => {
+                setShowStudentAssignment(false);
+                setSelectedStudents([]);
+                setSelectedGradeForStudents(0);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleAssignStudentsToGrade}
+              disabled={loading || selectedStudents.length === 0 || selectedGradeForStudents === 0}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              {loading ? 'Asignando...' : `Asignar ${selectedStudents.length} estudiante(s)`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading && !showForm && !showStudentAssignment ? (
         <div className="text-center py-8">Cargando...</div>
       ) : (
         <div className="space-y-6">
@@ -570,7 +729,7 @@ export default function TeacherGradeManagement() {
               </div>
             </div>
           )}
-          
+
           {Object.keys(groupedGrades).length === 0 ? (
             <div className="bg-white p-8 rounded-lg shadow-md text-center text-gray-500">
               No hay grados asignados. Comience asignando profesores a grados.
@@ -613,10 +772,11 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadTeacherSubjects();
-  }, [grade.teacherId]);
+  }, [grade.teacherId, grade.id, refreshKey]); // Agregar refreshKey para forzar recarga
 
   const loadAvailableSubjects = async () => {
     setLoadingAvailable(true);
@@ -628,10 +788,10 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
         }
       });
       const data = await response.json();
-      
+
       if (data.success) {
         const section = grade.fullGradeName.replace(/\d+/, '').trim();
-        
+
         const gradeLevelNames: Record<number, string> = {
           0: 'Preescolar',
           1: 'Primero',
@@ -640,22 +800,46 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
           4: 'Cuarto',
           5: 'Quinto'
         };
-        
+
         const possibleNames = [
           grade.fullGradeName,
           `${gradeLevelNames[grade.gradeLevel]} ${section}`,
           `${grade.gradeLevel}${section}`
         ];
-        
-        // Filtrar materias del mismo grado que no tienen profesor o tienen otro profesor
-        const available = data.subjects.filter((s: any) => 
-          s.schoolGrade && 
-          s.schoolGrade.gradeLevel === grade.gradeLevel &&
-          (possibleNames.includes(s.schoolGrade.gradeName) || 
-           s.schoolGrade.gradeName.includes(section)) &&
-          (!s.teacher || s.teacher.id !== grade.teacherId)
-        );
-        
+
+        // Filtrar materias del mismo grado - FILTRO MÁS FLEXIBLE
+        console.log('🔍 Filtrando materias para:', {
+          gradeLevel: grade.gradeLevel,
+          section,
+          possibleNames,
+          totalSubjects: data.subjects.length
+        });
+
+        const available = data.subjects.filter((s: any) => {
+          if (!s.schoolGrade) return false;
+
+          // Mismo nivel de grado
+          const sameGradeLevel = s.schoolGrade.gradeLevel === grade.gradeLevel;
+
+          // No tiene profesor O tiene otro profesor
+          const availableTeacher = !s.teacher || s.teacher.id !== grade.teacherId;
+
+          // FILTRO SIMPLIFICADO: Solo verificar nivel de grado
+          // Ignorar la sección para mostrar TODAS las materias del nivel
+
+          console.log(`  📚 ${s.name}:`, {
+            gradeLevel: s.schoolGrade.gradeLevel,
+            gradeName: s.schoolGrade.gradeName,
+            sameGradeLevel,
+            availableTeacher,
+            willInclude: sameGradeLevel && availableTeacher
+          });
+
+          // SOLO verificar nivel de grado y disponibilidad de profesor
+          return sameGradeLevel && availableTeacher;
+        });
+
+        console.log(`✅ Materias disponibles encontradas: ${available.length}`);
         setAvailableSubjects(available);
       }
     } catch (error) {
@@ -668,7 +852,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
   const handleAssignSubject = async (subjectId: number) => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api';
-      await fetch(`${API_BASE_URL}/subjects/${subjectId}/assign-teacher`, {
+      const response = await fetch(`${API_BASE_URL}/subjects/${subjectId}/assign-teacher`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -676,10 +860,23 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
         },
         body: JSON.stringify({ teacherId: grade.teacherId })
       });
-      
-      // Recargar materias
-      await loadTeacherSubjects();
-      await loadAvailableSubjects();
+
+      if (!response.ok) {
+        throw new Error('Error al asignar materia');
+      }
+
+      // Forzar recarga incrementando el refreshKey
+      setRefreshKey(prev => prev + 1);
+
+      // Recargar materias inmediatamente
+      await Promise.all([
+        loadTeacherSubjects(),
+        loadAvailableSubjects()
+      ]);
+
+      // Cerrar el modal
+      setShowAssignModal(false);
+
       alert('✅ Materia asignada exitosamente');
     } catch (error) {
       console.error('Error asignando materia:', error);
@@ -704,7 +901,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
           fullGradeName: grade.fullGradeName,
           totalSubjects: data.subjects.length
         });
-        
+
         // Mostrar los nombres de grado que vienen de la BD
         if (data.subjects.length > 0) {
           const gradeNames = [...new Set(data.subjects.map((s: any) => s.schoolGrade?.gradeName))].filter(Boolean);
@@ -715,10 +912,10 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
             coincide: gradeNames.includes(grade.fullGradeName)
           });
         }
-        
+
         // Extraer la sección del fullGradeName (ej: "1C" -> "C" o "0A" -> "A")
         const section = grade.fullGradeName.replace(/\d+/, '').trim();
-        
+
         // Posibles formatos de nombre de grado en la BD
         const gradeLevelNames: Record<number, string> = {
           0: 'Preescolar',
@@ -728,29 +925,46 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
           4: 'Cuarto',
           5: 'Quinto'
         };
-        
+
         const possibleNames = [
           grade.fullGradeName, // Formato corto: "1C"
           `${gradeLevelNames[grade.gradeLevel]} ${section}`, // Formato largo: "Primero C"
           `${grade.gradeLevel}${section}` // Formato sin espacio: "1C"
         ];
-        
+
         console.log('🔍 Buscando materias con nombres posibles:', possibleNames);
-        
-        // Filtrar materias por nivel de grado y cualquiera de los nombres posibles
-        const gradeSubjects = data.subjects.filter((s: any) => 
-          s.schoolGrade && 
-          s.schoolGrade.gradeLevel === grade.gradeLevel &&
-          (possibleNames.includes(s.schoolGrade.gradeName) || 
-           s.schoolGrade.gradeName.includes(section))
-        );
-        
+
+        // Filtrar materias por nivel de grado (más flexible)
+        // Acepta materias que:
+        // 1. Coincidan exactamente con los nombres posibles
+        // 2. Contengan la sección
+        // 3. Solo tengan el nivel de grado sin sección (ej: "Primero" para "Primero B")
+        const gradeSubjects = data.subjects.filter((s: any) => {
+          if (!s.schoolGrade) return false;
+
+          // Mismo nivel de grado es requisito mínimo
+          if (s.schoolGrade.gradeLevel !== grade.gradeLevel) return false;
+
+          const gradeName = s.schoolGrade.gradeName;
+
+          // Coincidencia exacta con nombres posibles
+          if (possibleNames.includes(gradeName)) return true;
+
+          // Contiene la sección
+          if (gradeName.includes(section)) return true;
+
+          // Solo tiene el nombre del nivel sin sección (ej: "Primero" para cualquier sección de Primero)
+          if (gradeName === gradeLevelNames[grade.gradeLevel]) return true;
+
+          return false;
+        });
+
         console.log('✅ Materias filtradas:', gradeSubjects.length);
         if (gradeSubjects.length > 0) {
-          console.log('📚 Nombres de grado encontrados:', 
+          console.log('📚 Nombres de grado encontrados:',
             [...new Set(gradeSubjects.map((s: any) => s.schoolGrade.gradeName))]);
         }
-        
+
         setSubjects(gradeSubjects);
       }
     } catch (error) {
@@ -773,7 +987,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
               Año: {grade.academicYear}
             </p>
           )}
-          
+
           {/* Materias que enseña */}
           {loadingSubjects ? (
             <p className="text-xs text-gray-400 mt-2">Cargando materias...</p>
@@ -785,7 +999,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
                   <span
                     key={subject.id}
                     className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                    style={{ 
+                    style={{
                       backgroundColor: `${subject.color}20`,
                       color: subject.color,
                       border: `1px solid ${subject.color}40`
@@ -819,7 +1033,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
           <Trash2 size={18} />
         </button>
       </div>
-      
+
       {/* Modal para asignar materias */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -835,7 +1049,7 @@ function TeacherGradeCard({ grade, onDelete }: { grade: TeacherGrade; onDelete: 
                 <X size={20} />
               </button>
             </div>
-            
+
             {loadingAvailable ? (
               <p className="text-center py-4">Cargando materias disponibles...</p>
             ) : availableSubjects.length === 0 ? (

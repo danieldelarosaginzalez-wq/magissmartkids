@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, User, GraduationCap } from 'lucide-react';
+import { BookOpen, User, GraduationCap, Eye } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import axios from 'axios';
+import SubjectDetailModal from './SubjectDetailModal';
 
 interface Subject {
   id: number;
@@ -37,6 +38,7 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
     withTeacher: 0,
     withoutTeacher: 0
   });
+  const [showSubjectDetail, setShowSubjectDetail] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
     console.log('🎯 SubjectsSection montado, cargando materias...');
@@ -49,9 +51,7 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
     try {
       setLoading(true);
       const institutionId = user?.institution?.id || 1;
-      
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api';
-      
+
       // Verificar que tenemos token
       if (!token) {
         console.error('❌ No hay token disponible');
@@ -59,22 +59,24 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
         setLoading(false);
         return;
       }
-      
+
+      console.log('🔍 Cargando materias para institución:', institutionId);
+      console.log('🔑 Token disponible:', token ? `${token.substring(0, 20)}...` : 'NO');
+
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       };
-      
-      console.log('🔍 Cargando materias para institución:', institutionId);
-      console.log('🔑 Token disponible:', token ? `${token.substring(0, 20)}...` : 'NO');
-      
-      // Cargar materias
+
+      // Cargar materias usando axios directamente
       const subjectsRes = await axios.get(`${API_BASE_URL}/subjects/institution/${institutionId}`, config);
       console.log('✅ Materias recibidas:', subjectsRes.data);
       const subjectsData = subjectsRes.data.subjects || [];
       setSubjects(subjectsData);
-      
+
       // Cargar estadísticas
       const statsRes = await axios.get(`${API_BASE_URL}/subjects/stats/institution/${institutionId}`, config);
       console.log('✅ Estadísticas recibidas:', statsRes.data);
@@ -85,7 +87,8 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
           withoutTeacher: statsRes.data.subjectsWithoutTeacher || 0
         });
       }
-      
+
+      setError(null);
     } catch (error) {
       console.error('❌ Error cargando materias:', error);
       if (axios.isAxiosError(error)) {
@@ -124,7 +127,7 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-600 font-semibold mb-2">❌ Error al cargar materias</p>
           <p className="text-sm text-red-500">{error}</p>
-          <button 
+          <button
             onClick={loadSubjects}
             className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
@@ -179,7 +182,7 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
                   </span>
                 )}
               </div>
-              
+
               {subject.teacher ? (
                 <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
                   <User className="h-3 w-3" />
@@ -203,6 +206,15 @@ const SubjectsSection: React.FC<SubjectsSectionProps> = ({ limit = 10 }) => {
           <BookOpen className="h-12 w-12 mx-auto mb-3 text-gray-300" />
           <p>No hay materias registradas</p>
         </div>
+      )}
+
+      {/* Modal de Detalles */}
+      {showSubjectDetail && (
+        <SubjectDetailModal
+          subjectId={showSubjectDetail.id}
+          subjectName={showSubjectDetail.name}
+          onClose={() => setShowSubjectDetail(null)}
+        />
       )}
     </div>
   );

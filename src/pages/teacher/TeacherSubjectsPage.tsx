@@ -40,9 +40,7 @@ const TeacherSubjectsPage: React.FC = () => {
         const data = await response.json();
         let subjectsData = data.subjects || [];
         
-        // FILTRAR SOLO CUARTO C
-        subjectsData = subjectsData.filter((subject: TeacherSubject) => subject.grade === 'Cuarto C');
-        
+        // Mostrar todas las materias del profesor
         setSubjects(subjectsData);
       } else {
         setSubjects([]);

@@ -31,10 +31,12 @@ interface TeacherTask {
 }
 
 interface TaskSubmission {
+  id?: number; // ID de la entrega en la base de datos
   studentId: string;
   studentName: string;
   submissionDate: string;
   score?: number;
+  feedback?: string; // Retroalimentación del profesor
   timeUsed?: number;
   files?: string[]; // Para tareas tradicionales
   comments?: string; // Comentarios del estudiante
@@ -101,16 +103,16 @@ const TeacherTasksPage: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const { /* token, */ user } = useAuthStore();
-  
+
   // Verificar si se debe abrir el formulario de creación automáticamente
   useEffect(() => {
     const shouldCreate = searchParams.get('create');
     const preSelectedSubject = searchParams.get('subject');
     const preSelectedGrade = searchParams.get('grade');
-    
+
     if (shouldCreate === 'true') {
       setShowCreateForm(true);
-      
+
       // Pre-seleccionar materia y grado si están en los parámetros
       if (preSelectedSubject || preSelectedGrade) {
         setCreateForm(prev => ({
@@ -121,7 +123,7 @@ const TeacherTasksPage: React.FC = () => {
       }
     }
   }, [searchParams]);
-  
+
 
 
   useEffect(() => {
@@ -156,7 +158,7 @@ const TeacherTasksPage: React.FC = () => {
       activityStorage.saveTask(newTask);
       const updated = activityStorage.getTasks();
       setInteractiveLibrary(updated);
-      setCreateForm({...createForm, actividadInteractivaId: id});
+      setCreateForm({ ...createForm, actividadInteractivaId: id });
       setShowActivityEditor(false);
     } catch (err) {
       console.error('Error saving new activity:', err);
@@ -185,7 +187,7 @@ const TeacherTasksPage: React.FC = () => {
       const updated = activityStorage.getTasks();
       setInteractiveLibrary(updated);
       // select the newly created activity for the task
-      setCreateForm({...createForm, actividadInteractivaId: id});
+      setCreateForm({ ...createForm, actividadInteractivaId: id });
       // reset draft state
       setDraftActivities([]);
       setShowActivityEditor(false);
@@ -212,13 +214,13 @@ const TeacherTasksPage: React.FC = () => {
 
     try {
       setDeletingTaskId(taskId);
-      
+
       // Simular procesamiento en el servidor
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Eliminar de la lista
       setTasks(prev => prev.filter(task => task.id !== taskId));
-      
+
       // Actualizar almacenamiento
       const savedTasks = localStorage.getItem('altiusv3-teacher-tasks');
       if (savedTasks) {
@@ -226,7 +228,7 @@ const TeacherTasksPage: React.FC = () => {
         const updatedTasks = parsedTasks.filter((task: any) => task.id !== taskId);
         localStorage.setItem('altiusv3-teacher-tasks', JSON.stringify(updatedTasks));
       }
-      
+
       setDeletingTaskId(null);
       alert('✅ Tarea eliminada exitosamente');
     } catch (error) {
@@ -244,7 +246,7 @@ const TeacherTasksPage: React.FC = () => {
     console.log('  - Materia ID:', task.materiaId);
     console.log('  - Materia Nombre:', task.materia);
     console.log('  - Grados:', task.grados);
-    
+
     setEditingTask(task);
     setCreateForm({
       titulo: task.titulo,
@@ -257,21 +259,21 @@ const TeacherTasksPage: React.FC = () => {
       comentario: '',
       archivosAdjuntos: []
     });
-    
+
     console.log('📋 Formulario configurado con:', {
       materiaId: task.materiaId || 0,
       grados: task.grados || []
     });
-    
+
     setShowEditForm(true);
     setShowCreateForm(false);
   };
 
   const handleUpdateTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!editingTask) return;
-    
+
     try {
       const taskData = {
         title: createForm.titulo,
@@ -332,30 +334,30 @@ const TeacherTasksPage: React.FC = () => {
       const { token } = useAuthStore.getState();
       console.log('📚 Cargando materias del profesor...');
       console.log('🔑 Token disponible:', token ? `${token.substring(0, 20)}...` : 'NO HAY TOKEN');
-      
+
       if (!token) {
         console.error('❌ No hay token disponible');
         setAvailableSubjects([]);
         return;
       }
-      
+
       const response = await fetch('/api/teacher/subjects', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Materias del profesor:', data);
-        
+
         const subjects = data.subjects || [];
         console.log('📋 Total de combinaciones materia-grado:', subjects.length);
         subjects.forEach((s: any, i: number) => {
           console.log(`  ${i + 1}. ${s.name} - ${s.grade} (ID: ${s.id})`);
         });
-        
+
         setAvailableSubjects(subjects);
       } else {
         console.warn('⚠️ Error obteniendo materias:', response.status);
@@ -399,12 +401,12 @@ const TeacherTasksPage: React.FC = () => {
     try {
       const { token } = useAuthStore.getState();
       console.log('🎓 Cargando grados disponibles del profesor...');
-      
+
       if (!token) {
         console.error('❌ No hay token disponible para cargar grados');
         return;
       }
-      
+
       // Obtener grados asignados al profesor desde el backend
       const response = await fetch('/api/teacher/tasks/grades', {
         headers: {
@@ -412,11 +414,11 @@ const TeacherTasksPage: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Grados del profesor:', data);
-        
+
         // El backend puede devolver un array directamente o un objeto con la propiedad grades
         const grades = Array.isArray(data) ? data : (data.grades || []);
         setAvailableGrades(grades);
@@ -433,7 +435,7 @@ const TeacherTasksPage: React.FC = () => {
         ];
         setAvailableGrades(fallback);
       }
-      
+
       // if (response.ok) {
       //   const data = await response.json();
       //   console.log('📥 Response data:', data);
@@ -459,7 +461,7 @@ const TeacherTasksPage: React.FC = () => {
     } catch (error) {
       console.error('❌ Error loading grades:', error);
       const fallback = [
-        'Preescolar','1° A','1° B','1° C','2° A','2° B','2° C','3° A','3° B','3° C','4° A','4° B','4° C','5° A','5° B','5° C'
+        'Preescolar', '1° A', '1° B', '1° C', '2° A', '2° B', '2° C', '3° A', '3° B', '3° C', '4° A', '4° B', '4° C', '5° A', '5° B', '5° C'
       ];
       setAvailableGrades(fallback);
     }
@@ -469,13 +471,13 @@ const TeacherTasksPage: React.FC = () => {
     try {
       const { token } = useAuthStore.getState();
       setLoading(true);
-      
+
       if (!token) {
         console.error('❌ No hay token disponible para cargar tareas');
         setLoading(false);
         return;
       }
-      
+
       // Cargar tareas desde el backend
       const response = await fetch('/api/teacher/tasks', {
         headers: {
@@ -483,26 +485,30 @@ const TeacherTasksPage: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         try {
           const data = await response.json();
           console.log('✅ Respuesta del backend:', data);
-          
+
           // El backend puede devolver un array directamente o un objeto con propiedad tasks
           let backendTasks = Array.isArray(data) ? data : (data.tasks || data.data || []);
-          
+
           if (!Array.isArray(backendTasks)) {
             console.error('❌ No se pudo extraer array de tareas:', data);
             setTasks([]);
             setLoading(false);
             return;
           }
-          
+
           console.log('📊 Total de tareas recibidas:', backendTasks.length);
-          
-          console.log('📊 Total de tareas recibidas:', backendTasks.length);
-          
+
+          // Log de la primera tarea para ver su estructura
+          if (backendTasks.length > 0) {
+            console.log('📋 Primera tarea completa:', JSON.stringify(backendTasks[0], null, 2));
+            console.log('📋 Entregas de la primera tarea:', backendTasks[0].submissions);
+          }
+
           // Convertir formato de MySQL al formato del frontend - CON ENTREGAS
           const convertedTasks: TeacherTask[] = backendTasks.map((task: any) => {
             // Convertir entregas del backend al formato del frontend
@@ -514,18 +520,20 @@ const TeacherTasksPage: React.FC = () => {
               } else if (sub.submissionFileUrl) {
                 files = [sub.submissionFileUrl];
               }
-              
+
               return {
+                id: sub.id, // ✅ IMPORTANTE: Incluir el ID de la entrega
                 studentId: sub.studentId?.toString() || '',
                 studentName: sub.studentName || 'Estudiante',
                 submissionDate: sub.submittedAt || '',
                 score: sub.score,
+                feedback: sub.feedback || '', // ✅ Incluir retroalimentación
                 files: files,
                 comments: sub.submissionText || '',
                 answers: [] // TODO: Parsear respuestas de actividades interactivas si existen
               };
             });
-            
+
             return {
               id: task.id,
               titulo: task.title || 'Sin título',
@@ -540,7 +548,7 @@ const TeacherTasksPage: React.FC = () => {
               submissions: submissions
             };
           });
-          
+
           console.log(`✅ Total de tareas convertidas: ${convertedTasks.length}`);
           console.log('📋 Tareas con entregas:', convertedTasks.filter(t => t.submissions && t.submissions.length > 0).length);
           setTasks(convertedTasks);
@@ -557,10 +565,10 @@ const TeacherTasksPage: React.FC = () => {
         const errorText = await response.text();
         console.error('❌ Respuesta de error:', errorText);
       }
-      
+
       // Si falla, usar datos de demostración
       await new Promise(resolve => setTimeout(resolve, 600));
-      
+
       // 🎭 COMENTADO TEMPORALMENTE - Forzar datos nuevos para mostrar la tarea de animales
       // const savedTasks = localStorage.getItem('altiusv3-teacher-tasks');
       // if (savedTasks) {
@@ -573,7 +581,7 @@ const TeacherTasksPage: React.FC = () => {
       //     console.warn('Error parsing saved teacher tasks, using default data');
       //   }
       // }
-      
+
       // 📚 TAREAS EXACTAMENTE IGUALES A LAS DEL ESTUDIANTE - Vista del Profesor
       const fakeTasks: TeacherTask[] = [
         // TAREAS PENDIENTES (que ve el estudiante)
@@ -763,7 +771,7 @@ const TeacherTasksPage: React.FC = () => {
             }
           ]
         },
-        
+
         // TAREAS COMPLETADAS (que ve el estudiante como completadas)
         {
           id: 5,
@@ -823,9 +831,9 @@ const TeacherTasksPage: React.FC = () => {
           ]
         }
       ];
-      
+
       setTasks(fakeTasks);
-      
+
       // 🎭 LIMPIAR Y GUARDAR DATOS NUEVOS - Para mostrar la tarea de animales
       localStorage.removeItem('altiusv3-teacher-tasks'); // Limpiar datos viejos
       localStorage.setItem('altiusv3-teacher-tasks', JSON.stringify(fakeTasks));
@@ -847,12 +855,12 @@ const TeacherTasksPage: React.FC = () => {
           const formData = new FormData();
           formData.append('file', file);
           formData.append('folder', 'tasks');
-          
+
           const uploadResponse = await fetch('/api/files/upload', {
             method: 'POST',
             body: formData
           });
-          
+
           if (uploadResponse.ok) {
             const uploadData = await uploadResponse.json();
             uploadedFiles.push(uploadData.filePath);
@@ -861,10 +869,10 @@ const TeacherTasksPage: React.FC = () => {
           }
         }
       }
-      
+
       // Preparar configuración de actividad interactiva
       let activityConfig = null;
-      
+
       // 🎯 CUESTIONARIOS: Si es interactiva, usar las preguntas del borrador o crear básicas
       if (createForm.tipo === 'interactive') {
         if (draftActivities.length > 0) {
@@ -876,11 +884,11 @@ const TeacherTasksPage: React.FC = () => {
             activities: draftActivities,
             createdAt: new Date().toISOString()
           };
-          
+
           // Guardar en biblioteca local
           activityStorage.saveTask(questionnaireActivity);
           setInteractiveLibrary(activityStorage.getTasks());
-          
+
           // Limpiar borrador después de usar
           setDraftActivities([]);
         } else {
@@ -910,7 +918,7 @@ const TeacherTasksPage: React.FC = () => {
             ],
             createdAt: new Date().toISOString()
           };
-          
+
           // Guardar en biblioteca local
           activityStorage.saveTask(basicQuestionnaire);
           setInteractiveLibrary(activityStorage.getTasks());
@@ -952,10 +960,10 @@ const TeacherTasksPage: React.FC = () => {
       if (response.ok) {
         const createdTasks = await response.json();
         console.log('✅ Tareas creadas en MySQL:', createdTasks);
-        
+
         // Recargar tareas desde el backend
         await loadTasks();
-        
+
         setShowCreateForm(false);
         setCreateForm({
           titulo: '',
@@ -973,9 +981,9 @@ const TeacherTasksPage: React.FC = () => {
         setAvailableStudents([]);
         setSelectedStudents([]);
         setAssignToAll(true);
-        
+
         const message = createForm.tipo === 'interactive'
-          ? draftActivities.length > 0 
+          ? draftActivities.length > 0
             ? `✅ Cuestionario creado con ${draftActivities.length} preguntas!`
             : '✅ Cuestionario creado con preguntas de ejemplo!'
           : '✅ Tarea creada exitosamente!';
@@ -985,7 +993,7 @@ const TeacherTasksPage: React.FC = () => {
         console.error('❌ Error creando tarea:', error);
         alert('❌ Error al crear la tarea. Verifica la consola.');
       }
-      
+
       // CÓDIGO ORIGINAL COMENTADO:
       // const response = await fetch('/api/teacher/tasks', {
       //   method: 'POST',
@@ -1007,7 +1015,7 @@ const TeacherTasksPage: React.FC = () => {
       //     maxGrade: 5.0
       //   })
       // });
-      
+
     } catch (error) {
       console.error('Error creating task:', error);
       alert('❌ Error de conexión. Verifica tu conexión a internet.');
@@ -1017,7 +1025,7 @@ const TeacherTasksPage: React.FC = () => {
 
 
   const getTaskTypeBadge = (tipo: string) => {
-    return tipo === 'traditional' 
+    return tipo === 'traditional'
       ? <Badge variant="secondary" className="bg-blue-100 text-blue-800">📸 Evidencia</Badge>
       : <Badge variant="secondary" className="bg-purple-100 text-purple-800">🎮 Interactiva</Badge>;
   };
@@ -1039,11 +1047,11 @@ const TeacherTasksPage: React.FC = () => {
         matchesType = !!(task.submissions && task.submissions.length > 0);
         break;
     }
-    
+
     // Filtro por grado
-    const matchesGrade = !selectedGradeFilter || 
+    const matchesGrade = !selectedGradeFilter ||
       (task.grados && task.grados.includes(selectedGradeFilter));
-    
+
     return matchesType && matchesGrade;
   }).sort((a, b) => {
     // Ordenamiento
@@ -1081,7 +1089,7 @@ const TeacherTasksPage: React.FC = () => {
         description={`Gestiona las tareas de tus ${availableSubjects.length} materia${availableSubjects.length !== 1 ? 's' : ''}`}
         icon={FileText}
         action={
-          <Button 
+          <Button
             onClick={() => {
               if (availableSubjects.length === 0) {
                 alert('⚠️ No tienes materias asignadas. Contacta al coordinador.');
@@ -1258,13 +1266,13 @@ const TeacherTasksPage: React.FC = () => {
                   <input
                     type="text"
                     value={createForm.titulo}
-                    onChange={(e) => setCreateForm({...createForm, titulo: e.target.value})}
+                    onChange={(e) => setCreateForm({ ...createForm, titulo: e.target.value })}
                     className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     placeholder="Ej: Ejercicios de Álgebra"
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-black mb-2">
                     Fecha de Entrega
@@ -1272,7 +1280,7 @@ const TeacherTasksPage: React.FC = () => {
                   <input
                     type="date"
                     value={createForm.fechaEntrega}
-                    onChange={(e) => setCreateForm({...createForm, fechaEntrega: e.target.value})}
+                    onChange={(e) => setCreateForm({ ...createForm, fechaEntrega: e.target.value })}
                     className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                     required
                   />
@@ -1285,7 +1293,7 @@ const TeacherTasksPage: React.FC = () => {
                 </label>
                 <textarea
                   value={createForm.descripcion}
-                  onChange={(e) => setCreateForm({...createForm, descripcion: e.target.value})}
+                  onChange={(e) => setCreateForm({ ...createForm, descripcion: e.target.value })}
                   className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   rows={3}
                   placeholder="Describe la tarea y las instrucciones..."
@@ -1333,7 +1341,7 @@ const TeacherTasksPage: React.FC = () => {
                                   'Content-Type': 'application/json'
                                 }
                               });
-                              
+
                               if (response.ok) {
                                 const data = await response.json();
                                 alert(`✅ ${data.message || 'Materias inicializadas correctamente'}`);
@@ -1365,7 +1373,7 @@ const TeacherTasksPage: React.FC = () => {
                           );
                           console.log('📝 Materia seleccionada:', selectedSubject);
                           setCreateForm({
-                            ...createForm, 
+                            ...createForm,
                             materiaId: subjectId,
                             grados: selectedSubject ? [selectedSubject.grade] : []
                           });
@@ -1397,7 +1405,7 @@ const TeacherTasksPage: React.FC = () => {
                   </label>
                   <select
                     value={createForm.tipo}
-                    onChange={(e) => setCreateForm({...createForm, tipo: e.target.value})}
+                    onChange={(e) => setCreateForm({ ...createForm, tipo: e.target.value })}
                     className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                   >
                     <option value="traditional">Tarea Tradicional</option>
@@ -1431,7 +1439,7 @@ const TeacherTasksPage: React.FC = () => {
                       <span className="text-sm font-medium text-blue-700">Todos ({availableStudents.length})</span>
                     </label>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-white rounded border border-blue-200">
                     {availableStudents.map((student: any) => (
                       <label
@@ -1455,7 +1463,7 @@ const TeacherTasksPage: React.FC = () => {
                       </label>
                     ))}
                   </div>
-                  
+
                   <p className="text-xs text-blue-600 mt-2">
                     {selectedStudents.length} estudiante{selectedStudents.length !== 1 ? 's' : ''} seleccionado{selectedStudents.length !== 1 ? 's' : ''}
                   </p>
@@ -1472,7 +1480,7 @@ const TeacherTasksPage: React.FC = () => {
                       <p className="text-sm text-purple-600">Crea un cuestionario con múltiples preguntas variadas</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
                     <div className="p-3 bg-white rounded-lg border border-purple-200">
                       <div className="flex items-center gap-2 mb-2">
@@ -1482,7 +1490,7 @@ const TeacherTasksPage: React.FC = () => {
                       <p className="text-sm text-purple-600 mb-3">
                         Agrega diferentes tipos de preguntas para crear un cuestionario completo
                       </p>
-                      
+
                       {draftActivities.length > 0 && (
                         <div className="mb-3 p-2 bg-purple-50 rounded border">
                           <p className="text-sm font-medium text-purple-700">
@@ -1498,12 +1506,12 @@ const TeacherTasksPage: React.FC = () => {
                           </ul>
                         </div>
                       )}
-                      
+
                       <Button
                         type="button"
-                        onClick={() => { 
-                          setEditingDraft(true); 
-                          setShowActivityEditor(true); 
+                        onClick={() => {
+                          setEditingDraft(true);
+                          setShowActivityEditor(true);
                         }}
                         className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
                       >
@@ -1519,7 +1527,7 @@ const TeacherTasksPage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-neutral-black mb-2">Formatos permitidos</label>
                       <div className="flex gap-2 flex-wrap">
-                        {['pdf','docx','jpg','png'].map(fmt => (
+                        {['pdf', 'docx', 'jpg', 'png'].map(fmt => (
                           <label key={fmt} className="inline-flex items-center gap-2 text-sm">
                             <input
                               type="checkbox"
@@ -1527,7 +1535,7 @@ const TeacherTasksPage: React.FC = () => {
                               onChange={(e) => {
                                 const set = new Set(createForm.formatosPermitidos || []);
                                 if (e.target.checked) set.add(fmt); else set.delete(fmt);
-                                setCreateForm({...createForm, formatosPermitidos: Array.from(set)});
+                                setCreateForm({ ...createForm, formatosPermitidos: Array.from(set) });
                               }}
                             />
                             <span className="capitalize">{fmt}</span>
@@ -1541,7 +1549,7 @@ const TeacherTasksPage: React.FC = () => {
                       <input
                         type="text"
                         value={createForm.comentario}
-                        onChange={(e) => setCreateForm({...createForm, comentario: e.target.value})}
+                        onChange={(e) => setCreateForm({ ...createForm, comentario: e.target.value })}
                         className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
                         placeholder="Instrucciones o comentario para la entrega"
                       />
@@ -1564,13 +1572,13 @@ const TeacherTasksPage: React.FC = () => {
               )}
 
               <div className="flex gap-2 pt-4">
-                <Button 
+                <Button
                   type="submit"
                   className="bg-primary hover:bg-primary-600 text-neutral-white border-0"
                 >
                   Crear Tarea
                 </Button>
-                <Button 
+                <Button
                   type="button"
                   variant="outline"
                   onClick={() => setShowCreateForm(false)}
@@ -1688,13 +1696,13 @@ const TeacherTasksPage: React.FC = () => {
                   <input
                     type="text"
                     value={createForm.titulo}
-                    onChange={(e) => setCreateForm({...createForm, titulo: e.target.value})}
+                    onChange={(e) => setCreateForm({ ...createForm, titulo: e.target.value })}
                     className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     placeholder="Ej: Ejercicios de Álgebra"
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-black mb-2">
                     Fecha de Entrega
@@ -1702,7 +1710,7 @@ const TeacherTasksPage: React.FC = () => {
                   <input
                     type="date"
                     value={createForm.fechaEntrega}
-                    onChange={(e) => setCreateForm({...createForm, fechaEntrega: e.target.value})}
+                    onChange={(e) => setCreateForm({ ...createForm, fechaEntrega: e.target.value })}
                     className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     required
                   />
@@ -1715,7 +1723,7 @@ const TeacherTasksPage: React.FC = () => {
                 </label>
                 <textarea
                   value={createForm.descripcion}
-                  onChange={(e) => setCreateForm({...createForm, descripcion: e.target.value})}
+                  onChange={(e) => setCreateForm({ ...createForm, descripcion: e.target.value })}
                   className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   rows={3}
                   placeholder="Describe la tarea y las instrucciones..."
@@ -1744,7 +1752,7 @@ const TeacherTasksPage: React.FC = () => {
                         );
                         console.log('📝 Materia seleccionada para edición:', selectedSubject);
                         setCreateForm({
-                          ...createForm, 
+                          ...createForm,
                           materiaId: subjectId,
                           grados: selectedSubject ? [selectedSubject.grade] : []
                         });
@@ -1778,14 +1786,14 @@ const TeacherTasksPage: React.FC = () => {
                       const fileName = archivo.split('/').pop() || archivo;
                       const fileExtension = fileName.split('.').pop()?.toLowerCase();
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
-                      
+
                       return (
                         <div key={index} className="flex items-center justify-between p-3 bg-white rounded border border-blue-200">
                           <div className="flex items-center gap-3">
                             {isImage ? (
                               <div className="w-12 h-12 rounded overflow-hidden border border-gray-200">
-                                <img 
-                                  src={archivo} 
+                                <img
+                                  src={archivo}
                                   alt={fileName}
                                   className="w-full h-full object-cover"
                                 />
@@ -1854,13 +1862,13 @@ const TeacherTasksPage: React.FC = () => {
               )}
 
               <div className="flex gap-2 pt-4 border-t border-orange-200">
-                <Button 
+                <Button
                   type="submit"
                   className="bg-orange-600 hover:bg-orange-700 text-white border-0"
                 >
                   Guardar Cambios
                 </Button>
-                <Button 
+                <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
@@ -1893,8 +1901,8 @@ const TeacherTasksPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredTasks.map((task) => (
-            <Card 
-              key={task.id} 
+            <Card
+              key={task.id}
               className="border-secondary-200 hover:shadow-lg transition-all duration-200"
             >
               <CardHeader className="pb-3">
@@ -1936,7 +1944,7 @@ const TeacherTasksPage: React.FC = () => {
                   )}
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-3">
                 {/* Estadísticas de entregas */}
                 {task.submissions && task.submissions.length > 0 ? (
@@ -1985,7 +1993,7 @@ const TeacherTasksPage: React.FC = () => {
                 {/* Acciones */}
                 <div className="flex gap-2 pt-2 border-t border-gray-200">
                   {task.submissions && task.submissions.length > 0 ? (
-                    <Button 
+                    <Button
                       onClick={() => setSelectedTaskSubmissions(task)}
                       variant="outline"
                       size="sm"
@@ -1995,7 +2003,7 @@ const TeacherTasksPage: React.FC = () => {
                       Ver Entregas
                     </Button>
                   ) : (
-                    <Button 
+                    <Button
                       variant="outline"
                       size="sm"
                       disabled
@@ -2005,7 +2013,7 @@ const TeacherTasksPage: React.FC = () => {
                       Sin entregas
                     </Button>
                   )}
-                  <Button 
+                  <Button
                     onClick={() => handleEditTask(task)}
                     variant="outline"
                     size="sm"
@@ -2013,7 +2021,7 @@ const TeacherTasksPage: React.FC = () => {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => handleDeleteTask(task.id)}
                     variant="outline"
                     size="sm"
@@ -2042,460 +2050,460 @@ const TeacherTasksPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 py-20">
           <div className="w-full max-w-4xl max-h-[calc(100vh-10rem)] overflow-y-auto">
             <Card className="w-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-primary" />
-                  📊 Entregas: {selectedTaskSubmissions.titulo}
-                </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedTaskSubmissions(null)}
-                >
-                  ✕
-                </Button>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              {selectedTaskSubmissions.submissions?.map((submission, index) => (
-                <div key={index} className="border rounded-lg p-6 space-y-4">
-                  {/* Header del estudiante */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Users className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{submission.studentName}</h3>
-                      <p className="text-sm text-gray-600">
-                        Entregado: {new Date(submission.submissionDate).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-primary" />
+                    📊 Entregas: {selectedTaskSubmissions.titulo}
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedTaskSubmissions(null)}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </CardHeader>
 
-                  {/* Estadísticas rápidas (solo para actividades interactivas) */}
-                  {submission.answers && submission.answers.length > 0 && (
-                    <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <CheckCircle className="w-5 h-5 text-blue-600" />
-                          <span className="font-bold text-blue-800">
-                            {submission.answers.filter(a => a.isCorrect).length}
-                          </span>
-                        </div>
-                        <div className="text-sm text-blue-600">Correctas</div>
+              <CardContent className="space-y-6">
+                {selectedTaskSubmissions.submissions?.map((submission, index) => (
+                  <div key={index} className="border rounded-lg p-6 space-y-4">
+                    {/* Header del estudiante */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-blue-600" />
                       </div>
-                      
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <XCircle className="w-5 h-5 text-red-600" />
-                          <span className="font-bold text-red-800">
-                            {submission.answers.filter(a => !a.isCorrect).length}
-                          </span>
-                        </div>
-                        <div className="text-sm text-red-600">Incorrectas</div>
-                      </div>
-                      
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <FileText className="w-5 h-5 text-blue-600" />
-                          <span className="font-bold text-blue-800">
-                            {submission.answers.length}
-                          </span>
-                        </div>
-                        <div className="text-sm text-blue-600">Total</div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{submission.studentName}</h3>
+                        <p className="text-sm text-gray-600">
+                          Entregado: {new Date(submission.submissionDate).toLocaleString()}
+                        </p>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* Resumen para tareas tradicionales */}
-                  {(!submission.answers || submission.answers.length === 0) && submission.files && submission.files.length > 0 && (
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <p className="font-semibold text-blue-800">Tarea Tradicional</p>
-                          <p className="text-sm text-blue-600">
-                            {submission.files.length} archivo{submission.files.length !== 1 ? 's' : ''} entregado{submission.files.length !== 1 ? 's' : ''}
-                          </p>
+
+                    {/* Estadísticas rápidas (solo para actividades interactivas) */}
+                    {submission.answers && submission.answers.length > 0 && (
+                      <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <CheckCircle className="w-5 h-5 text-blue-600" />
+                            <span className="font-bold text-blue-800">
+                              {submission.answers.filter(a => a.isCorrect).length}
+                            </span>
+                          </div>
+                          <div className="text-sm text-blue-600">Correctas</div>
+                        </div>
+
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <XCircle className="w-5 h-5 text-red-600" />
+                            <span className="font-bold text-red-800">
+                              {submission.answers.filter(a => !a.isCorrect).length}
+                            </span>
+                          </div>
+                          <div className="text-sm text-red-600">Incorrectas</div>
+                        </div>
+
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-2 mb-1">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                            <span className="font-bold text-blue-800">
+                              {submission.answers.length}
+                            </span>
+                          </div>
+                          <div className="text-sm text-blue-600">Total</div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Archivos subidos (tareas tradicionales) */}
-                  {submission.files && submission.files.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-primary" />
-                        Archivos Entregados ({submission.files.length}):
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {submission.files.map((file, fileIndex) => {
-                          const fileName = file.split('/').pop() || file;
-                          const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
-                          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
-                          const isPdf = fileExtension === 'pdf';
-                          const isDoc = ['doc', 'docx'].includes(fileExtension);
-                          
-                          return (
-                            <div 
-                              key={fileIndex}
-                              className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary-50 transition-colors"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                  isImage ? 'bg-blue-100' : 
-                                  isPdf ? 'bg-red-100' : 
-                                  isDoc ? 'bg-blue-100' : 'bg-gray-100'
-                                }`}>
-                                  {isImage ? (
-                                    <span className="text-2xl">🖼️</span>
-                                  ) : isPdf ? (
-                                    <span className="text-2xl">📄</span>
-                                  ) : isDoc ? (
-                                    <span className="text-2xl">📝</span>
-                                  ) : (
-                                    <FileText className="w-6 h-6 text-gray-600" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-sm truncate" title={fileName}>
-                                    {fileName}
-                                  </p>
-                                  <p className="text-xs text-gray-500 uppercase">
-                                    {fileExtension}
-                                  </p>
-                                </div>
-                                <a
-                                  href={`http://localhost:8090/api/files/download/${file}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-600 text-sm"
-                                >
-                                  Ver
-                                </a>
-                              </div>
-                            </div>
-                          );
-                        })}
+                    {/* Resumen para tareas tradicionales */}
+                    {(!submission.answers || submission.answers.length === 0) && submission.files && submission.files.length > 0 && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                          <div>
+                            <p className="font-semibold text-blue-800">Tarea Tradicional</p>
+                            <p className="text-sm text-blue-600">
+                              {submission.files.length} archivo{submission.files.length !== 1 ? 's' : ''} entregado{submission.files.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Comentarios del estudiante o resultados del quiz */}
-                  {(submission.comments || (submission as any).feedback) && (() => {
-                    // Intentar parsear como JSON para quiz interactivos
-                    const dataToparse = submission.comments || (submission as any).feedback;
-                    try {
-                      const quizData = JSON.parse(dataToparse);
-                      if (quizData.answers && Array.isArray(quizData.answers)) {
-                        // Es un quiz interactivo - mostrar resultados bonitos
-                        const correctCount = quizData.answers.filter((a: any) => a.isCorrect === 1 || a.isCorrect === true).length;
-                        const incorrectCount = quizData.answers.length - correctCount;
-                        
-                        return (
-                          <div className="space-y-4">
-                            {/* Estadísticas del quiz */}
-                            <div className="grid grid-cols-3 gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                  <CheckCircle className="w-5 h-5 text-green-600" />
-                                  <span className="font-bold text-2xl text-green-700">{correctCount}</span>
-                                </div>
-                                <div className="text-sm text-green-600 font-medium">Correctas</div>
-                              </div>
-                              
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                  <XCircle className="w-5 h-5 text-red-600" />
-                                  <span className="font-bold text-2xl text-red-700">{incorrectCount}</span>
-                                </div>
-                                <div className="text-sm text-red-600 font-medium">Incorrectas</div>
-                              </div>
-                              
-                              <div className="text-center">
-                                <div className="flex items-center justify-center gap-2 mb-1">
-                                  <FileText className="w-5 h-5 text-blue-600" />
-                                  <span className="font-bold text-2xl text-blue-700">{quizData.answers.length}</span>
-                                </div>
-                                <div className="text-sm text-blue-600 font-medium">Total</div>
-                              </div>
-                            </div>
+                    {/* Archivos subidos (tareas tradicionales) */}
+                    {submission.files && submission.files.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-primary" />
+                          Archivos Entregados ({submission.files.length}):
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {submission.files.map((file, fileIndex) => {
+                            const fileName = file.split('/').pop() || file;
+                            const fileExtension = fileName.split('.').pop()?.toLowerCase() || '';
+                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension);
+                            const isPdf = fileExtension === 'pdf';
+                            const isDoc = ['doc', 'docx'].includes(fileExtension);
 
-                            {/* Tiempo usado */}
-                            {quizData.timeSpent && (
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Clock className="w-4 h-4" />
-                                <span className="text-sm">Tiempo: <strong>{quizData.timeSpent}</strong></span>
-                              </div>
-                            )}
-
-                            {/* Detalle de respuestas */}
-                            <div className="space-y-3">
-                              <h4 className="font-semibold text-lg">Detalle de Respuestas:</h4>
-                              {quizData.answers.slice(0, 5).map((answer: any, idx: number) => {
-                                const isCorrect = answer.isCorrect === 1 || answer.isCorrect === true;
-                                return (
-                                  <div 
-                                    key={idx}
-                                    className={`p-4 rounded-lg border-2 ${
-                                      isCorrect 
-                                        ? 'bg-green-50 border-green-300' 
-                                        : 'bg-red-50 border-red-300'
-                                    }`}
+                            return (
+                              <div
+                                key={fileIndex}
+                                className="p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary-50 transition-colors"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${isImage ? 'bg-blue-100' :
+                                    isPdf ? 'bg-red-100' :
+                                      isDoc ? 'bg-blue-100' : 'bg-gray-100'
+                                    }`}>
+                                    {isImage ? (
+                                      <span className="text-2xl">🖼️</span>
+                                    ) : isPdf ? (
+                                      <span className="text-2xl">📄</span>
+                                    ) : isDoc ? (
+                                      <span className="text-2xl">📝</span>
+                                    ) : (
+                                      <FileText className="w-6 h-6 text-gray-600" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm truncate" title={fileName}>
+                                      {fileName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 uppercase">
+                                      {fileExtension}
+                                    </p>
+                                  </div>
+                                  <a
+                                    href={`http://localhost:8090/api/files/download/${file}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-600 text-sm"
                                   >
-                                    <div className="flex items-start gap-3">
-                                      {isCorrect ? (
-                                        <CheckCircle className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
-                                      ) : (
-                                        <XCircle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
-                                      )}
-                                      <div className="flex-1">
-                                        <p className="font-semibold text-gray-800 mb-2">{answer.question}</p>
-                                        <div className="space-y-1">
-                                          <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
-                                            <strong>Respuesta del estudiante:</strong> {answer.studentAnswer}
-                                          </p>
-                                          {!isCorrect && (
-                                            <p className="text-sm text-green-700">
-                                              <strong>✓ Respuesta correcta:</strong> {answer.correctAnswer}
+                                    Ver
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Comentarios del estudiante o resultados del quiz */}
+                    {(submission.comments || (submission as any).feedback) && (() => {
+                      // Intentar parsear como JSON para quiz interactivos
+                      const dataToparse = submission.comments || (submission as any).feedback;
+                      try {
+                        const quizData = JSON.parse(dataToparse);
+                        if (quizData.answers && Array.isArray(quizData.answers)) {
+                          // Es un quiz interactivo - mostrar resultados bonitos
+                          const correctCount = quizData.answers.filter((a: any) => a.isCorrect === 1 || a.isCorrect === true).length;
+                          const incorrectCount = quizData.answers.length - correctCount;
+
+                          return (
+                            <div className="space-y-4">
+                              {/* Estadísticas del quiz */}
+                              <div className="grid grid-cols-3 gap-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center gap-2 mb-1">
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                    <span className="font-bold text-2xl text-green-700">{correctCount}</span>
+                                  </div>
+                                  <div className="text-sm text-green-600 font-medium">Correctas</div>
+                                </div>
+
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center gap-2 mb-1">
+                                    <XCircle className="w-5 h-5 text-red-600" />
+                                    <span className="font-bold text-2xl text-red-700">{incorrectCount}</span>
+                                  </div>
+                                  <div className="text-sm text-red-600 font-medium">Incorrectas</div>
+                                </div>
+
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center gap-2 mb-1">
+                                    <FileText className="w-5 h-5 text-blue-600" />
+                                    <span className="font-bold text-2xl text-blue-700">{quizData.answers.length}</span>
+                                  </div>
+                                  <div className="text-sm text-blue-600 font-medium">Total</div>
+                                </div>
+                              </div>
+
+                              {/* Tiempo usado */}
+                              {quizData.timeSpent && (
+                                <div className="flex items-center gap-2 text-gray-600">
+                                  <Clock className="w-4 h-4" />
+                                  <span className="text-sm">Tiempo: <strong>{quizData.timeSpent}</strong></span>
+                                </div>
+                              )}
+
+                              {/* Detalle de respuestas */}
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-lg">Detalle de Respuestas:</h4>
+                                {quizData.answers.slice(0, 5).map((answer: any, idx: number) => {
+                                  const isCorrect = answer.isCorrect === 1 || answer.isCorrect === true;
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className={`p-4 rounded-lg border-2 ${isCorrect
+                                        ? 'bg-green-50 border-green-300'
+                                        : 'bg-red-50 border-red-300'
+                                        }`}
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        {isCorrect ? (
+                                          <CheckCircle className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+                                        ) : (
+                                          <XCircle className="w-6 h-6 text-red-600 mt-1 flex-shrink-0" />
+                                        )}
+                                        <div className="flex-1">
+                                          <p className="font-semibold text-gray-800 mb-2">{answer.question}</p>
+                                          <div className="space-y-1">
+                                            <p className={`text-sm ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                                              <strong>Respuesta del estudiante:</strong> {answer.studentAnswer}
                                             </p>
-                                          )}
+                                            {!isCorrect && (
+                                              <p className="text-sm text-green-700">
+                                                <strong>✓ Respuesta correcta:</strong> {answer.correctAnswer}
+                                              </p>
+                                            )}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      }
-                    } catch (e) {
-                      // No es JSON o no tiene el formato esperado - mostrar como texto normal
-                    }
-                    
-                    // Mostrar como comentario normal
-                    return (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold">Comentarios:</h4>
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-700 whitespace-pre-wrap">{dataToparse}</p>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Detalle de respuestas (actividades interactivas) */}
-                  {submission.answers && submission.answers.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">Detalle de Respuestas:</h4>
-                      {submission.answers.map((answer, answerIndex) => (
-                        <div 
-                          key={answerIndex} 
-                          className={`p-4 rounded-lg border ${
-                            answer.isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            {answer.isCorrect ? (
-                              <CheckCircle className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                            ) : (
-                              <XCircle className="w-5 h-5 text-red-600 mt-1 flex-shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <p className="font-medium mb-2">{answer.question}</p>
-                              <div className="space-y-1">
-                                <p className={`text-sm ${answer.isCorrect ? 'text-blue-700' : 'text-red-700'}`}>
-                                  <strong>Respuesta del estudiante:</strong> {answer.userAnswer}
-                                </p>
-                                {!answer.isCorrect && (
-                                  <p className="text-sm text-blue-700">
-                                    <strong>Respuesta correcta:</strong> {answer.correctAnswer}
-                                  </p>
-                                )}
+                                  );
+                                })}
                               </div>
                             </div>
+                          );
+                        }
+                      } catch (e) {
+                        // No es JSON o no tiene el formato esperado - mostrar como texto normal
+                      }
+
+                      // Mostrar como comentario normal
+                      return (
+                        <div className="space-y-2">
+                          <h4 className="font-semibold">Comentarios:</h4>
+                          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-gray-700 whitespace-pre-wrap">{dataToparse}</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    })()}
 
-                  {/* Sección de Calificación */}
-                  <div className="mt-6 pt-6 border-t-2 border-gray-200">
-                    <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                      <Star className="w-5 h-5 text-yellow-500" />
-                      Calificación del Profesor
-                    </h4>
-                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 space-y-4">
-                      {/* Modo edición */}
-                      {editingSubmissionId === (submission as any).id ? (
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Nota (0.0 - 5.0)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              max="5"
-                              step="0.1"
-                              value={editingScore}
-                              onChange={(e) => setEditingScore(parseFloat(e.target.value))}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Retroalimentación
-                            </label>
-                            <textarea
-                              value={editingFeedback}
-                              onChange={(e) => setEditingFeedback(e.target.value)}
-                              rows={3}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                              placeholder="Escribe tu retroalimentación aquí..."
-                            />
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={async () => {
-                                try {
-                                  // Validar nota
-                                  if (editingScore < 0 || editingScore > 5) {
-                                    alert('La nota debe estar entre 0.0 y 5.0');
-                                    return;
-                                  }
-
-                                  // Actualizar en la base de datos
-                                  const { token } = useAuthStore.getState();
-                                  if (!token) {
-                                    alert('❌ No hay sesión activa');
-                                    return;
-                                  }
-
-                                  const response = await fetch(`/api/teacher/submissions/${(submission as any).id}/grade`, {
-                                    method: 'PUT',
-                                    headers: {
-                                      'Content-Type': 'application/json',
-                                      'Authorization': `Bearer ${token}`
-                                    },
-                                    body: JSON.stringify({
-                                      score: editingScore,
-                                      feedback: editingFeedback
-                                    })
-                                  });
-
-                                  if (response.ok) {
-                                    alert('✅ Nota actualizada correctamente');
-                                    // Actualizar en el estado local
-                                    if (selectedTaskSubmissions) {
-                                      const updatedSubmissions = selectedTaskSubmissions.submissions?.map(sub => 
-                                        (sub as any).id === (submission as any).id 
-                                          ? { ...sub, score: editingScore, feedback: editingFeedback }
-                                          : sub
-                                      );
-                                      setSelectedTaskSubmissions({
-                                        ...selectedTaskSubmissions,
-                                        submissions: updatedSubmissions
-                                      });
-                                    }
-                                    setEditingSubmissionId(null);
-                                  } else {
-                                    alert('❌ Error al actualizar la nota');
-                                  }
-                                } catch (error) {
-                                  console.error('Error:', error);
-                                  alert('❌ Error de conexión');
-                                }
-                              }}
-                              className="bg-primary hover:bg-primary-600 text-white"
-                            >
-                              Guardar Cambios
-                            </Button>
-                            <Button
-                              onClick={() => setEditingSubmissionId(null)}
-                              variant="outline"
-                              className="border-gray-300 text-gray-600 hover:bg-gray-50"
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Modo visualización */
-                        (submission as any).score !== undefined && (submission as any).score !== null ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-gray-600 mb-1">Nota asignada:</p>
-                                <div className="flex items-center gap-3">
-                                  <span className={`text-4xl font-bold ${
-                                    (submission as any).score >= 4.5 ? 'text-green-600' : 
-                                    (submission as any).score >= 4.0 ? 'text-blue-600' : 
-                                    (submission as any).score >= 3.0 ? 'text-orange-600' : 'text-red-600'
-                                  }`}>
-                                    {(submission as any).score}
-                                  </span>
-                                  <span className="text-gray-500">/ 5.0</span>
+                    {/* Detalle de respuestas (actividades interactivas) */}
+                    {submission.answers && submission.answers.length > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">Detalle de Respuestas:</h4>
+                        {submission.answers.map((answer, answerIndex) => (
+                          <div
+                            key={answerIndex}
+                            className={`p-4 rounded-lg border ${answer.isCorrect ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
+                              }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {answer.isCorrect ? (
+                                <CheckCircle className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                              ) : (
+                                <XCircle className="w-5 h-5 text-red-600 mt-1 flex-shrink-0" />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-medium mb-2">{answer.question}</p>
+                                <div className="space-y-1">
+                                  <p className={`text-sm ${answer.isCorrect ? 'text-blue-700' : 'text-red-700'}`}>
+                                    <strong>Respuesta del estudiante:</strong> {answer.userAnswer}
+                                  </p>
+                                  {!answer.isCorrect && (
+                                    <p className="text-sm text-blue-700">
+                                      <strong>Respuesta correcta:</strong> {answer.correctAnswer}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sección de Calificación */}
+                    <div className="mt-6 pt-6 border-t-2 border-gray-200">
+                      <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-500" />
+                        Calificación del Profesor
+                      </h4>
+                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 space-y-4">
+                        {/* Modo edición */}
+                        {editingSubmissionId === submission.id ? (
+                          <div className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Nota (0.0 - 5.0)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                max="5"
+                                step="0.1"
+                                value={editingScore}
+                                onChange={(e) => setEditingScore(parseFloat(e.target.value))}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Retroalimentación
+                              </label>
+                              <textarea
+                                value={editingFeedback}
+                                onChange={(e) => setEditingFeedback(e.target.value)}
+                                rows={3}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                                placeholder="Escribe tu retroalimentación aquí..."
+                              />
+                            </div>
+                            <div className="flex gap-2">
                               <Button
-                                onClick={() => {
-                                  setEditingSubmissionId((submission as any).id);
-                                  setEditingScore((submission as any).score || 0);
-                                  setEditingFeedback((submission as unknown).feedback || '');
+                                onClick={async () => {
+                                  try {
+                                    // Validar nota
+                                    if (editingScore < 0 || editingScore > 5) {
+                                      alert('La nota debe estar entre 0.0 y 5.0');
+                                      return;
+                                    }
+
+                                    // Actualizar en la base de datos
+                                    const { token } = useAuthStore.getState();
+                                    if (!token) {
+                                      alert('❌ No hay sesión activa');
+                                      return;
+                                    }
+
+                                    const response = await fetch(`/api/teacher/submissions/${submission.id}/grade`, {
+                                      method: 'PUT',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${token}`
+                                      },
+                                      body: JSON.stringify({
+                                        score: editingScore,
+                                        feedback: editingFeedback
+                                      })
+                                    });
+
+                                    if (response.ok) {
+                                      alert('✅ Nota actualizada correctamente');
+                                      // Actualizar en el estado local
+                                      if (selectedTaskSubmissions) {
+                                        const updatedSubmissions = selectedTaskSubmissions.submissions?.map(sub =>
+                                          sub.id === submission.id
+                                            ? { ...sub, score: editingScore, feedback: editingFeedback }
+                                            : sub
+                                        );
+                                        setSelectedTaskSubmissions({
+                                          ...selectedTaskSubmissions,
+                                          submissions: updatedSubmissions
+                                        });
+                                      }
+                                      setEditingSubmissionId(null);
+                                    } else {
+                                      alert('❌ Error al actualizar la nota');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error:', error);
+                                    alert('❌ Error de conexión');
+                                  }
                                 }}
-                                variant="outline"
-                                size="sm"
-                                className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                                className="bg-primary hover:bg-primary-600 text-white"
                               >
-                                Editar Nota
+                                Guardar Cambios
+                              </Button>
+                              <Button
+                                onClick={() => setEditingSubmissionId(null)}
+                                variant="outline"
+                                className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                              >
+                                Cancelar
                               </Button>
                             </div>
-                            
-                            {/* Feedback del profesor */}
-                            {(submission as unknown).feedback && (submission as unknown).feedback !== 'null' && (
-                              <div>
-                                <p className="text-sm font-medium text-gray-700 mb-2">Retroalimentación:</p>
-                                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                                  <p className="text-gray-700">{(submission as unknown).feedback}</p>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         ) : (
-                          <div className="text-center py-4">
-                            <p className="text-gray-600 mb-4">Esta entrega aún no ha sido calificada</p>
-                            <Button 
-                              onClick={() => {
-                                setEditingSubmissionId((submission as unknown).id);
-                                setEditingScore(3.0);
-                                setEditingFeedback('');
-                              }}
-                              className="bg-primary hover:bg-primary-600 text-white"
-                            >
-                              Calificar Ahora
-                            </Button>
-                          </div>
-                        )
-                      )}
+                          /* Modo visualización */
+                          submission.score !== undefined && submission.score !== null ? (
+                            <div className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-gray-600 mb-1">Nota asignada:</p>
+                                  <div className="flex items-center gap-3">
+                                    <span className={`text-4xl font-bold ${submission.score! >= 4.5 ? 'text-green-600' :
+                                      submission.score! >= 4.0 ? 'text-blue-600' :
+                                        submission.score! >= 3.0 ? 'text-orange-600' : 'text-red-600'
+                                      }`}>
+                                      {submission.score}
+                                    </span>
+                                    <span className="text-gray-500">/ 5.0</span>
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => {
+                                    if (submission.id) {
+                                      setEditingSubmissionId(submission.id);
+                                      setEditingScore(submission.score || 0);
+                                      setEditingFeedback(submission.feedback || '');
+                                    }
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                                >
+                                  Editar Nota
+                                </Button>
+                              </div>
+
+                              {/* Feedback del profesor */}
+                              {submission.feedback && submission.feedback !== 'null' && (
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700 mb-2">Retroalimentación:</p>
+                                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                    <p className="text-gray-700">{submission.feedback}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <p className="text-gray-600 mb-4">Esta entrega aún no ha sido calificada</p>
+                              <Button
+                                onClick={() => {
+                                  if (submission.id) {
+                                    setEditingSubmissionId(submission.id);
+                                    setEditingScore(3.0);
+                                    setEditingFeedback('');
+                                  }
+                                }}
+                                className="bg-primary hover:bg-primary-600 text-white"
+                              >
+                                Calificar Ahora
+                              </Button>
+                            </div>
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              
-              {selectedTaskSubmissions.submissions?.length === 0 && (
-                <div className="text-center py-8">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-lg text-gray-600">No hay entregas para esta tarea</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                ))}
+
+                {selectedTaskSubmissions.submissions?.length === 0 && (
+                  <div className="text-center py-8">
+                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-lg text-gray-600">No hay entregas para esta tarea</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

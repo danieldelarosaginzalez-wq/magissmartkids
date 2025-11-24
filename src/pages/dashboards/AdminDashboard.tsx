@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -12,11 +12,11 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Line, Pie } from 'react-chartjs-2';
-import { 
-  Users, 
-  School, 
-  BarChart3, 
-  Settings, 
+import {
+  Users,
+  School,
+  BarChart3,
+  Settings,
   Plus,
   AlertCircle,
   RefreshCw,
@@ -50,6 +50,9 @@ import { Select } from '../../components/ui/Select';
 import { translateRole, getRoleIcon } from '../../utils/roleTranslations';
 import { useAuthStore } from '../../stores/authStore';
 import adminApi from '../../services/adminApi';
+import { QuickActions } from './AdminDashboardQuickActions';
+import { AdvancedStats } from '../../components/admin/AdvancedStats';
+import { SystemMonitoringPanel } from '../../components/admin/SystemMonitoringPanel';
 
 // Register Chart.js components
 ChartJS.register(
@@ -172,6 +175,7 @@ const AdminDashboard: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedInstitution, setSelectedInstitution] = useState('all');
+  const [showMonitoringPanel, setShowMonitoringPanel] = useState(false);
 
   useEffect(() => {
     loadAdminData();
@@ -181,172 +185,70 @@ const AdminDashboard: React.FC = () => {
 
   const loadAdminData = async () => {
     try {
-      console.log('🚀 Loading admin data with example data...');
-      
-      // Simular loading
+      console.log('🚀 Loading REAL admin data from backend...');
+
       setStats(prev => ({ ...prev, loading: true }));
-      
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // ✅ DATOS DE EJEMPLO REALISTAS
+
+      // Cargar datos reales del backend
+      const data = await adminApi.loadAllDashboardData();
+
+      // Procesar estadísticas reales
       setStats({
-        totalUsers: 1247,
-        totalInstitutions: 23,
-        totalStudents: 892,
-        totalTeachers: 156,
-        totalCoordinators: 34,
-        totalParents: 165,
-        activeInstitutions: 21,
-        systemUptime: '99.8%',
-        databaseSize: '4.2 GB',
-        monthlyGrowth: '+18.5%',
-        activeSessions: 342,
-        pendingApprovals: 12,
-        systemHealth: 'excellent',
+        totalUsers: data.dashboardStats.totalUsers || 0,
+        totalInstitutions: data.dashboardStats.totalInstitutions || 0,
+        totalStudents: data.dashboardStats.totalStudents || 0,
+        totalTeachers: data.dashboardStats.totalTeachers || 0,
+        totalCoordinators: data.dashboardStats.totalCoordinators || 0,
+        totalParents: 0, // TODO: agregar al backend
+        activeInstitutions: data.dashboardStats.activeInstitutions || 0,
+        systemUptime: '99.8%', // TODO: agregar al backend
+        databaseSize: '0 GB', // TODO: agregar al backend
+        monthlyGrowth: '+0%', // TODO: agregar al backend
+        activeSessions: 0, // TODO: agregar al backend
+        pendingApprovals: 0, // TODO: agregar al backend
+        systemHealth: 'good',
         loading: false
       });
 
-      // ✅ USUARIOS RECIENTES DE EJEMPLO
-      setRecentUsers([
-        {
-          name: 'María González',
-          email: 'maria.gonzalez@colegio.edu.co',
-          role: 'student',
-          joinDate: '2025-10-22T10:30:00',
-          institution: 'Colegio San José'
-        },
-        {
-          name: 'Carlos Rodríguez',
-          email: 'carlos.rodriguez@escuela.edu.co',
-          role: 'teacher',
-          joinDate: '2025-10-21T14:15:00',
-          institution: 'Escuela Nueva Esperanza'
-        },
-        {
-          name: 'Ana Martínez',
-          email: 'ana.martinez@instituto.edu.co',
-          role: 'coordinator',
-          joinDate: '2025-10-20T09:45:00',
-          institution: 'Instituto Técnico'
-        },
-        {
-          name: 'Luis Pérez',
-          email: 'luis.perez@gmail.com',
-          role: 'parent',
-          joinDate: '2025-10-19T16:20:00',
-          institution: 'Colegio Central'
-        },
-        {
-          name: 'Sofia Ramírez',
-          email: 'sofia.ramirez@estudiante.edu.co',
-          role: 'student',
-          joinDate: '2025-10-18T11:10:00',
-          institution: 'Liceo Moderno'
-        }
-      ]);
-      
-      // ✅ INSTITUCIONES DE EJEMPLO
-      setInstitutions([
-        {
-          id: '1',
-          name: 'Colegio San José',
-          address: 'Calle 123 #45-67, Bogotá',
-          students: 245,
-          teachers: 28,
-          coordinators: 4,
-          avgGrade: 4.2,
-          status: 'active',
-          createdAt: '2024-01-15',
-          subscriptionTier: 'Premium'
-        },
-        {
-          id: '2',
-          name: 'Escuela Nueva Esperanza',
-          address: 'Carrera 45 #12-34, Medellín',
-          students: 189,
-          teachers: 22,
-          coordinators: 3,
-          avgGrade: 4.0,
-          status: 'active',
-          createdAt: '2024-02-20',
-          subscriptionTier: 'Standard'
-        },
-        {
-          id: '3',
-          name: 'Instituto Técnico Industrial',
-          address: 'Avenida 68 #89-12, Cali',
-          students: 312,
-          teachers: 35,
-          coordinators: 6,
-          avgGrade: 3.8,
-          status: 'active',
-          createdAt: '2023-11-10',
-          subscriptionTier: 'Enterprise'
-        },
-        {
-          id: '4',
-          name: 'Colegio Central',
-          address: 'Plaza Central #1-23, Barranquilla',
-          students: 156,
-          teachers: 18,
-          coordinators: 2,
-          avgGrade: 4.1,
-          status: 'active',
-          createdAt: '2024-03-05',
-          subscriptionTier: 'Standard'
-        }
-      ]);
-      
-      // ✅ USUARIOS DE EJEMPLO
-      setUsers([
-        {
-          id: '1',
-          firstName: 'María',
-          lastName: 'González',
-          email: 'maria.gonzalez@colegio.edu.co',
-          role: 'student',
-          institutionName: 'Colegio San José',
-          status: 'active',
-          createdAt: '2025-10-22T10:30:00',
-          lastLogin: '2025-10-23T08:15:00'
-        },
-        {
-          id: '2',
-          firstName: 'Carlos',
-          lastName: 'Rodríguez',
-          email: 'carlos.rodriguez@escuela.edu.co',
-          role: 'teacher',
-          institutionName: 'Escuela Nueva Esperanza',
-          status: 'active',
-          createdAt: '2025-10-21T14:15:00',
-          lastLogin: '2025-10-23T07:45:00'
-        },
-        {
-          id: '3',
-          firstName: 'Ana',
-          lastName: 'Martínez',
-          email: 'ana.martinez@instituto.edu.co',
-          role: 'coordinator',
-          institutionName: 'Instituto Técnico',
-          status: 'active',
-          createdAt: '2025-10-20T09:45:00',
-          lastLogin: '2025-10-23T09:30:00'
-        }
-      ]);
-      
-      // ✅ MÉTRICAS DEL SISTEMA DE EJEMPLO
-      setSystemMetrics({
-        cpuUsage: 42,
-        memoryUsage: 68,
-        diskUsage: 75,
-        networkTraffic: 125,
-        activeConnections: 342,
-        responseTime: 89
-      });
-      
-      console.log('✅ Admin data loaded with example data!');
-      
+      // Usuarios recientes reales
+      const recentUsersData = data.dashboardStats.recentUsers || [];
+      setRecentUsers(recentUsersData.map((user: any) => ({
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: user.role?.value || user.role,
+        joinDate: user.createdAt,
+        institution: user.institution?.name || 'Sin institución'
+      })));
+
+      // Instituciones reales
+      setInstitutions(data.institutions.map((inst: any) => ({
+        id: inst.id.toString(),
+        name: inst.name,
+        address: inst.address || 'Sin dirección',
+        students: 0, // TODO: calcular del backend
+        teachers: 0, // TODO: calcular del backend
+        coordinators: 0, // TODO: calcular del backend
+        avgGrade: 0, // TODO: calcular del backend
+        status: inst.isActive ? 'active' : 'inactive',
+        createdAt: inst.createdAt,
+        subscriptionTier: 'Standard'
+      })));
+
+      // Usuarios reales
+      setUsers(data.users.map((user: any) => ({
+        id: user.id.toString(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role?.value || user.role,
+        institutionName: user.institution?.name || 'Sin institución',
+        status: user.isActive ? 'active' : 'inactive',
+        createdAt: user.createdAt,
+        lastLogin: user.lastLoginAt
+      })));
+
+      console.log('✅ Admin data loaded from backend!');
+
     } catch (error) {
       console.error('❌ Error loading admin data:', error);
       setStats(prev => ({ ...prev, loading: false }));
@@ -376,10 +278,10 @@ const AdminDashboard: React.FC = () => {
   const loadRecentActivity = async () => {
     try {
       setLoadingActivity(true);
-      
+
       // Simular delay
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // ✅ ACTIVIDADES RECIENTES DE EJEMPLO
       const activities: RecentActivity[] = [
         {
@@ -418,7 +320,7 @@ const AdminDashboard: React.FC = () => {
           timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
         }
       ];
-      
+
       setRecentActivity(activities);
     } catch (error) {
       console.error('Error loading recent activity:', error);
@@ -465,7 +367,7 @@ const AdminDashboard: React.FC = () => {
           status: 'active'
         }
       ];
-      
+
       setInstitutionStats(institutionStats);
     } catch (error) {
       console.error('Error loading institution stats:', error);
@@ -805,35 +707,11 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </div>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  Acciones Rápidas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button className="h-20 flex flex-col items-center gap-2" variant="outline">
-                    <Plus className="w-6 h-6" />
-                    <span className="text-sm">Nueva Institución</span>
-                  </Button>
-                  <Button className="h-20 flex flex-col items-center gap-2" variant="outline">
-                    <Users className="w-6 h-6" />
-                    <span className="text-sm">Gestionar Usuarios</span>
-                  </Button>
-                  <Button className="h-20 flex flex-col items-center gap-2" variant="outline">
-                    <BarChart3 className="w-6 h-6" />
-                    <span className="text-sm">Ver Reportes</span>
-                  </Button>
-                  <Button className="h-20 flex flex-col items-center gap-2" variant="outline">
-                    <Shield className="w-6 h-6" />
-                    <span className="text-sm">Monitoreo</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Quick Actions - FUNCIONALES CON BACKEND */}
+            <QuickActions onSuccess={loadAdminData} />
+
+            {/* ✅ ESTADÍSTICAS AVANZADAS CON DATOS REALES */}
+            <AdvancedStats />
 
             {/* ✅ USUARIOS RECIENTES CON DATOS REALES */}
             <Card>
@@ -863,9 +741,9 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <Badge variant={
                             user.role === 'student' ? 'default' :
-                            user.role === 'teacher' ? 'success' :
-                            user.role === 'coordinator' ? 'warning' :
-                            'secondary'
+                              user.role === 'teacher' ? 'success' :
+                                user.role === 'coordinator' ? 'warning' :
+                                  'secondary'
                           }>
                             {translateRole(user.role)}
                           </Badge>
@@ -1168,95 +1046,8 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </div>
 
-            {/* ✅ REPORTES Y ESTADÍSTICAS ADICIONALES */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Instituciones por Región</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Bogotá</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">15</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Medellín</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-600 h-2 rounded-full" style={{ width: '35%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">8</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Otras</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div className="bg-purple-600 h-2 rounded-full" style={{ width: '20%' }}></div>
-                        </div>
-                        <span className="text-sm font-medium">5</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Actividad Mensual</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Nuevos Registros</span>
-                      <span className="text-sm font-medium text-green-600">+49</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Tareas Creadas</span>
-                      <span className="text-sm font-medium text-blue-600">+156</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Calificaciones</span>
-                      <span className="text-sm font-medium text-purple-600">+342</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Reportes Generados</span>
-                      <span className="text-sm font-medium text-orange-600">+23</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Rendimiento Académico</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-green-600">4.1</div>
-                      <div className="text-sm text-gray-600">Promedio General</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div>
-                        <div className="text-lg font-semibold text-blue-600">78%</div>
-                        <div className="text-xs text-gray-600">Aprobación</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-semibold text-purple-600">92%</div>
-                        <div className="text-xs text-gray-600">Asistencia</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* ✅ ESTADÍSTICAS AVANZADAS CON DATOS REALES */}
+            <AdvancedStats />
           </TabsContent>
 
           {/* System Tab */}
@@ -1355,11 +1146,11 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
+            </div >
+          </TabsContent >
 
           {/* Activity Tab */}
-          <TabsContent value="activity" className="space-y-6">
+          < TabsContent value="activity" className="space-y-6" >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Activity */}
               <Card className="border-secondary-200">
@@ -1429,7 +1220,11 @@ const AdminDashboard: React.FC = () => {
                     <BarChart3 className="w-4 h-4 mr-2" />
                     Generar Reportes
                   </Button>
-                  <Button className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50" variant="outline">
+                  <Button
+                    className="w-full justify-start border-secondary-300 text-secondary hover:bg-secondary-50"
+                    variant="outline"
+                    onClick={() => setShowMonitoringPanel(true)}
+                  >
                     <Shield className="w-4 h-4 mr-2" />
                     Monitoreo del Sistema
                   </Button>
@@ -1480,8 +1275,8 @@ const AdminDashboard: React.FC = () => {
                             <Badge
                               variant={
                                 institution.avgGrade >= 4.0 ? 'success' :
-                                institution.avgGrade >= 3.0 ? 'warning' :
-                                'destructive'
+                                  institution.avgGrade >= 3.0 ? 'warning' :
+                                    'destructive'
                               }
                               className="text-xs"
                             >
@@ -1507,10 +1302,16 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+          </TabsContent >
+        </Tabs >
+      </div >
+
+      {/* Panel de Monitoreo del Sistema */}
+      < SystemMonitoringPanel
+        isOpen={showMonitoringPanel}
+        onClose={() => setShowMonitoringPanel(false)}
+      />
+    </div >
   );
 };
 

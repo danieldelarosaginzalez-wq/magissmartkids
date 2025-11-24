@@ -42,6 +42,11 @@ interface RecentGrade {
   grade: number;
   maxGrade: number;
   date: string;
+  teacherName?: string;
+  dueDate?: string;
+  priority?: 'HIGH' | 'MEDIUM' | 'LOW';
+  points?: number;
+  taskType?: string;
 }
 
 const StudentDashboard: React.FC = () => {
@@ -69,73 +74,47 @@ const StudentDashboard: React.FC = () => {
     loadRecentGrades();
   }, []);
 
-  // 🎭 DATOS FICTICIOS PARA LA PRESENTACIÓN
   const loadStudentStats = async () => {
     try {
       setStats(prev => ({ ...prev, loading: true }));
 
-      // 🎭 SIMULACIÓN DE LOADING PARA LA PRESENTACIÓN
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const response = await api.get('/students/dashboard/stats');
+      const data = response.data;
 
-      // ✅ ESTADÍSTICAS FICTICIAS REALISTAS
       setStats({
-        totalSubjects: 5,
-        pendingTasks: 3,
-        completedTasks: 12,
-        averageGrade: 4.3,
-        studyHours: '2.5h',
-        completedActivities: 8,
+        totalSubjects: data.totalSubjects || 0,
+        pendingTasks: data.pendingTasks || 0,
+        completedTasks: data.completedTasks || 0,
+        averageGrade: data.averageGrade || 0,
+        studyHours: data.studyHours || '0h',
+        completedActivities: data.completedActivities || 0,
         loading: false
       });
     } catch (error) {
       console.error('Error loading student stats:', error);
-      setStats({
-        totalSubjects: 5,
-        pendingTasks: 3,
-        completedTasks: 12,
-        averageGrade: 4.3,
-        studyHours: '2.5h',
-        completedActivities: 0,
-        loading: false
-      });
+      setStats(prev => ({ ...prev, loading: false }));
     }
   };
 
-  // 🎭 TAREAS FICTICIAS PARA LA PRESENTACIÓN
   const loadPendingTasks = async () => {
     try {
       setLoadingTasks(true);
       
-      // 🎭 SIMULACIÓN DE LOADING
-      await new Promise(resolve => setTimeout(resolve, 600));
+      const response = await api.get('/student/tasks/pending');
+      const data = response.data;
 
-      // ✅ TAREAS FICTICIAS REALISTAS
-      setTasks([
-        {
-          id: '1',
-          subject: 'Matemáticas',
-          title: 'Ejercicios de Sumas y Restas',
-          dueDate: '2025-10-28',
-          priority: 'HIGH',
-          status: 'pending'
-        },
-        {
-          id: '2',
-          subject: 'Español',
-          title: 'Lectura del Cuento "El Patito Feo"',
-          dueDate: '2025-10-30',
-          priority: 'MEDIUM',
-          status: 'pending'
-        },
-        {
-          id: '3',
-          subject: 'Ciencias',
-          title: 'Dibujar una Planta',
-          dueDate: '2025-11-02',
-          priority: 'LOW',
-          status: 'pending'
-        }
-      ]);
+      // Tomar solo la primera tarea pendiente real
+      const pendingTasks = data.slice(0, 1).map((task: any) => ({
+        id: task.id.toString(),
+        subject: task.subjectName || 'Sin materia',
+        title: task.title,
+        dueDate: task.dueDate,
+        priority: task.priority,
+        status: 'pending',
+        type: task.taskType === 'INTERACTIVE' ? 'interactive' : 'traditional'
+      }));
+
+      setTasks(pendingTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
       setTasks([]);
@@ -144,52 +123,29 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  // 🎭 MATERIAS FICTICIAS PARA LA PRESENTACIÓN
   const loadSubjectsProgress = async () => {
     try {
       setLoadingSubjects(true);
       
-      // 🎭 SIMULACIÓN DE LOADING
-      await new Promise(resolve => setTimeout(resolve, 700));
+      const response = await api.get('/students/subjects/progress');
+      const realData = response.data;
 
-      // ✅ MATERIAS - EXACTAMENTE IGUALES A MateriasPage
-      setSubjects([
-        {
-          id: '1',
-          name: 'Matemáticas',
-          progress: 75, // 3 de 4 tareas completadas
-          grade: 4.5,
-          color: '#3B82F6'
-        },
-        {
-          id: '2',
-          name: 'Español',
-          progress: 67, // 2 de 3 tareas completadas
-          grade: 4.2,
-          color: '#10B981'
-        },
-        {
-          id: '3',
-          name: 'Ciencias Naturales',
-          progress: 100, // 3 de 3 tareas completadas ✅
-          grade: 4.2,
-          color: '#8B5CF6'
-        },
-        {
-          id: '4',
-          name: 'Sociales',
-          progress: 100, // 2 de 2 tareas completadas ✅
-          grade: 4.6,
-          color: '#F59E0B'
-        },
-        {
-          id: '5',
-          name: 'Inglés',
-          progress: 67, // 2 de 3 tareas completadas
-          grade: 4.0,
-          color: '#EF4444'
-        }
-      ]);
+      const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4'];
+      
+      // Mapear solo las materias reales del backend
+      let realSubjects: any[] = [];
+      if (Array.isArray(realData) && realData.length > 0) {
+        realSubjects = realData.map((subject: unknown, index: number) => ({
+          id: (subject.subjectId || subject.id || index).toString(),
+          name: subject.subjectName || subject.name || 'Materia',
+          progress: subject.progress || 0,
+          grade: subject.averageGrade || subject.grade || 0,
+          color: colors[index % colors.length]
+        }));
+      }
+
+      // Solo mostrar materias reales
+      setSubjects(realSubjects);
     } catch (error) {
       console.error('Error loading subjects:', error);
       setSubjects([]);
@@ -198,57 +154,35 @@ const StudentDashboard: React.FC = () => {
     }
   };
 
-  // 🎭 CALIFICACIONES FICTICIAS PARA LA PRESENTACIÓN
   const loadRecentGrades = async () => {
     try {
       setLoadingGrades(true);
       
-      // 🎭 SIMULACIÓN DE LOADING
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await api.get('/students/grades/recent?limit=5');
+      const realGrades = response.data;
 
-      // ✅ NOTAS RECIENTES - EXACTAMENTE IGUALES A NotasPage
-      setRecentGrades([
-        {
-          id: '1',
-          subject: 'Matemáticas',
-          assignment: 'Examen de Fracciones',
-          grade: 4.5,
-          maxGrade: 5.0,
-          date: '2025-10-20'
-        },
-        {
-          id: '2',
-          subject: 'Español',
-          assignment: 'Comprensión Lectora',
-          grade: 4.2,
-          maxGrade: 5.0,
-          date: '2025-10-18'
-        },
-        {
-          id: '3',
-          subject: 'Ciencias Naturales',
-          assignment: 'Tarea sobre Plantas',
-          grade: 4.2,
-          maxGrade: 5.0,
-          date: '2025-10-15'
-        },
-        {
-          id: '4',
-          subject: 'Sociales',
-          assignment: 'Dibujo de la Familia',
-          grade: 4.6,
-          maxGrade: 5.0,
-          date: '2025-10-12'
-        },
-        {
-          id: '5',
-          subject: 'Inglés',
-          assignment: 'Colores en Inglés',
-          grade: 4.0,
-          maxGrade: 5.0,
-          date: '2025-10-10'
-        }
-      ]);
+      // Mapear solo las notas reales (sin ficticias)
+      let realGradesData: unknown[] = [];
+      if (Array.isArray(realGrades) && realGrades.length > 0) {
+        realGradesData = realGrades.map((grade: unknown, index: number) => ({
+          id: grade.id || Math.random().toString(),
+          subject: grade.subject || 'Materia',
+          assignment: grade.taskName || grade.assignment || grade.title || `Tarea ${index + 1}`,
+          grade: grade.grade || grade.score || 0,
+          maxGrade: grade.maxGrade || 5.0,
+          date: grade.date || (grade.gradedAt ? new Date(grade.gradedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          teacherName: grade.teacherName || 'Sin profesor',
+          dueDate: grade.dueDate || grade.date,
+          priority: grade.priority || 'MEDIUM',
+          points: grade.points || 100,
+          taskType: grade.taskType || 'TRADITIONAL'
+        }));
+      }
+      
+      console.log('📊 Notas reales cargadas:', realGradesData);
+
+      // Solo mostrar las notas reales, sin ficticias
+      setRecentGrades(realGradesData);
     } catch (error) {
       console.error('Error loading recent grades:', error);
       setRecentGrades([]);
@@ -532,9 +466,22 @@ const StudentDashboard: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {recentGrades.map((grade) => (
-                    <div key={grade.id} className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-medium text-gray-900">{grade.assignment}</h4>
+                    <div key={grade.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900">{grade.assignment}</h4>
+                        <Badge
+                          className={
+                            grade.priority === 'HIGH' ? 'bg-red-100 text-red-800' :
+                              grade.priority === 'MEDIUM' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                          }
+                        >
+                          {grade.priority}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">Profesor: {grade.teacherName} • Vence: {grade.dueDate ? new Date(grade.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-sm text-gray-500">{grade.subject}</span>
                         <Badge
                           className={
                             grade.grade >= 4.0 ? 'bg-green-100 text-green-800' :
@@ -542,11 +489,9 @@ const StudentDashboard: React.FC = () => {
                                 'bg-red-100 text-red-800'
                           }
                         >
-                          {grade.grade.toFixed(1)}/{grade.maxGrade.toFixed(1)}
+                          {grade.grade.toFixed(2)}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-600">{grade.subject}</p>
-                      <p className="text-xs text-gray-500 mt-1">{grade.date}</p>
                     </div>
                   ))}
                   {recentGrades.length === 0 && (

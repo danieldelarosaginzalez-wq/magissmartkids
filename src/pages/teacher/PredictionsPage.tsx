@@ -34,19 +34,41 @@ interface PredictionResponse {
 export default function PredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedGrade] = useState('Cuarto C');
+  const [selectedGrade, setSelectedGrade] = useState<string>('');
+  const [availableGrades, setAvailableGrades] = useState<string[]>([]);
   const [showModel, setShowModel] = useState(false);
 
   useEffect(() => {
-    loadPredictions();
+    loadAvailableGrades();
+  }, []);
+
+  useEffect(() => {
+    if (selectedGrade) {
+      loadPredictions();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedGrade]);
+
+  const loadAvailableGrades = async () => {
+    try {
+      const response = await api.get('/teacher/subjects');
+      const subjects = response.data.subjects || [];
+      const grades = subjects.map((s: any) => s.grade as string).filter((g: string) => g && g !== 'Sin grado');
+      const uniqueGrades: string[] = Array.from(new Set(grades));
+      setAvailableGrades(uniqueGrades);
+      if (uniqueGrades.length > 0) {
+        setSelectedGrade(uniqueGrades[0] as string);
+      }
+    } catch (error) {
+      console.error('Error loading grades:', error);
+    }
+  };
 
   const loadPredictions = async () => {
     try {
       setLoading(true);
       const response = await api.get(`/predictions/student-performance?grade=${encodeURIComponent(selectedGrade)}`);
-      
+
       // Eliminar duplicados de predicciones basándose en el nombre del estudiante
       if (response.data && response.data.predicciones) {
         const uniquePredictions = response.data.predicciones.reduce((acc: Prediction[], current: Prediction) => {
@@ -56,7 +78,7 @@ export default function PredictionsPage() {
           }
           return acc;
         }, []);
-        
+
         setPredictions({
           ...response.data,
           predicciones: uniquePredictions,
@@ -119,7 +141,7 @@ export default function PredictionsPage() {
         description="Análisis predictivo del rendimiento estudiantil usando Machine Learning (WEKA)"
         icon={TrendingUp}
         action={
-          <Button 
+          <Button
             onClick={loadPredictions}
             variant="outline"
             className="border-secondary-300 text-secondary hover:bg-secondary-50 flex items-center gap-2"
@@ -129,6 +151,31 @@ export default function PredictionsPage() {
           </Button>
         }
       />
+
+      {/* Selector de grado */}
+      {availableGrades.length > 0 && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium text-gray-700">
+                Seleccionar Grado:
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableGrades.map((grade) => (
+                  <Button
+                    key={grade}
+                    variant={selectedGrade === grade ? 'default' : 'outline'}
+                    onClick={() => setSelectedGrade(grade)}
+                    size="sm"
+                  >
+                    {grade}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {predictions && (
         <>
@@ -205,7 +252,7 @@ export default function PredictionsPage() {
                     {getRiskBadge(pred.riesgo)}
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   {/* Métricas */}
                   <div className="grid grid-cols-4 gap-3">
@@ -234,7 +281,7 @@ export default function PredictionsPage() {
                       <p className="text-xs text-red-600">Sin Entregar</p>
                     </div>
                   </div>
-                  
+
                   {/* Porcentaje de entrega */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-2">
@@ -242,23 +289,21 @@ export default function PredictionsPage() {
                       <span className="text-sm font-bold text-gray-900">{pred.porcentajeEntrega?.toFixed(1) || '0.0'}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all ${
-                          (pred.porcentajeEntrega || 0) >= 70 ? 'bg-green-500' :
+                      <div
+                        className={`h-2 rounded-full transition-all ${(pred.porcentajeEntrega || 0) >= 70 ? 'bg-green-500' :
                           (pred.porcentajeEntrega || 0) >= 50 ? 'bg-yellow-500' :
-                          'bg-red-500'
-                        }`}
+                            'bg-red-500'
+                          }`}
                         style={{ width: `${Math.min(pred.porcentajeEntrega || 0, 100)}%` }}
                       />
                     </div>
                   </div>
 
                   {/* Recomendación */}
-                  <div className={`p-4 rounded-lg border-l-4 ${
-                    pred.riesgo === 'ALTO' ? 'bg-red-50 border-red-500' :
+                  <div className={`p-4 rounded-lg border-l-4 ${pred.riesgo === 'ALTO' ? 'bg-red-50 border-red-500' :
                     pred.riesgo === 'MEDIO' ? 'bg-yellow-50 border-yellow-500' :
-                    'bg-green-50 border-green-500'
-                  }`}>
+                      'bg-green-50 border-green-500'
+                    }`}>
                     <p className="text-sm font-semibold mb-1">Recomendación:</p>
                     <p className="text-sm">{pred.recomendacion}</p>
                   </div>

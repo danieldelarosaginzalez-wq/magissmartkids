@@ -3,7 +3,10 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import EmptyState from '../ui/EmptyState';
-import { api } from '../../services/api';
+import { api, coordinatorApi } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
+import TeacherDetailModal from './TeacherDetailModal';
+import StudentDetailModal from './StudentDetailModal';
 
 interface User {
   id: number;
@@ -20,6 +23,7 @@ interface UserManagementPanelProps {
 }
 
 export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ institutionNit }) => {
+  const { user } = useAuthStore();
   // Datos de muestra para demostración
   const sampleUsers: User[] = [
     // Profesores
@@ -140,6 +144,8 @@ export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ instit
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showTeacherDetail, setShowTeacherDetail] = useState<{ id: number; name: string } | null>(null);
+  const [showStudentDetail, setShowStudentDetail] = useState<{ id: number; name: string } | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -148,13 +154,30 @@ export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ instit
   const loadUsers = async () => {
     try {
       setLoading(true);
-      // Simular carga de datos - en producción esto haría la llamada real a la API
-      setTimeout(() => {
-        setUsers(sampleUsers);
-        setLoading(false);
-      }, 500);
+      console.log('📊 Cargando usuarios reales del backend...');
+
+      const institutionId = parseInt(user?.institution?.id || '1');
+
+      // Cargar profesores y estudiantes del backend
+      const [teachersRes, studentsRes] = await Promise.all([
+        coordinatorApi.getTeachers(institutionId, 100),
+        coordinatorApi.getStudents(institutionId, 100)
+      ]);
+
+      const teachers = teachersRes.data || [];
+      const students = studentsRes.data || [];
+
+      // Combinar todos los usuarios
+      const allUsers = [...teachers, ...students];
+
+      console.log(`✅ Usuarios cargados: ${teachers.length} profesores, ${students.length} estudiantes`);
+
+      setUsers(allUsers);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('❌ Error loading users:', error);
+      // Si falla, usar datos de muestra
+      setUsers(sampleUsers);
+    } finally {
       setLoading(false);
     }
   };
@@ -186,21 +209,34 @@ export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ instit
     if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) return;
 
     try {
-      const endpoint = selectedTab === 'teachers' ? '/api/coordinator/teachers' : '/api/coordinator/students';
-      await api.delete(`${endpoint}/${userId}`);
+      if (selectedTab === 'teachers') {
+        await coordinatorApi.deleteTeacher(userId);
+      } else {
+        await coordinatorApi.deleteStudent(userId);
+      }
+      alert('✅ Usuario eliminado exitosamente');
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
+      alert('❌ Error al eliminar usuario');
     }
   };
 
   const handleToggleStatus = async (userId: number, isActive: boolean) => {
     try {
-      const endpoint = selectedTab === 'teachers' ? '/api/coordinator/teachers' : '/api/coordinator/students';
-      await api.put(`${endpoint}/${userId}`, { isActive: !isActive });
+      const updateData = { isActive: !isActive };
+
+      if (selectedTab === 'teachers') {
+        await coordinatorApi.updateTeacher(userId, updateData);
+      } else {
+        await coordinatorApi.updateStudent(userId, updateData);
+      }
+
+      alert(`✅ Usuario ${!isActive ? 'activado' : 'desactivado'} exitosamente`);
       loadUsers();
     } catch (error) {
       console.error('Error updating user status:', error);
+      alert('❌ Error al actualizar estado del usuario');
     }
   };
 
@@ -394,6 +430,26 @@ export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ instit
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <Button
+                        onClick={() => {
+                          if (selectedTab === 'teachers') {
+                            setShowTeacherDetail({
+                              id: user.id,
+                              name: `${user.firstName} ${user.lastName}`
+                            });
+                          } else {
+                            setShowStudentDetail({
+                              id: user.id,
+                              name: `${user.firstName} ${user.lastName}`
+                            });
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="bg-blue-50 text-blue-600 hover:bg-blue-100"
+                      >
+                        Ver Detalles
+                      </Button>
+                      <Button
                         onClick={() => handleEditUser(user)}
                         variant="outline"
                         size="sm"
@@ -438,6 +494,24 @@ export const UserManagementPanel: React.FC<UserManagementPanelProps> = ({ instit
           }}
         />
       )}
+
+      {/* Teacher Detail Modal */}
+      {showTeacherDetail && (
+        <TeacherDetailModal
+          teacherId={showTeacherDetail.id}
+          teacherName={showTeacherDetail.name}
+          onClose={() => setShowTeacherDetail(null)}
+        />
+      )}
+
+      {/* Student Detail Modal */}
+      {showStudentDetail && (
+        <StudentDetailModal
+          studentId={showStudentDetail.id}
+          studentName={showStudentDetail.name}
+          onClose={() => setShowStudentDetail(null)}
+        />
+      )}
     </div>
   );
 };
@@ -477,24 +551,39 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
 
     try {
       setLoading(true);
-      const endpoint = userType === 'teachers' ? '/api/coordinator/teachers' : '/api/coordinator/students';
 
       const payload = {
-        ...formData,
-        institutionNit,
-        role: userType === 'teachers' ? 'TEACHER' : 'STUDENT'
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        isActive: formData.isActive,
+        role: userType === 'teachers' ? 'TEACHER' : 'STUDENT',
+        institutionNit
       };
 
       if (user) {
-        await api.put(`${endpoint}/${user.id}`, payload);
+        // Actualizar usuario existente
+        if (userType === 'teachers') {
+          await coordinatorApi.updateTeacher(user.id, payload);
+        } else {
+          await coordinatorApi.updateStudent(user.id, payload);
+        }
+        alert('✅ Usuario actualizado exitosamente');
       } else {
-        await api.post(endpoint, payload);
+        // Crear nuevo usuario
+        if (userType === 'teachers') {
+          await coordinatorApi.createTeacher(payload);
+        } else {
+          await coordinatorApi.createStudent(payload);
+        }
+        alert('✅ Usuario creado exitosamente');
       }
 
       onSuccess();
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Error al guardar el usuario');
+      alert('❌ Error al guardar el usuario: ' + (error as any).message);
     } finally {
       setLoading(false);
     }

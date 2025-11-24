@@ -126,3 +126,17 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Docker
+*.dockerignore
+docker-compose.override.yml
+
+# Railway
+.railway/
+
+# Uploads (archivos subidos por usuarios)
+uploads/
+backend/uploads/
+
+# Keep .env.example but ignore .env
+!.env.example

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { BarChart3, TrendingUp, Award, Calendar, RefreshCw, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
+import api from '../services/api';
 
 interface Grade {
   id: string;
@@ -28,20 +30,37 @@ interface SubjectAverage {
 }
 
 const NotasPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [subjectAverages, setSubjectAverages] = useState<SubjectAverage[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'recent' | 'improved'>('all');
+  const [studentInfo, setStudentInfo] = useState({
+    name: 'Estudiante de Prueba',
+    grade: '5° Primaria'
+  });
+
+  const loadStudentInfo = useCallback(() => {
+    if (user) {
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Estudiante de Prueba';
+      const gradeName = user.schoolGrade?.gradeName || '5° Primaria';
+      setStudentInfo({
+        name: fullName,
+        grade: gradeName
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
+    loadStudentInfo();
     loadGrades();
-  }, []);
+  }, [loadStudentInfo]);
 
   const loadGrades = async () => {
     try {
       setLoading(true);
       
-      // 🎭 DATOS FALSOS PARA LA PRESENTACIÓN - Sistema de Refuerzo
+      // Sistema de Refuerzo - Solo mostrar materias que el estudiante está reforzando
       await new Promise(resolve => setTimeout(resolve, 800));
       
       const fakeGrades: Grade[] = [
@@ -145,46 +164,23 @@ const NotasPage: React.FC = () => {
         }
       ];
       
+      // Solo materias de refuerzo: Matemáticas y Ciencias Naturales
       const fakeSubjectAverages: SubjectAverage[] = [
         {
           subject: 'Matemáticas',
-          currentAverage: 4.5,
-          previousAverage: 3.2,
-          improvement: 1.3,
-          color: '#3B82F6',
-          totalAssignments: 4
-        },
-        {
-          subject: 'Español',
-          currentAverage: 4.2,
+          currentAverage: 4.43,
           previousAverage: 3.5,
-          improvement: 0.7,
-          color: '#10B981',
-          totalAssignments: 3
+          improvement: 0.93,
+          color: '#3B82F6',
+          totalAssignments: 17
         },
         {
           subject: 'Ciencias Naturales',
-          currentAverage: 4.2,
-          previousAverage: 4.0,
-          improvement: 0.2,
-          color: '#8B5CF6',
-          totalAssignments: 3
-        },
-        {
-          subject: 'Sociales',
-          currentAverage: 4.6,
-          previousAverage: 4.3,
-          improvement: 0.3,
-          color: '#F59E0B',
-          totalAssignments: 2
-        },
-        {
-          subject: 'Inglés',
-          currentAverage: 4.0,
-          previousAverage: 2.8,
-          improvement: 1.2,
-          color: '#EF4444',
-          totalAssignments: 3
+          currentAverage: 4.43,
+          previousAverage: 3.8,
+          improvement: 0.63,
+          color: '#10B981',
+          totalAssignments: 17
         }
       ];
       
@@ -268,7 +264,7 @@ const NotasPage: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Promedio General</p>
-                <p className="text-2xl font-bold text-gray-900">{overallAverage.toFixed(1)}</p>
+                <p className="text-2xl font-bold text-gray-900">{overallAverage.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -283,7 +279,7 @@ const NotasPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Mejora Promedio</p>
                 <p className="text-2xl font-bold text-gray-900 flex items-center gap-1">
-                  +{overallImprovement.toFixed(1)}
+                  +{overallImprovement.toFixed(2)}
                   <ArrowUp className="h-5 w-5 text-green-600" />
                 </p>
               </div>
@@ -298,9 +294,9 @@ const NotasPage: React.FC = () => {
                 <BarChart3 className="h-8 w-8 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Materias Mejoradas</p>
+                <p className="text-sm font-medium text-gray-600">Materias en Refuerzo</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {subjectAverages.filter(s => s.improvement > 0).length}/5
+                  {subjectAverages.length}
                 </p>
               </div>
             </div>
@@ -330,7 +326,7 @@ const NotasPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={getGradeColor(subject.currentAverage)}>
-                      {subject.currentAverage.toFixed(1)}
+                      {subject.currentAverage.toFixed(2)}
                     </Badge>
                     {subject.improvement !== 0 && (
                       <div className="flex items-center gap-1 text-sm">
@@ -339,7 +335,7 @@ const NotasPage: React.FC = () => {
                           subject.improvement > 0 ? 'text-green-600' : 
                           subject.improvement < 0 ? 'text-red-600' : 'text-gray-600'
                         }>
-                          {subject.improvement > 0 ? '+' : ''}{subject.improvement.toFixed(1)}
+                          {subject.improvement > 0 ? '+' : ''}{subject.improvement.toFixed(2)}
                         </span>
                       </div>
                     )}
@@ -347,7 +343,7 @@ const NotasPage: React.FC = () => {
                 </div>
                 <div className="text-sm text-gray-600">
                   {subject.totalAssignments} evaluaciones • 
-                  Promedio anterior: {subject.previousAverage.toFixed(1)}
+                  Promedio anterior: {subject.previousAverage.toFixed(2)}
                 </div>
               </div>
             ))}
@@ -393,13 +389,13 @@ const NotasPage: React.FC = () => {
         <CardHeader className="bg-blue-50 border-b">
           <div className="text-center">
             <CardTitle className="text-xl font-bold text-gray-900 mb-2">
-              📋 BOLETÍN DE CALIFICACIONES
+              📋 BOLETÍN DE CALIFICACIONES - REFUERZO ACADÉMICO
             </CardTitle>
             <div className="text-sm text-gray-600">
-              <p><strong>Estudiante:</strong> Juan Pérez</p>
-              <p><strong>Grado:</strong> 5° A</p>
+              <p><strong>Estudiante:</strong> {studentInfo.name}</p>
+              <p><strong>Grado:</strong> {studentInfo.grade}</p>
               <p><strong>Año Lectivo:</strong> 2025</p>
-              <p><strong>Período Actual:</strong> Segundo Período</p>
+              <p><strong>Período:</strong> Tercer Período</p>
             </div>
           </div>
         </CardHeader>
@@ -411,20 +407,19 @@ const NotasPage: React.FC = () => {
                   <th className="text-left p-4 font-semibold text-gray-900 border-r">Materia</th>
                   <th className="text-left p-4 font-semibold text-gray-900 border-r">Profesor</th>
                   <th className="text-center p-4 font-semibold text-gray-900 border-r">
-                    Primer Período<br/>
-                    <span className="text-xs font-normal text-gray-600">(Antes del refuerzo)</span>
+                    Nota en Clase<br/>
+                    <span className="text-xs font-normal text-gray-600">(Evaluación inicial)</span>
                   </th>
                   <th className="text-center p-4 font-semibold text-gray-900 border-r">
-                    Segundo Período<br/>
-                    <span className="text-xs font-normal text-gray-600">(Después del refuerzo)</span>
+                    Nota Reforzada<br/>
+                    <span className="text-xs font-normal text-gray-600">(Promedio refuerzo)</span>
                   </th>
                   <th className="text-center p-4 font-semibold text-gray-900 border-r">
-                    Tercer Período<br/>
-                    <span className="text-xs font-normal text-gray-600">(En curso)</span>
+                    Total Evaluaciones<br/>
+                    <span className="text-xs font-normal text-gray-600">(Refuerzo)</span>
                   </th>
                   <th className="text-center p-4 font-semibold text-gray-900">
-                    Promedio<br/>
-                    <span className="text-xs font-normal text-gray-600">Actual</span>
+                    Promedio Final
                   </th>
                 </tr>
               </thead>
@@ -436,24 +431,24 @@ const NotasPage: React.FC = () => {
                       Matemáticas
                     </div>
                   </td>
-                  <td className="p-4 text-gray-700 border-r">Profesora Ana Martínez</td>
+                  <td className="p-4 text-gray-700 border-r">Prof. Valeria Torres</td>
                   <td className="p-4 text-center border-r">
-                    <Badge className="bg-red-100 text-red-800">3.2</Badge>
+                    <Badge className="bg-yellow-100 text-yellow-800 text-lg px-3 py-1">3.5</Badge>
+                    <p className="text-xs text-gray-500 mt-1">Evaluación inicial</p>
                   </td>
                   <td className="p-4 text-center border-r">
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className="bg-green-100 text-green-800">4.5</Badge>
-                      <div className="flex items-center text-green-600 text-xs">
-                        <ArrowUp className="h-3 w-3" />
-                        +1.3
-                      </div>
+                    <Badge className="bg-blue-100 text-blue-800 text-lg px-3 py-1">4.43</Badge>
+                    <div className="flex items-center justify-center gap-1 text-green-600 text-xs mt-1">
+                      <ArrowUp className="h-3 w-3" />
+                      +0.93
                     </div>
                   </td>
-                  <td className="p-4 text-center border-r text-gray-400">
-                    <span className="text-sm">En curso...</span>
+                  <td className="p-4 text-center border-r">
+                    <span className="font-semibold text-gray-700 text-lg">17</span>
+                    <p className="text-xs text-gray-500 mt-1">tareas</p>
                   </td>
                   <td className="p-4 text-center">
-                    <Badge className="bg-blue-100 text-blue-800 font-bold">4.5</Badge>
+                    <Badge className="bg-green-100 text-green-800 font-bold text-lg px-4 py-2">4.43</Badge>
                   </td>
                 </tr>
                 
@@ -461,129 +456,42 @@ const NotasPage: React.FC = () => {
                   <td className="p-4 font-medium text-gray-900 border-r">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                      Español
-                    </div>
-                  </td>
-                  <td className="p-4 text-gray-700 border-r">Profesor Carlos Rodríguez</td>
-                  <td className="p-4 text-center border-r">
-                    <Badge className="bg-yellow-100 text-yellow-800">3.5</Badge>
-                  </td>
-                  <td className="p-4 text-center border-r">
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className="bg-blue-100 text-blue-800">4.2</Badge>
-                      <div className="flex items-center text-green-600 text-xs">
-                        <ArrowUp className="h-3 w-3" />
-                        +0.7
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center border-r text-gray-400">
-                    <span className="text-sm">En curso...</span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <Badge className="bg-blue-100 text-blue-800 font-bold">4.2</Badge>
-                  </td>
-                </tr>
-                
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-900 border-r">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
                       Ciencias Naturales
                     </div>
                   </td>
-                  <td className="p-4 text-gray-700 border-r">Profesora María González</td>
+                  <td className="p-4 text-gray-700 border-r">Prof. Valeria Torres</td>
                   <td className="p-4 text-center border-r">
-                    <Badge className="bg-blue-100 text-blue-800">4.0</Badge>
+                    <Badge className="bg-yellow-100 text-yellow-800 text-lg px-3 py-1">3.8</Badge>
+                    <p className="text-xs text-gray-500 mt-1">Evaluación inicial</p>
                   </td>
                   <td className="p-4 text-center border-r">
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className="bg-blue-100 text-blue-800">4.2</Badge>
-                      <div className="flex items-center text-green-600 text-xs">
-                        <ArrowUp className="h-3 w-3" />
-                        +0.2
-                      </div>
+                    <Badge className="bg-blue-100 text-blue-800 text-lg px-3 py-1">4.43</Badge>
+                    <div className="flex items-center justify-center gap-1 text-green-600 text-xs mt-1">
+                      <ArrowUp className="h-3 w-3" />
+                      +0.63
                     </div>
                   </td>
-                  <td className="p-4 text-center border-r text-gray-400">
-                    <span className="text-sm">En curso...</span>
+                  <td className="p-4 text-center border-r">
+                    <span className="font-semibold text-gray-700 text-lg">17</span>
+                    <p className="text-xs text-gray-500 mt-1">tareas</p>
                   </td>
                   <td className="p-4 text-center">
-                    <Badge className="bg-blue-100 text-blue-800 font-bold">4.2</Badge>
-                  </td>
-                </tr>
-                
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-900 border-r">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                      Sociales
-                    </div>
-                  </td>
-                  <td className="p-4 text-gray-700 border-r">Profesor Juan Pérez</td>
-                  <td className="p-4 text-center border-r">
-                    <Badge className="bg-blue-100 text-blue-800">4.3</Badge>
-                  </td>
-                  <td className="p-4 text-center border-r">
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className="bg-green-100 text-green-800">4.6</Badge>
-                      <div className="flex items-center text-green-600 text-xs">
-                        <ArrowUp className="h-3 w-3" />
-                        +0.3
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center border-r text-gray-400">
-                    <span className="text-sm">En curso...</span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <Badge className="bg-green-100 text-green-800 font-bold">4.6</Badge>
-                  </td>
-                </tr>
-                
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-900 border-r">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                      Inglés
-                    </div>
-                  </td>
-                  <td className="p-4 text-gray-700 border-r">Teacher Sarah Johnson</td>
-                  <td className="p-4 text-center border-r">
-                    <Badge className="bg-red-100 text-red-800">2.8</Badge>
-                  </td>
-                  <td className="p-4 text-center border-r">
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge className="bg-blue-100 text-blue-800">4.0</Badge>
-                      <div className="flex items-center text-green-600 text-xs">
-                        <ArrowUp className="h-3 w-3" />
-                        +1.2
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center border-r text-gray-400">
-                    <span className="text-sm">En curso...</span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <Badge className="bg-blue-100 text-blue-800 font-bold">4.0</Badge>
+                    <Badge className="bg-green-100 text-green-800 font-bold text-lg px-4 py-2">4.43</Badge>
                   </td>
                 </tr>
               </tbody>
               <tfoot className="bg-blue-50 border-t-2">
                 <tr>
-                  <td colSpan={3} className="p-4 font-bold text-gray-900 text-right">
+                  <td colSpan={2} className="p-4 font-bold text-gray-900 text-right">
                     PROMEDIO GENERAL:
                   </td>
-                  <td className="p-4 text-center">
-                    <Badge className="bg-blue-600 text-white font-bold text-lg px-4 py-2">
-                      4.3
-                    </Badge>
+                  <td colSpan={2} className="p-4 text-center">
+                    <span className="text-sm text-gray-600">Total Evaluaciones: 34</span>
                   </td>
                   <td colSpan={2} className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 text-green-600 font-semibold">
-                      <TrendingUp className="h-5 w-5" />
-                      Mejora promedio: +0.7
-                    </div>
+                    <Badge className="bg-blue-600 text-white font-bold text-lg px-4 py-2">
+                      4.43
+                    </Badge>
                   </td>
                 </tr>
               </tfoot>

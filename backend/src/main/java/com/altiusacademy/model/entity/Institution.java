@@ -36,6 +36,9 @@ public class Institution {
     @Size(max = 500)
     private String address;
 
+    @Size(max = 100)
+    private String city;
+
     @Size(max = 20)
     private String phone;
 
@@ -92,6 +95,14 @@ public class Institution {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getPhone() {

@@ -4,7 +4,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-import { Users, BookOpen, AlertCircle, FileText, School, Target, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
+import { Users, BookOpen, AlertCircle, FileText, School, TrendingUp, Clock, RefreshCw, BarChart3 } from 'lucide-react';
 import { teacherApi } from '../../services/api';
 
 interface TeacherDashboardStats {
@@ -53,15 +53,14 @@ const TeacherDashboard: React.FC = () => {
       setLoading(true);
       const response = await teacherApi.getDashboardStats();
       
-      // Ajustar stats para contar solo materias de Cuarto C
+      // Obtener todas las materias del profesor
       const statsData = response.data;
       const subjectsResponse = await teacherApi.getSubjects();
       const allSubjects = subjectsResponse.data.subjects || [];
-      const cuartoCSubjects = allSubjects.filter((s: { grade: string }) => s.grade === 'Cuarto C');
       
       setStats({
         ...statsData,
-        totalMaterias: cuartoCSubjects.length
+        totalMaterias: allSubjects.length
       });
     } catch (error) {
       console.error('Error loading teacher dashboard stats:', error);
@@ -96,7 +95,6 @@ const TeacherDashboard: React.FC = () => {
       }
       
       const mappedSubjects = (response.data.subjects || [])
-        .filter((subject: SubjectData) => subject.grade === 'Cuarto C') // FILTRAR SOLO CUARTO C
         .map((subject: SubjectData) => ({
           id: subject.id?.toString() || '',
           nombre: subject.name || subject.subjectName || 'Sin nombre',
@@ -267,7 +265,7 @@ const TeacherDashboard: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-[#00368F]" />
               Acciones Rápidas
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <Link to="/profesor/materias">
                 <Button className="w-full bg-[#00368F] hover:bg-[#2E5BFF] text-white flex items-center justify-center gap-2">
                   <BookOpen className="h-4 w-4" />
@@ -303,12 +301,6 @@ const TeacherDashboard: React.FC = () => {
                   Predicciones IA
                 </Button>
               </Link>
-              <Link to="/actividades-interactivas">
-                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Actividades
-                </Button>
-              </Link>
             </div>
           </CardContent>
         </Card>
@@ -337,8 +329,8 @@ const TeacherDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {subjects.map((subject) => (
-                    <div key={subject.id} className="space-y-2">
+                  {subjects.map((subject, index) => (
+                    <div key={`${subject.id}-${subject.grade}-${index}`} className="space-y-2">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-medium text-gray-900">

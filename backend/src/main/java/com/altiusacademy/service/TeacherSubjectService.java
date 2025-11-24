@@ -52,14 +52,16 @@ public class TeacherSubjectService {
             // Contar estudiantes del grado
             long totalStudents = userRepository.countBySchoolGradeGradeName(grade);
             
-            // Obtener tareas de esta materia y grado
-            List<Task> subjectTasks = taskRepository.findByTeacherId(teacher.getId()).stream()
-                    .filter(task -> task.getSubject() != null && 
-                                   task.getSubject().getId().equals(ts.getSubjectId()) &&
-                                   grade.equals(task.getGrade()))
-                    .collect(Collectors.toList());
+            // Obtener tareas de esta materia y grado usando query directa
+            List<Task> subjectTasks = taskRepository.findByTeacherIdAndSubjectIdAndGrade(
+                teacher.getId(), 
+                ts.getSubjectId(), 
+                grade
+            );
             
             int totalTasks = subjectTasks.size();
+            
+            System.out.println("📊 DEBUG - Grade: " + grade + ", Subject: " + subject.getName() + ", Total Tasks: " + totalTasks);
             
             // Obtener todas las entregas de estas tareas
             List<Long> taskIds = subjectTasks.stream()
@@ -110,6 +112,23 @@ public class TeacherSubjectService {
             subjects.add(subjectData);
         }
         
+        // ✅ Ordenar materias por grado y luego por nombre de materia
+        subjects.sort((s1, s2) -> {
+            String grade1 = (String) s1.get("grade");
+            String grade2 = (String) s2.get("grade");
+            
+            // Primero ordenar por grado
+            int gradeCompare = compareGrades(grade1, grade2);
+            if (gradeCompare != 0) {
+                return gradeCompare;
+            }
+            
+            // Si el grado es igual, ordenar por nombre de materia
+            String name1 = (String) s1.get("name");
+            String name2 = (String) s2.get("name");
+            return name1.compareTo(name2);
+        });
+        
         Map<String, Object> response = new HashMap<>();
         response.put("subjects", subjects);
         response.put("totalSubjects", subjects.size());
@@ -127,5 +146,40 @@ public class TeacherSubjectService {
             "Geografía", "#06B6D4"
         );
         return colors.getOrDefault(subjectName, "#6B7280");
+    }
+    
+    /**
+     * Compara dos grados para ordenarlos correctamente
+     * Ejemplo: "Segundo A" < "Tercero B" < "Cuarto C" < "Quinto A"
+     */
+    private int compareGrades(String grade1, String grade2) {
+        // Mapeo de nombres de grados a números
+        Map<String, Integer> gradeOrder = new HashMap<>();
+        gradeOrder.put("Primero", 1);
+        gradeOrder.put("Segundo", 2);
+        gradeOrder.put("Tercero", 3);
+        gradeOrder.put("Cuarto", 4);
+        gradeOrder.put("Quinto", 5);
+        gradeOrder.put("Sexto", 6);
+        gradeOrder.put("Séptimo", 7);
+        gradeOrder.put("Octavo", 8);
+        gradeOrder.put("Noveno", 9);
+        gradeOrder.put("Décimo", 10);
+        gradeOrder.put("Undécimo", 11);
+        
+        // Extraer el número del grado (ej. "Segundo A" -> "Segundo")
+        String gradeName1 = grade1.split(" ")[0];
+        String gradeName2 = grade2.split(" ")[0];
+        
+        int order1 = gradeOrder.getOrDefault(gradeName1, 0);
+        int order2 = gradeOrder.getOrDefault(gradeName2, 0);
+        
+        // Si los números son diferentes, ordenar por número
+        if (order1 != order2) {
+            return Integer.compare(order1, order2);
+        }
+        
+        // Si los números son iguales, ordenar por la letra (A, B, C, etc.)
+        return grade1.compareTo(grade2);
     }
 }

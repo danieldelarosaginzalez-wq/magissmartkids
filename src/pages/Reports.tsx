@@ -25,29 +25,122 @@ const Reports: React.FC = () => {
   const loadReports = async () => {
     try {
       setLoading(true);
-      
-      // Load institution stats
-      const institutionResponse = await fetch(`/api/super-admin/institutions/stats?period=${selectedPeriod}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+
+      const institutionId = user?.institution?.id ? parseInt(user.institution.id) : 1;
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+      const token = useAuthStore.getState().token;
+
+      // Load institution stats from coordinator endpoints
+      const [statsResponse, teachersResponse, studentsResponse, subjectsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/coordinator/dashboard/stats?institutionId=${institutionId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${API_BASE_URL}/multi-institution/users/${institutionId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${API_BASE_URL}/multi-institution/users/${institutionId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${API_BASE_URL}/subjects/institution/${institutionId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+
+      const stats = statsResponse.ok ? await statsResponse.json() : {};
+      const teachersData = teachersResponse.ok ? await teachersResponse.json() : {};
+      const studentsData = studentsResponse.ok ? await studentsResponse.json() : {};
+      const subjectsData = subjectsResponse.ok ? await subjectsResponse.json() : {};
+
+      const teachers = teachersData.users?.teachers || [];
+      const students = studentsData.users?.students || [];
+      const subjects = subjectsData.subjects || [];
+
+      console.log('📊 Datos REALES:', { teachers: teachers.length, students: students.length, subjects: subjects.length });
+
+      // Cargar teacher_grades para obtener datos reales de grados
+      const teacherGradesResponse = await fetch(`${API_BASE_URL}/teacher-grades/institution/${institutionId}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-      
-      if (institutionResponse.ok) {
-        const data = await institutionResponse.json();
-        setInstitutionStats(data.stats || {});
-        setGradeStats(data.gradeStats || []);
-        setSubjectStats(data.subjectStats || []);
-        setTeacherStats(data.teacherStats || []);
-        setMonthlyProgress(data.monthlyProgress || []);
-      } else {
-        console.error('Failed to load reports');
-        setInstitutionStats({});
-        setGradeStats([]);
-        setSubjectStats([]);
-        setTeacherStats([]);
-        setMonthlyProgress([]);
-      }
+      const teacherGrades = teacherGradesResponse.ok ? await teacherGradesResponse.json() : [];
+
+      // Agrupar estudiantes por grado
+      const studentsByGrade: Record<string, number> = {};
+      students.forEach((s: any) => {
+        const grade = s.schoolGrade?.gradeName || 'Sin grado';
+        studentsByGrade[grade] = (studentsByGrade[grade] || 0) + 1;
+      });
+
+      // Agrupar profesores por grado
+      const teachersByGrade: Record<string, Set<number>> = {};
+      (Array.isArray(teacherGrades) ? teacherGrades : []).forEach((tg: any) => {
+        const grade = tg.fullGradeName || `Grado ${tg.gradeLevel}`;
+        if (!teachersByGrade[grade]) teachersByGrade[grade] = new Set();
+        teachersByGrade[grade].add(tg.teacherId);
+      });
+
+      // Build institution stats con datos REALES
+      setInstitutionStats({
+        totalStudents: students.length,
+        totalTeachers: teachers.length,
+        averageGrade: 0,
+        improvement: '+0',
+        activeAssignments: subjects.length,
+        completionRate: 0
+      });
+
+      // Build grade stats con datos REALES
+      const gradeNames = Object.keys(studentsByGrade).filter(g => g !== 'Sin grado');
+      setGradeStats(gradeNames.map(grade => ({
+        grade,
+        students: studentsByGrade[grade] || 0,
+        teachers: teachersByGrade[grade]?.size || 0,
+        averageBefore: '0',
+        averageAfter: '0',
+        improvement: '+0',
+        completionRate: 0
+      })));
+
+      // Build subject stats con datos REALES
+      setSubjectStats(subjects.map((subject: any) => ({
+        subject: subject.name,
+        students: studentsByGrade[subject.schoolGrade?.gradeName] || 0,
+        teachers: subject.teacher ? 1 : 0,
+        averageBefore: '0',
+        averageAfter: '0',
+        improvement: '+0',
+        assignments: 0,
+        completionRate: 0
+      })));
+
+      // Build teacher stats con datos REALES
+      setTeacherStats(teachers.map((teacher: any) => {
+        const teacherSubjects = subjects.filter((s: any) => s.teacher?.id === teacher.id);
+        return {
+          name: `${teacher.firstName} ${teacher.lastName}`,
+          subjects: teacherSubjects.map((s: any) => s.name),
+          averageGrade: '0',
+          improvement: '+0',
+          students: 0,
+          assignments: 0,
+          completionRate: 0
+        };
+      }));
+
+      // Monthly progress - vacío hasta tener datos reales
+      setMonthlyProgress([]);
+
     } catch (error) {
       console.error('Error loading reports:', error);
       setInstitutionStats({});
@@ -418,7 +511,7 @@ const Reports: React.FC = () => {
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${(parseFloat(subject.improvement.replace('+', '')) / 1.5) * 100}%` }}
                           />
@@ -426,7 +519,7 @@ const Reports: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="space-y-4">
                     <h4 className="font-medium text-gray-900">Mejora por Grado</h4>
                     {gradeStats.map((grade, index) => (
@@ -438,7 +531,7 @@ const Reports: React.FC = () => {
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-green-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${(parseFloat(grade.improvement.replace('+', '')) / 1.5) * 100}%` }}
                           />

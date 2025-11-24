@@ -27,6 +27,7 @@ import com.altiusacademy.security.JwtTokenProvider;
 public class AuthService {
 
     @Autowired
+    @org.springframework.context.annotation.Lazy
     private AuthenticationManager authenticationManager;
 
     @Autowired
@@ -45,16 +46,17 @@ public class AuthService {
     private SchoolGradeRepository schoolGradeRepository;
 
     /**
-     * Autentica un usuario validando email y contraseña contra la base de datos MySQL
+     * Autentica un usuario validando email y contraseña contra la base de datos
+     * MySQL
      * Genera un token JWT válido si las credenciales son correctas
      */
     public AuthResponse login(LoginRequest loginRequest) {
         try {
             System.out.println("🔐 Iniciando login para: " + loginRequest.getEmail());
-            
+
             // Validar que el usuario existe en MySQL
             User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
+                    .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
 
             // Verificar que el usuario esté activo
             if (!user.getIsActive()) {
@@ -63,35 +65,35 @@ public class AuthService {
 
             // Autenticar con Spring Security (valida contraseña cifrada)
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    loginRequest.getEmail(),
-                    loginRequest.getPassword()
-                )
-            );
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getEmail(),
+                            loginRequest.getPassword()));
 
             // Generar token JWT válido
             String jwt = tokenProvider.generateToken(authentication);
-            
+
             System.out.println("✅ Login exitoso para usuario ID: " + user.getId() + " con rol: " + user.getRole());
-            
+
             // Debug: Verificar institución
             if (user.getInstitution() != null) {
-                System.out.println("🏛️ Institución cargada: " + user.getInstitution().getName() + " (ID: " + user.getInstitution().getId() + ")");
+                System.out.println("🏛️ Institución cargada: " + user.getInstitution().getName() + " (ID: "
+                        + user.getInstitution().getId() + ")");
             } else {
                 System.out.println("⚠️ Usuario sin institución asignada");
             }
 
             // Debug: Verificar grado escolar
             if (user.getSchoolGrade() != null) {
-                System.out.println("📚 Grado escolar: " + user.getSchoolGrade().getGradeName() + " (ID: " + user.getSchoolGrade().getId() + ")");
+                System.out.println("📚 Grado escolar: " + user.getSchoolGrade().getGradeName() + " (ID: "
+                        + user.getSchoolGrade().getId() + ")");
             } else {
                 System.out.println("⚠️ Usuario sin grado escolar asignado (normal para profesores/coordinadores)");
             }
 
-            AuthResponse response = new AuthResponse(jwt, user.getId(), user.getEmail(), 
-                                   user.getFirstName(), user.getLastName(), user.getRole(), user.getInstitution());
+            AuthResponse response = new AuthResponse(jwt, user.getId(), user.getEmail(),
+                    user.getFirstName(), user.getLastName(), user.getRole(), user.getInstitution());
             response.setSchoolGrade(user.getSchoolGrade()); // Puede ser null
-            
+
             return response;
         } catch (BadCredentialsException e) {
             System.err.println("❌ Credenciales inválidas para: " + loginRequest.getEmail());
@@ -110,7 +112,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest registerRequest) {
         try {
             System.out.println("📝 Iniciando registro para: " + registerRequest.getEmail());
-            
+
             // Verificar que el email no esté duplicado en MySQL
             if (userRepository.existsByEmail(registerRequest.getEmail())) {
                 throw new RuntimeException("El correo ya está registrado");
@@ -119,17 +121,17 @@ public class AuthService {
             // Crear nuevo usuario con datos validados
             User user = new User();
             user.setEmail(registerRequest.getEmail().toLowerCase().trim());
-            
+
             // Cifrar contraseña con BCryptPasswordEncoder
             String encodedPassword = passwordEncoder.encode(registerRequest.getPassword());
             user.setPassword(encodedPassword);
-            
+
             user.setFirstName(registerRequest.getFirstName().trim());
             user.setLastName(registerRequest.getLastName().trim());
-            
+
             // Convertir y validar rol del frontend al enum UserRole
             UserRole userRole = convertAndValidateRole(registerRequest.getRole());
-            
+
             // ✅ VALIDACIÓN: Solo un coordinador en el sistema
             if (userRole == UserRole.COORDINATOR) {
                 long coordinatorCount = userRepository.countByRole(UserRole.COORDINATOR);
@@ -138,7 +140,7 @@ public class AuthService {
                 }
                 System.out.println("✅ Validación de coordinador único pasada - creando primer coordinador");
             }
-            
+
             user.setRole(userRole);
             user.setIsActive(true);
             user.setEmailVerified(false);
@@ -146,7 +148,8 @@ public class AuthService {
             // Asignar institución si se proporciona
             if (registerRequest.getInstitutionId() != null) {
                 Institution institution = institutionRepository.findById(registerRequest.getInstitutionId())
-                    .orElseThrow(() -> new RuntimeException("Institución no encontrada con ID: " + registerRequest.getInstitutionId()));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Institución no encontrada con ID: " + registerRequest.getInstitutionId()));
                 user.setInstitution(institution);
                 System.out.println("✅ Usuario asignado a institución: " + institution.getName());
             }
@@ -154,25 +157,26 @@ public class AuthService {
             // ✅ ASIGNAR GRADO ESCOLAR PARA ESTUDIANTES
             System.out.println("🔍 DEBUG - Rol del usuario: " + userRole);
             System.out.println("🔍 DEBUG - SchoolGrade recibido: '" + registerRequest.getSchoolGrade() + "'");
-            
+
             if (userRole == UserRole.STUDENT) {
                 if (registerRequest.getSchoolGrade() != null && !registerRequest.getSchoolGrade().trim().isEmpty()) {
                     try {
                         String gradeName = registerRequest.getSchoolGrade().trim();
                         System.out.println("🔍 Buscando grado escolar: '" + gradeName + "'");
-                        
+
                         // Listar todos los grados disponibles para debug
                         List<SchoolGrade> allGrades = schoolGradeRepository.findAll();
                         System.out.println("📚 Grados disponibles en BD:");
                         for (SchoolGrade g : allGrades) {
                             System.out.println("  - ID: " + g.getId() + ", Nombre: '" + g.getGradeName() + "'");
                         }
-                        
+
                         SchoolGrade schoolGrade = schoolGradeRepository.findByGradeName(gradeName)
-                            .orElseThrow(() -> new RuntimeException("Grado escolar no encontrado: " + gradeName));
-                        
+                                .orElseThrow(() -> new RuntimeException("Grado escolar no encontrado: " + gradeName));
+
                         user.setSchoolGrade(schoolGrade);
-                        System.out.println("✅ Estudiante asignado al grado: " + schoolGrade.getGradeName() + " (ID: " + schoolGrade.getId() + ")");
+                        System.out.println("✅ Estudiante asignado al grado: " + schoolGrade.getGradeName() + " (ID: "
+                                + schoolGrade.getId() + ")");
                     } catch (Exception e) {
                         System.err.println("❌ Error asignando grado escolar: " + e.getMessage());
                         e.printStackTrace();
@@ -187,7 +191,8 @@ public class AuthService {
             // Manejar registro específico para coordinadores con NIT
             if (userRole == UserRole.COORDINATOR && registerRequest.getInstitutionNit() != null) {
                 Institution institution = institutionRepository.findByNit(registerRequest.getInstitutionNit())
-                    .orElseThrow(() -> new RuntimeException("Institución no encontrada con NIT: " + registerRequest.getInstitutionNit()));
+                        .orElseThrow(() -> new RuntimeException(
+                                "Institución no encontrada con NIT: " + registerRequest.getInstitutionNit()));
                 user.setInstitution(institution);
                 System.out.println("✅ Coordinador asignado a institución por NIT: " + institution.getName());
             }
@@ -201,17 +206,15 @@ public class AuthService {
 
             // Autenticar automáticamente después del registro exitoso
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    registerRequest.getEmail(),
-                    registerRequest.getPassword()
-                )
-            );
+                    new UsernamePasswordAuthenticationToken(
+                            registerRequest.getEmail(),
+                            registerRequest.getPassword()));
 
             // Generar token JWT para el usuario recién registrado
             String jwt = tokenProvider.generateToken(authentication);
 
             return new AuthResponse(jwt, savedUser.getId(), savedUser.getEmail(),
-                                   savedUser.getFirstName(), savedUser.getLastName(), savedUser.getRole(), savedUser.getInstitution());
+                    savedUser.getFirstName(), savedUser.getLastName(), savedUser.getRole(), savedUser.getInstitution());
         } catch (Exception e) {
             System.err.println("❌ Error en registro: " + e.getMessage());
             e.printStackTrace();
@@ -236,9 +239,9 @@ public class AuthService {
         if (frontendRole == null || frontendRole.trim().isEmpty()) {
             throw new RuntimeException("El rol es requerido");
         }
-        
+
         String role = frontendRole.toUpperCase().trim();
-        
+
         // Mapeo de roles del frontend (español e inglés) al enum UserRole
         switch (role) {
             // Roles en español (del frontend)
@@ -257,7 +260,8 @@ public class AuthService {
                 return UserRole.SUPER_ADMIN;
             default:
                 System.err.println("❌ Rol no válido recibido: " + frontendRole);
-                throw new RuntimeException("Rol no válido: " + frontendRole + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, SUPER_ADMIN");
+                throw new RuntimeException("Rol no válido: " + frontendRole
+                        + ". Roles válidos: STUDENT, TEACHER, COORDINATOR, SUPER_ADMIN");
         }
     }
 }

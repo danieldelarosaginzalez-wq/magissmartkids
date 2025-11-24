@@ -6,9 +6,9 @@ import type { UserRole } from '../types';
  */
 export const normalizeRole = (role: string): UserRole => {
   if (!role) return 'student';
-  
+
   const normalizedRole = role.toLowerCase();
-  
+
   // Mapeo de roles del backend al frontend
   switch (normalizedRole) {
     case 'student':
@@ -20,6 +20,9 @@ export const normalizeRole = (role: string): UserRole => {
     case 'coordinator':
     case 'coordinador':
       return 'coordinator';
+    case 'admin':
+    case 'administrador':
+      return 'admin';
     case 'super_admin':
     case 'superadmin':
     case 'superadministrador':
@@ -35,7 +38,7 @@ export const normalizeRole = (role: string): UserRole => {
  */
 export const getRoleDisplayName = (role: string): string => {
   const normalizedRole = normalizeRole(role);
-  
+
   switch (normalizedRole) {
     case 'student':
       return 'Estudiante';
@@ -43,6 +46,8 @@ export const getRoleDisplayName = (role: string): string => {
       return 'Profesor';
     case 'coordinator':
       return 'Coordinador';
+    case 'admin':
+      return 'Administrador';
     case 'super_admin':
       return 'Super Administrador';
     default:

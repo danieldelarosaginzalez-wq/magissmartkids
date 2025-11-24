@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { useScrollToTop } from './hooks/useScrollToTop';
+import { ViewModeProvider } from './contexts/ViewModeContext';
 
 // Pages
 import Home from './pages/Home';
@@ -46,397 +47,412 @@ import UserGeneratorPage from './pages/UserGeneratorPage';
 import StudentGradeTasksPage from './pages/student/StudentGradeTasksPage';
 import StudentTaskDetailPage from './pages/student/StudentTaskDetailPage';
 import PredictionsPage from './pages/teacher/PredictionsPage';
+import AcademicAnalyticsPage from './pages/coordinator/AcademicAnalyticsPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
 
   return (
-    <Router>
-      <ScrollToTopWrapper />
-      <Routes>
-        {/* Public Routes */}
-        <Route 
-          path="/" 
-          element={
-            <PublicRoute>
-              <Home />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/register" 
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path="/institution-register" 
-          element={
-            <PublicRoute>
-              <InstitutionRegistration />
-            </PublicRoute>
-          } 
-        />
+    <ViewModeProvider>
+      <Router>
+        <ScrollToTopWrapper />
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/"
+            element={
+              <PublicRoute>
+                <Home />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/institution-register"
+            element={
+              <PublicRoute>
+                <InstitutionRegistration />
+              </PublicRoute>
+            }
+          />
 
-        {/* Protected Routes */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <DashboardRouter />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/change-password" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <ChangePassword />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DashboardRouter />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Student Navigation Routes */}
-        <Route 
-          path="/tareas" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <TareasPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/student/grade-tasks" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <StudentGradeTasksPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/student/grade-tasks/:taskId" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <StudentTaskDetailPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/materias" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <MateriasPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/notas" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <NotasPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/perfil" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <PerfilPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* Subjects Routes */}
-        <Route 
-          path="/subjects" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Subjects />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ChangePassword />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Assignments Routes */}
-        <Route 
-          path="/assignments" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher']}>
-              <Layout>
-                <Assignments />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Student Navigation Routes */}
+          <Route
+            path="/tareas"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <TareasPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Grades Routes */}
-        <Route 
-          path="/grades" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Grades />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/student/grade-tasks"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <StudentGradeTasksPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Calendar Routes */}
-        <Route 
-          path="/calendar" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <Calendar />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/student/grade-tasks/:taskId"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <StudentTaskDetailPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Users Routes - Coordinador puede ver usuarios de su institución */}
-        <Route 
-          path="/users" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator', 'admin', 'super_admin']}>
-              <CoordinatorUsersPage />
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/materias"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <MateriasPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Reports Routes */}
-        <Route 
-          path="/reports" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator', 'admin']}>
-              <Layout>
-                <Reports />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/notas"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <NotasPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Settings Routes */}
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Layout>
-                <Settings />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/perfil"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PerfilPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Admin Dashboard */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Subjects Routes */}
+          <Route
+            path="/subjects"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
+                <Layout>
+                  <Subjects />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Quiz Solver */}
-        <Route 
-          path="/quiz/:id" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <QuizSolver />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Assignments Routes */}
+          <Route
+            path="/assignments"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher']}>
+                <Layout>
+                  <Assignments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Task Management Routes */}
-        <Route 
-          path="/teacher/tasks" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherTaskManager />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/student/tasks" 
-          element={
-            <ProtectedRoute allowedRoles={['student']}>
-              <Layout>
-                <StudentTaskView />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Grades Routes */}
+          <Route
+            path="/grades"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
+                <Layout>
+                  <Grades />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Teacher Routes */}
-        <Route 
-          path="/profesor" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/materias" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherSubjectsPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/tareas" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherTasksPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/calificaciones" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherGradesPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/pendientes" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherPendingGradesPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/estudiantes" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <TeacherStudentsPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/materias/:subjectId/tareas" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <SubjectTasksPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        
-        <Route 
-          path="/profesor/predicciones" 
-          element={
-            <ProtectedRoute allowedRoles={['teacher']}>
-              <Layout>
-                <PredictionsPage />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Calendar Routes */}
+          <Route
+            path="/calendar"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
+                <Layout>
+                  <Calendar />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Interactive Activities Routes - Módulo de actividades interactivas */}
-        <Route 
-          path="/actividades-interactivas" 
-          element={
-            <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
-              <Layout>
-                <InteractiveActivities />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
+          {/* Users Routes - Coordinador puede ver usuarios de su institución */}
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute allowedRoles={['coordinator', 'admin', 'super_admin']}>
+                <CoordinatorUsersPage />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Teacher Grade Management - Gestión de grados por profesor */}
-        <Route 
-          path="/gestion-grados" 
-          element={
-            <ProtectedRoute allowedRoles={['coordinator', 'admin', 'super_admin']}>
-              <TeacherGradeManagementPage />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Reports Routes */}
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={['coordinator', 'admin']}>
+                <Layout>
+                  <Reports />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Initialization Page - Solo para desarrollo */}
-        <Route 
-          path="/init" 
-          element={<InitializationPage />} 
-        />
+          {/* Settings Routes */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Layout>
+                  <Settings />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
-        {/* User Generator Page - Generador de usuarios de prueba */}
-        <Route 
-          path="/generator" 
-          element={<UserGeneratorPage />} 
-        />
+          {/* Admin Dashboard */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'super_admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Catch all route */}
-        <Route 
-          path="*" 
-          element={
-            isAuthenticated ? 
-            <Navigate to="/dashboard" replace /> : 
-            <Navigate to="/" replace />
-          } 
-        />
-      </Routes>
-    </Router>
+          {/* Coordinator Analytics - NUEVO */}
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute allowedRoles={['coordinator', 'admin', 'super_admin']}>
+                <Layout>
+                  <AcademicAnalyticsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Quiz Solver */}
+          <Route
+            path="/quiz/:id"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <QuizSolver />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Task Management Routes */}
+          <Route
+            path="/teacher/tasks"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherTaskManager />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/student/tasks"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <Layout>
+                  <StudentTaskView />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Teacher Routes */}
+          <Route
+            path="/profesor"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/materias"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherSubjectsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/tareas"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherTasksPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/calificaciones"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherGradesPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/pendientes"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherPendingGradesPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/estudiantes"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <TeacherStudentsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/materias/:subjectId/tareas"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <SubjectTasksPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profesor/predicciones"
+            element={
+              <ProtectedRoute allowedRoles={['teacher']}>
+                <Layout>
+                  <PredictionsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Interactive Activities Routes - Módulo de actividades interactivas */}
+          <Route
+            path="/actividades-interactivas"
+            element={
+              <ProtectedRoute allowedRoles={['student', 'teacher', 'coordinator']}>
+                <Layout>
+                  <InteractiveActivities />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Teacher Grade Management - Gestión de grados por profesor */}
+          <Route
+            path="/gestion-grados"
+            element={
+              <ProtectedRoute allowedRoles={['coordinator', 'admin', 'super_admin']}>
+                <TeacherGradeManagementPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Initialization Page - Solo para desarrollo */}
+          <Route
+            path="/init"
+            element={<InitializationPage />}
+          />
+
+          {/* User Generator Page - Generador de usuarios de prueba */}
+          <Route
+            path="/generator"
+            element={<UserGeneratorPage />}
+          />
+
+          {/* Catch all route */}
+          <Route
+            path="*"
+            element={
+              isAuthenticated ?
+                <Navigate to="/dashboard" replace /> :
+                <Navigate to="/" replace />
+            }
+          />
+        </Routes>
+      </Router>
+    </ViewModeProvider>
   );
 }
 

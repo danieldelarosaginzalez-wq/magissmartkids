@@ -38,26 +38,47 @@ const TeacherGradesPage: React.FC = () => {
 
   const loadAvailableGrades = async () => {
     try {
-      if (!token) return;
+      if (!token) {
+        console.log('❌ No hay token disponible');
+        setLoading(false);
+        return;
+      }
 
-      const response = await fetch('/api/teacher/tasks/grades', {
+      console.log('📚 Cargando grados disponibles...');
+      // Intentar primero con el endpoint de materias que tiene los grados
+      const response = await fetch('/api/teacher/subjects', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
+      console.log('📊 Response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        const grades = Array.isArray(data) ? data : (data.grades || []);
-        // FILTRAR SOLO CUARTO C
-        const filteredGrades = grades.filter((g: string) => g === 'Cuarto C');
-        setAvailableGrades(filteredGrades);
-        if (filteredGrades.length > 0) {
-          setSelectedGrade(filteredGrades[0]);
+        console.log('✅ Materias recibidas:', data);
+
+        // Extraer grados únicos de las materias
+        const subjects = data.subjects || [];
+        const uniqueGrades = [...new Set(subjects.map((s: any) => s.grade).filter((g: string) => g && g !== 'Sin grado'))];
+        console.log('📋 Grados únicos extraídos:', uniqueGrades);
+
+        // Mostrar TODOS los grados disponibles
+        setAvailableGrades(uniqueGrades);
+        if (uniqueGrades.length > 0) {
+          setSelectedGrade(uniqueGrades[0]);
+          console.log('🎯 Grado seleccionado por defecto:', uniqueGrades[0]);
+        } else {
+          console.warn('⚠️ No se encontraron grados disponibles');
+          setLoading(false);
         }
+      } else {
+        console.error('❌ Error HTTP:', response.status);
+        setLoading(false);
       }
     } catch (error) {
-      console.error('Error loading grades:', error);
+      console.error('❌ Error loading grades:', error);
+      setLoading(false);
     }
   };
 
@@ -129,10 +150,10 @@ const TeacherGradesPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedGrade) {
+    if (selectedGrade && token) {
       loadStudentGrades();
     }
-  }, [selectedGrade, loadStudentGrades]);
+  }, [selectedGrade, token]); // ✅ Eliminar loadStudentGrades de las dependencias para evitar loop infinito
 
   const handleSaveScore = async (submissionIndex: number) => {
     if (!selectedStudent || !token) return;
@@ -145,17 +166,17 @@ const TeacherGradesPage: React.FC = () => {
 
     try {
       setSaving(true);
-      
+
       // Encontrar la submission correcta (puede estar en pendientes o calificadas)
       const allSubmissions = selectedStudent.submissions;
       const submission = allSubmissions[submissionIndex];
-      
+
       if (!submission || !submission.id) {
         alert('Error: No se encontró el ID de la entrega');
         setSaving(false);
         return;
       }
-      
+
       const response = await fetch(`/api/teacher/submissions/${submission.id}/grade`, {
         method: 'PUT',
         headers: {
@@ -172,18 +193,18 @@ const TeacherGradesPage: React.FC = () => {
         // Actualizar localmente
         const updatedStudent = { ...selectedStudent };
         updatedStudent.submissions[submissionIndex].score = newScore;
-        
+
         // Recalcular promedio
         const totalScore = updatedStudent.submissions.reduce((sum, s) => sum + s.score, 0);
         updatedStudent.averageGrade = totalScore / updatedStudent.totalTasks;
-        
+
         setSelectedStudent(updatedStudent);
-        
+
         // Actualizar en la lista
-        setStudents(students.map(s => 
+        setStudents(students.map(s =>
           s.id === updatedStudent.id ? updatedStudent : s
         ));
-        
+
         setEditingSubmission(null);
       } else {
         alert('Error al actualizar la nota');
@@ -358,8 +379,8 @@ const TeacherGradesPage: React.FC = () => {
                       : 0;
 
                     return (
-                      <tr 
-                        key={student.id} 
+                      <tr
+                        key={student.id}
                         className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
                         onClick={() => setSelectedStudent(student)}
                       >
@@ -475,7 +496,7 @@ const TeacherGradesPage: React.FC = () => {
                                 Entregado: {new Date(submission.submittedAt).toLocaleDateString('es-ES')}
                               </p>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
                               {editingSubmission === index ? (
                                 <>
@@ -535,7 +556,7 @@ const TeacherGradesPage: React.FC = () => {
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 Entregas Calificadas ({selectedStudent.submissions.filter(s => s.score && s.score > 0).length})
               </h3>
-              
+
               {selectedStudent.submissions.filter(s => s.score && s.score > 0).length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No hay entregas calificadas</p>
               ) : (
@@ -543,66 +564,66 @@ const TeacherGradesPage: React.FC = () => {
                   {selectedStudent.submissions
                     .filter(s => s.score && s.score > 0)
                     .map((submission, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{submission.taskTitle}</p>
-                          <p className="text-sm text-gray-500">
-                            Entregado: {new Date(submission.submittedAt).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          {editingSubmission === index ? (
-                            <>
-                              <input
-                                type="number"
-                                min="0"
-                                max="5"
-                                step="0.1"
-                                value={editScore}
-                                onChange={(e) => setEditScore(e.target.value)}
-                                className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                                disabled={saving}
-                              />
-                              <Button
-                                onClick={() => handleSaveScore(index)}
-                                size="sm"
-                                disabled={saving}
-                                className="flex items-center gap-1"
-                              >
-                                <Save className="h-4 w-4" />
-                                {saving ? 'Guardando...' : 'Guardar'}
-                              </Button>
-                              <Button
-                                onClick={() => setEditingSubmission(null)}
-                                variant="outline"
-                                size="sm"
-                                disabled={saving}
-                              >
-                                Cancelar
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <div className={`px-4 py-2 rounded-lg font-bold text-lg ${getGradeColor(submission.score)}`}>
-                                {submission.score.toFixed(1)}
-                              </div>
-                              <Button
-                                onClick={() => handleEditScore(index, submission.score)}
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center gap-1"
-                              >
-                                <Edit className="h-4 w-4" />
-                                Editar
-                              </Button>
-                            </>
-                          )}
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">{submission.taskTitle}</p>
+                            <p className="text-sm text-gray-500">
+                              Entregado: {new Date(submission.submittedAt).toLocaleDateString('es-ES')}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            {editingSubmission === index ? (
+                              <>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="5"
+                                  step="0.1"
+                                  value={editScore}
+                                  onChange={(e) => setEditScore(e.target.value)}
+                                  className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                  disabled={saving}
+                                />
+                                <Button
+                                  onClick={() => handleSaveScore(index)}
+                                  size="sm"
+                                  disabled={saving}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Save className="h-4 w-4" />
+                                  {saving ? 'Guardando...' : 'Guardar'}
+                                </Button>
+                                <Button
+                                  onClick={() => setEditingSubmission(null)}
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={saving}
+                                >
+                                  Cancelar
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <div className={`px-4 py-2 rounded-lg font-bold text-lg ${getGradeColor(submission.score)}`}>
+                                  {submission.score.toFixed(1)}
+                                </div>
+                                <Button
+                                  onClick={() => handleEditScore(index, submission.score)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex items-center gap-1"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  Editar
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>

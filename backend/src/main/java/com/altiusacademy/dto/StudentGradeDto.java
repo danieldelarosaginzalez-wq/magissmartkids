@@ -10,6 +10,11 @@ public class StudentGradeDto {
     private Double grade;
     private Double maxGrade;
     private LocalDate date;
+    private String teacherName;
+    private LocalDate dueDate;
+    private String priority;
+    private Integer points;
+    private String taskType;
     
     // Constructors
     public StudentGradeDto() {}
@@ -21,6 +26,22 @@ public class StudentGradeDto {
         this.grade = grade;
         this.maxGrade = maxGrade;
         this.date = date;
+    }
+    
+    public StudentGradeDto(String id, String subject, String taskName, Double grade, Double maxGrade, 
+                          LocalDate date, String teacherName, LocalDate dueDate, String priority, 
+                          Integer points, String taskType) {
+        this.id = id;
+        this.subject = subject;
+        this.taskName = taskName;
+        this.grade = grade;
+        this.maxGrade = maxGrade;
+        this.date = date;
+        this.teacherName = teacherName;
+        this.dueDate = dueDate;
+        this.priority = priority;
+        this.points = points;
+        this.taskType = taskType;
     }
     
     // Getters and Setters
@@ -41,4 +62,19 @@ public class StudentGradeDto {
     
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
+    
+    public String getTeacherName() { return teacherName; }
+    public void setTeacherName(String teacherName) { this.teacherName = teacherName; }
+    
+    public LocalDate getDueDate() { return dueDate; }
+    public void setDueDate(LocalDate dueDate) { this.dueDate = dueDate; }
+    
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
+    
+    public Integer getPoints() { return points; }
+    public void setPoints(Integer points) { this.points = points; }
+    
+    public String getTaskType() { return taskType; }
+    public void setTaskType(String taskType) { this.taskType = taskType; }
 }
