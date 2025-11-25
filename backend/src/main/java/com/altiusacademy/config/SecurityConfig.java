@@ -242,6 +242,12 @@ public class SecurityConfig {
                                 // ==================== CONFIGURACIÓN DE AUTORIZACIÓN ====================
                                 .authorizeHttpRequests(authz -> authz
 
+                                                // ==================== PERMITIR PREFLIGHT REQUESTS (OPTIONS)
+                                                // ====================
+                                                // Permitir todas las peticiones OPTIONS para CORS preflight
+                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                                                .permitAll()
+
                                                 // ==================== ENDPOINTS COMPLETAMENTE PÚBLICOS
                                                 // ====================
                                                 // Estos endpoints no requieren autenticación ni autorización
