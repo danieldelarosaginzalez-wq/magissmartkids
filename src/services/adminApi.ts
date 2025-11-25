@@ -191,26 +191,10 @@ export const createInstitution = async (institutionData: {
   email?: string;
 }) => {
   console.log('🏛️ Creating institution:', institutionData);
-  const token = getToken();
-
-  if (!token) {
-    throw new Error('No authentication token found');
-  }
-
-  const response = await fetch('/api/institutions', {
+  return apiRequest('/institutions/create', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(institutionData),
   });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-  }
-
-  return response.json();
 };
 
 // ✏️ Actualizar usuario
