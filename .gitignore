@@ -117,7 +117,7 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# public - Comentado porque Vite necesita esta carpeta
 
 # Storybook build outputs
 .out
