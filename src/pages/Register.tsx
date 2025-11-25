@@ -335,9 +335,9 @@ const Register: React.FC = () => {
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: formData.role,
+        institutionId: formData.institutionId, // Siempre enviar institutionId
         ...(formData.role === 'COORDINATOR' && { institutionNit: formData.institutionNit }),
-        ...(formData.institutionId && { institutionId: formData.institutionId }),
-        ...(formData.role === 'STUDENT' && { schoolGrade: formData.gradeLevel }),
+        ...(formData.role === 'STUDENT' && formData.gradeLevel && { schoolGrade: formData.gradeLevel }),
         ...(formData.role === 'PARENT' && { 
           childrenEmails: childrenInfo
             .filter(child => child.email.trim() && child.exists)
@@ -346,7 +346,7 @@ const Register: React.FC = () => {
       };
 
       // 🔍 DEBUG: Verificar datos de registro
-      console.log('📝 Datos a enviar:', registerData);
+      console.log('📝 Datos a enviar:', JSON.stringify(registerData, null, 2));
       console.log('🏫 Institution ID seleccionado:', formData.institutionId);
       console.log('🎓 Grado seleccionado:', formData.gradeLevel);
       console.log('📚 Grados disponibles:', schoolGrades);
