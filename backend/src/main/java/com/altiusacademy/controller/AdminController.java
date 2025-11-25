@@ -289,9 +289,8 @@ public class AdminController {
             if (updates.containsKey("email")) {
                 user.setEmail((String) updates.get("email"));
             }
-            if (updates.containsKey("isActive")) {
-                user.setIsActive((Boolean) updates.get("isActive"));
-            }
+            // NO actualizar isActive aquí para evitar problemas con bit(1)
+            // isActive se maneja en endpoints específicos de activar/desactivar
 
             User updatedUser = userService.saveUser(user);
 
@@ -333,6 +332,80 @@ public class AdminController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("message", "Error eliminando usuario: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * Activar usuario
+     * PUT /api/admin/users/{id}/activate
+     */
+    @PutMapping({ "/api/admin/users/{id}/activate", "/api/super-admin/users/{id}/activate" })
+    public ResponseEntity<Map<String, Object>> activateUser(@PathVariable Long id) {
+        try {
+            logger.info("Activando usuario ID: {}", id);
+
+            User user = userService.findUserById(id);
+
+            if (user == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Usuario no encontrado");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            user.setIsActive(true);
+            User updatedUser = userService.saveUser(user);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Usuario activado exitosamente");
+            response.put("user", updatedUser);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error activando usuario: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error activando usuario: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
+
+    /**
+     * Desactivar usuario
+     * PUT /api/admin/users/{id}/deactivate
+     */
+    @PutMapping({ "/api/admin/users/{id}/deactivate", "/api/super-admin/users/{id}/deactivate" })
+    public ResponseEntity<Map<String, Object>> deactivateUser(@PathVariable Long id) {
+        try {
+            logger.info("Desactivando usuario ID: {}", id);
+
+            User user = userService.findUserById(id);
+
+            if (user == null) {
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "Usuario no encontrado");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            user.setIsActive(false);
+            User updatedUser = userService.saveUser(user);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Usuario desactivado exitosamente");
+            response.put("user", updatedUser);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Error desactivando usuario: {}", e.getMessage());
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Error desactivando usuario: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
     }
