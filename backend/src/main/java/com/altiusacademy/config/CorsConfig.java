@@ -18,20 +18,21 @@ import java.util.List;
  * 
  * ¿QUÉ ES CORS?
  * CORS es un mecanismo de seguridad implementado por navegadores web que
- * restringe requests HTTP entre diferentes orígenes (protocolo, dominio, puerto).
+ * restringe requests HTTP entre diferentes orígenes (protocolo, dominio,
+ * puerto).
  * Sin una configuración CORS adecuada, el navegador bloqueará las peticiones
  * del frontend al backend por razones de seguridad.
  * 
  * ARQUITECTURA DE COMUNICACIÓN:
- * ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
- * │   React App     │───▶│  CORS Headers    │───▶│  Spring Boot    │
- * │ localhost:3000  │    │  Validation      │    │ localhost:8090  │
- * └─────────────────┘    └──────────────────┘    └─────────────────┘
- *                                 │
- * ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
- * │  Browser CORS   │◀───│  Preflight       │◀───│  OPTIONS        │
- * │  Policy Check   │    │  Request         │    │  Request        │
- * └─────────────────┘    └──────────────────┘    └─────────────────┘
+ * ┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
+ * │ React App │───▶│ CORS Headers │───▶│ Spring Boot │
+ * │ localhost:3000 │ │ Validation │ │ localhost:8090 │
+ * └─────────────────┘ └──────────────────┘ └─────────────────┘
+ * │
+ * ┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
+ * │ Browser CORS │◀───│ Preflight │◀───│ OPTIONS │
+ * │ Policy Check │ │ Request │ │ Request │
+ * └─────────────────┘ └──────────────────┘ └─────────────────┘
  * 
  * TIPOS DE REQUESTS CORS:
  * 1. Simple Requests: GET, POST con headers básicos
@@ -65,7 +66,8 @@ public class CorsConfig {
      * - https://admin.altius-academy.com (panel administrativo)
      * 
      * IMPORTANTE: En producción, especificar orígenes exactos en lugar de "*"
-     * para mayor seguridad. El wildcard "*" no debe usarse con allowCredentials=true.
+     * para mayor seguridad. El wildcard "*" no debe usarse con
+     * allowCredentials=true.
      */
     @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:3002}")
     private String[] allowedOrigins;
@@ -167,7 +169,8 @@ public class CorsConfig {
      * 6. Aplicar configuración a todas las rutas (/api/**)
      * 
      * SEGURIDAD:
-     * - Usa allowedOriginPatterns en lugar de allowedOrigins para mayor flexibilidad
+     * - Usa allowedOriginPatterns en lugar de allowedOrigins para mayor
+     * flexibilidad
      * - Valida que allowCredentials sea compatible con los orígenes configurados
      * - Aplica principio de menor privilegio en headers y métodos
      * 
@@ -176,58 +179,65 @@ public class CorsConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // ==================== CONFIGURACIÓN DE ORÍGENES ====================
-        // Usar patterns para mayor flexibilidad (soporta wildcards)
-        // Agregar soporte para cualquier puerto localhost en desarrollo
-        configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:*",
-            "https://localhost:*",
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*"
-        ));
-        
-        logger.info("CORS - Configuración permisiva para desarrollo habilitada");
-        
+        // Combinar orígenes de properties con localhost para desarrollo
+        List<String> origins = new java.util.ArrayList<>();
+
+        // Agregar orígenes desde properties (producción)
+        origins.addAll(Arrays.asList(allowedOrigins));
+
+        // Agregar localhost para desarrollo
+        origins.add("http://localhost:*");
+        origins.add("https://localhost:*");
+        origins.add("http://127.0.0.1:*");
+        origins.add("https://127.0.0.1:*");
+
+        configuration.setAllowedOriginPatterns(origins);
+
+        logger.info("CORS - Orígenes permitidos: {}", origins);
+
         // ==================== CONFIGURACIÓN DE MÉTODOS ====================
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
-        logger.debug("CORS - Métodos permitidos: GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD");
-        
+        configuration.setAllowedMethods(Arrays.asList(allowedMethods));
+        logger.debug("CORS - Métodos permitidos: {}", Arrays.asList(allowedMethods));
+
         // ==================== CONFIGURACIÓN DE HEADERS ====================
         configuration.setAllowedHeaders(List.of("*"));
         logger.debug("CORS - Todos los headers permitidos");
-        
+
         // ==================== CONFIGURACIÓN DE HEADERS EXPUESTOS ====================
         List<String> exposed = Arrays.asList(exposedHeaders);
         configuration.setExposedHeaders(exposed);
         logger.debug("CORS - Headers expuestos: {}", exposed);
-        
+
         // ==================== CONFIGURACIÓN DE CREDENCIALES ====================
-        configuration.setAllowCredentials(true);
-        logger.debug("CORS - Credenciales permitidas: true");
-        
+        configuration.setAllowCredentials(allowCredentials);
+        logger.debug("CORS - Credenciales permitidas: {}", allowCredentials);
+
         // ==================== CONFIGURACIÓN DE CACHE ====================
-        configuration.setMaxAge(3600L);
-        logger.debug("CORS - Tiempo de cache preflight: 3600 segundos");
-        
+        configuration.setMaxAge(maxAge);
+        logger.debug("CORS - Tiempo de cache preflight: {} segundos", maxAge);
+
         // ==================== APLICACIÓN DE CONFIGURACIÓN ====================
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        
+
         // Aplicar a TODAS las rutas para máxima compatibilidad
         source.registerCorsConfiguration("/**", configuration);
-        
+
         logger.info("CORS configurado exitosamente para todos los endpoints");
-        
+
         return source;
     }
 
-    // ==================== CONFIGURACIONES ESPECÍFICAS POR AMBIENTE ====================
+    // ==================== CONFIGURACIONES ESPECÍFICAS POR AMBIENTE
+    // ====================
 
     /**
      * Configuración CORS específica para desarrollo
      * 
      * Configuración más permisiva para facilitar el desarrollo local.
-     * Permite todos los orígenes y headers para evitar problemas durante desarrollo.
+     * Permite todos los orígenes y headers para evitar problemas durante
+     * desarrollo.
      * 
      * CARACTERÍSTICAS:
      * - Orígenes: Todos los localhost con puertos comunes
@@ -241,24 +251,23 @@ public class CorsConfig {
     @Bean("developmentCorsConfigurationSource")
     public CorsConfigurationSource developmentCorsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // Configuración permisiva para desarrollo
         configuration.setAllowedOriginPatterns(List.of(
-            "http://localhost:*",
-            "https://localhost:*",
-            "http://127.0.0.1:*",
-            "https://127.0.0.1:*"
-        ));
-        
+                "http://localhost:*",
+                "https://localhost:*",
+                "http://127.0.0.1:*",
+                "https://127.0.0.1:*"));
+
         configuration.setAllowedMethods(List.of("*"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(Arrays.asList(exposedHeaders));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(1800L); // 30 minutos - más corto para desarrollo
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        
+
         return source;
     }
 
@@ -280,34 +289,32 @@ public class CorsConfig {
     @Bean("productionCorsConfigurationSource")
     public CorsConfigurationSource productionCorsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
+
         // Configuración restrictiva para producción
         configuration.setAllowedOriginPatterns(List.of(
-            "https://app.altius-academy.com",
-            "https://www.altius-academy.com",
-            "https://admin.altius-academy.com"
-        ));
-        
+                "https://app.altius-academy.com",
+                "https://www.altius-academy.com",
+                "https://admin.altius-academy.com"));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        
+
         // Headers específicos para producción
         configuration.setAllowedHeaders(List.of(
-            "Content-Type",
-            "Authorization",
-            "Accept",
-            "Origin",
-            "User-Agent",
-            "Cache-Control",
-            "X-Requested-With"
-        ));
-        
+                "Content-Type",
+                "Authorization",
+                "Accept",
+                "Origin",
+                "User-Agent",
+                "Cache-Control",
+                "X-Requested-With"));
+
         configuration.setExposedHeaders(Arrays.asList(exposedHeaders));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(86400L); // 24 horas - cache largo para producción
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
-        
+
         return source;
     }
 
@@ -342,9 +349,9 @@ public class CorsConfig {
         if (origin == null || origin.isEmpty()) {
             return false;
         }
-        
+
         return Arrays.asList(allowedOrigins).contains(origin) ||
-               Arrays.asList(allowedOrigins).contains("*");
+                Arrays.asList(allowedOrigins).contains("*");
     }
 
     /**
@@ -354,27 +361,26 @@ public class CorsConfig {
      */
     public List<String> validateCorsConfiguration() {
         List<String> warnings = new java.util.ArrayList<>();
-        
+
         // Verificar configuración insegura de credenciales con wildcard
         if (allowCredentials && Arrays.asList(allowedOrigins).contains("*")) {
             warnings.add("allowCredentials=true con allowedOrigins='*' no es soportado por navegadores");
         }
-        
+
         // Verificar si se están usando wildcards en producción
         if (Arrays.asList(allowedOrigins).contains("*")) {
             warnings.add("Usar allowedOrigins='*' no es recomendado para producción");
         }
-        
+
         // Verificar tiempo de cache muy largo
         if (maxAge > 86400) {
             warnings.add("maxAge mayor a 24 horas puede no ser respetado por algunos navegadores");
         }
-        
+
         return warnings;
     }
 
     // ==================== LOGGING ====================
-    
-    private static final org.slf4j.Logger logger = 
-        org.slf4j.LoggerFactory.getLogger(CorsConfig.class);
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CorsConfig.class);
 }
