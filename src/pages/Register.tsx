@@ -266,8 +266,9 @@ const Register: React.FC = () => {
     }
 
     // Validaciones específicas por rol
-    if (formData.role === 'COORDINATOR' && !formData.institutionNit?.trim()) {
-      setError('El NIT de la institución es obligatorio para coordinadores');
+    // Para coordinadores: NIT es opcional si ya seleccionó una institución del dropdown
+    if (formData.role === 'COORDINATOR' && !formData.institutionId && !formData.institutionNit?.trim()) {
+      setError('Debes seleccionar una institución o ingresar el NIT');
       return;
     }
 
@@ -336,7 +337,7 @@ const Register: React.FC = () => {
         password: formData.password,
         role: formData.role,
         institutionId: formData.institutionId, // Siempre enviar institutionId
-        ...(formData.role === 'COORDINATOR' && { institutionNit: formData.institutionNit }),
+        ...(formData.role === 'COORDINATOR' && formData.institutionNit?.trim() && { institutionNit: formData.institutionNit.trim() }),
         ...(formData.role === 'STUDENT' && formData.gradeLevel && { schoolGrade: formData.gradeLevel }),
         ...(formData.role === 'PARENT' && { 
           childrenEmails: childrenInfo
