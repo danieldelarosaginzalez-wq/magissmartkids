@@ -381,9 +381,18 @@ const Register: React.FC = () => {
       } else {
         setError(data.message || 'Error en el registro. Inténtalo de nuevo.');
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError('Error de conexión. Verifica tu conexión a internet.');
+    } catch (error: any) {
+      console.error('❌ Registration error:', error);
+      console.error('❌ Error response:', error.response);
+      console.error('❌ Error data:', error.response?.data);
+      
+      // Mostrar el mensaje específico del backend
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.error 
+        || error.message 
+        || 'Error de conexión. Verifica tu conexión a internet.';
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
