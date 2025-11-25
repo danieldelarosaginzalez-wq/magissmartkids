@@ -12,6 +12,10 @@ RUN npm ci --only=production
 # Copiar código fuente
 COPY . .
 
+# ARG para recibir la URL del backend en build time
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build de producción
 RUN npm run build
 
