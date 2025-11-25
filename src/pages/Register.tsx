@@ -115,12 +115,12 @@ const Register: React.FC = () => {
         console.log('⚠️ Respuesta vacía, usando datos de tu BD');
         // ✅ DATOS EXACTOS DE TU BD
         const gradesFromYourDB = [
-          { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
-          { id: 2, name: '1°', gradeName: '1°', level: 1 },
-          { id: 3, name: '2°', gradeName: '2°', level: 2 },
-          { id: 4, name: '3°', gradeName: '3°', level: 3 },
-          { id: 5, name: '4°', gradeName: '4°', level: 4 },
-          { id: 6, name: '5°', gradeName: '5°', level: 5 }
+          { id: 1, gradeName: 'Preescolar', gradeLevel: 0, description: 'Preescolar', isActive: true },
+          { id: 2, gradeName: '1°', gradeLevel: 1, description: 'Primero', isActive: true },
+          { id: 3, gradeName: '2°', gradeLevel: 2, description: 'Segundo', isActive: true },
+          { id: 4, gradeName: '3°', gradeLevel: 3, description: 'Tercero', isActive: true },
+          { id: 5, gradeName: '4°', gradeLevel: 4, description: 'Cuarto', isActive: true },
+          { id: 6, gradeName: '5°', gradeLevel: 5, description: 'Quinto', isActive: true }
         ];
         setSchoolGrades(gradesFromYourDB);
       }
@@ -130,12 +130,12 @@ const Register: React.FC = () => {
       
       // ✅ DATOS EXACTOS DE TU BD COMO FALLBACK
       const gradesFromYourDB = [
-        { id: 1, name: 'Preescolar', gradeName: 'Preescolar', level: 0 },
-        { id: 2, name: '1°', gradeName: '1°', level: 1 },
-        { id: 3, name: '2°', gradeName: '2°', level: 2 },
-        { id: 4, name: '3°', gradeName: '3°', level: 3 },
-        { id: 5, name: '4°', gradeName: '4°', level: 4 },
-        { id: 6, name: '5°', gradeName: '5°', level: 5 }
+        { id: 1, gradeName: 'Preescolar', gradeLevel: 0, description: 'Preescolar', isActive: true },
+        { id: 2, gradeName: '1°', gradeLevel: 1, description: 'Primero', isActive: true },
+        { id: 3, gradeName: '2°', gradeLevel: 2, description: 'Segundo', isActive: true },
+        { id: 4, gradeName: '3°', gradeLevel: 3, description: 'Tercero', isActive: true },
+        { id: 5, gradeName: '4°', gradeLevel: 4, description: 'Cuarto', isActive: true },
+        { id: 6, gradeName: '5°', gradeLevel: 5, description: 'Quinto', isActive: true }
       ];
       setSchoolGrades(gradesFromYourDB);
       setError(''); // No mostrar error, los datos están disponibles
