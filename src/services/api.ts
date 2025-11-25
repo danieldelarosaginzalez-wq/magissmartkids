@@ -1,8 +1,19 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
-// IMPORTANTE: Usar rutas relativas para que funcione el proxy de Vite
+// Configuración de la URL base del API
+// En desarrollo: usa el proxy de Vite (/api)
+// En producción: DEBE configurarse VITE_API_BASE_URL en Railway apuntando al backend
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// Log para debugging
+if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
+  console.error('⚠️ VITE_API_BASE_URL no está configurada en producción!');
+  console.error('El frontend intentará usar rutas relativas, lo que causará errores 405');
+  console.error('Configura VITE_API_BASE_URL en Railway apuntando a tu backend');
+}
+
+console.log('🔗 API Base URL:', API_BASE_URL);
 
 // Create axios instance for protected endpoints
 const api = axios.create({

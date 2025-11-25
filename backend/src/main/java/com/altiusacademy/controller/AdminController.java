@@ -512,7 +512,8 @@ public class AdminController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("error", "Error obteniendo estadísticas: " + e.getMessage());
-            return ResponseEntity.status(500).body(errorResponse);
+            errorResponse.put("data", new HashMap<>());
+            return ResponseEntity.ok(errorResponse);
         }
     }
 
@@ -571,7 +572,8 @@ public class AdminController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("error", "Error obteniendo actividad mensual: " + e.getMessage());
-            return ResponseEntity.status(500).body(errorResponse);
+            errorResponse.put("data", new HashMap<>());
+            return ResponseEntity.ok(errorResponse);
         }
     }
 
@@ -631,7 +633,8 @@ public class AdminController {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("success", false);
             errorResponse.put("error", "Error obteniendo rendimiento académico: " + e.getMessage());
-            return ResponseEntity.status(500).body(errorResponse);
+            errorResponse.put("data", new HashMap<>());
+            return ResponseEntity.ok(errorResponse);
         }
     }
 
